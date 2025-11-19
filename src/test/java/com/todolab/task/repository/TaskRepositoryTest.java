@@ -1,15 +1,14 @@
 package com.todolab.task.repository;
 
+import com.todolab.support.RepositoryTestSupport;
 import com.todolab.task.domain.Task;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.data.r2dbc.DataR2dbcTest;
 import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-@DataR2dbcTest
-class TaskRepositoryTest {
+class TaskRepositoryTest extends RepositoryTestSupport {
 
     @Autowired
     TaskRepository taskRepository;

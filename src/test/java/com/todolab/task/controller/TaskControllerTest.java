@@ -1,19 +1,16 @@
 package com.todolab.task.controller;
 
+import com.todolab.support.ControllerTestSupport;
 import com.todolab.task.dto.TaskCreateRequest;
 import com.todolab.task.dto.TaskResponse;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
 
-@SpringBootTest
-@AutoConfigureWebTestClient
-class TaskControllerTest {
+class TaskControllerTest extends ControllerTestSupport {
 
     @Autowired
     WebTestClient webTestClient;

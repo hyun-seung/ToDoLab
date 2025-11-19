@@ -1,15 +1,14 @@
 package com.todolab.task.service;
 
+import com.todolab.support.ServiceTestSupport;
 import com.todolab.task.dto.TaskCreateRequest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-@SpringBootTest
-class TaskServiceIntegrationTest {
+class TaskServiceTest extends ServiceTestSupport {
 
     @Autowired
     TaskService taskService;
