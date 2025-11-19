@@ -44,4 +44,22 @@ class TaskControllerTest extends ControllerTestSupport {
                     assert data.description().equals("까먹지 말자..!");
                 });
     }
+
+    @Test
+    void 일정_등록_실패_title_필수값_누락() {
+        TaskCreateRequest req = new TaskCreateRequest(
+                null, "desc", null, null
+        );
+
+        webTestClient.post()
+                .uri("/tasks")
+                .bodyValue(req)
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody(new ParameterizedTypeReference<ApiResponse<Void>>() {})
+                .value(res -> {
+                    assert res.status().equals("fail");
+                    assert res.error().code() == 10001;
+                });
+    }
 }
