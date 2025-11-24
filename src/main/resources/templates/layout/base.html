@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${title}">일정 관리</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- flatpickr + material_green -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/material_green.css">
+</head>
+
+<body class="bg-gray-100 min-h-screen flex flex-col">
+
+<header class="bg-white shadow p-4">
+    <h1 class="text-xl font-semibold text-gray-900">🗓️ 일정 관리</h1>
+</header>
+
+<main class="flex-1 px-4 py-6">
+    <div class="max-w-lg mx-auto">
+        <div th:utext="${body}"></div>
+    </div>
+</main>
+
+<footer class="text-center text-gray-500 text-sm py-4">
+    © 2025 일정 관리 시스템
+</footer>
+
+<!-- 성공 모달 -->
+<div id="successModal"
+     class="fixed inset-0 hidden bg-black/40 flex items-center justify-center z-50">
+    <div class="bg-white shadow-xl rounded-xl px-6 py-5 text-center animate-fade-in">
+        <div class="text-4xl mb-2">🎉</div>
+        <div class="text-lg font-bold mb-4">일정이 등록되었습니다!</div>
+        <button onclick="closeModal()"
+                class="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+            확인
+        </button>
+    </div>
+</div>
+
+<div id="toast-container" class="fixed top-4 right-4 z-50 space-y-3"></div>
+
+<style>
+    @keyframes fade-in {
+      from { opacity: 0; transform: scale(0.95); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+    .animate-fade-in { animation: fade-in 0.25s ease-out; }
+</style>
+
+<!-- flatpickr JS -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ko.js"></script>
+
+<script>
+    /* ---- 모달 ---- */
+    function openModal() {
+        document.getElementById("successModal").classList.remove("hidden");
+    }
+    function closeModal() {
+        document.getElementById("successModal").classList.add("hidden");
+    }
+
+    /* ---- Toast ---- */
+    function showToast(message) {
+        const container = document.getElementById("toast-container");
+        const toast = document.createElement("div");
+
+        toast.className =
+                "bg-black text-white px-4 py-2 rounded shadow-lg opacity-90 transition transform text-sm";
+        toast.innerHTML = "✔️ " + message;
+
+        container.appendChild(toast);
+
+        setTimeout(() => {
+            toast.classList.add("opacity-0");
+            setTimeout(() => toast.remove(), 300);
+        }, 2000);
+    }
+
+    /* ------------------------------
+       🌟 create 페이지 전용 JS
+       ------------------------------ */
+    document.addEventListener("DOMContentLoaded", () => {
+        const createPage = document.getElementById("create-page");
+        if (!createPage) return;
+
+        const form = document.getElementById("taskForm");
+        const btn = document.getElementById("submitBtn");
+        const errorBox = document.getElementById("error-box");
+
+        const originalText = btn.innerHTML;
+
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            errorBox.classList.add("hidden");
+
+            btn.disabled = true;
+            btn.innerHTML = "⏳ 등록 중...";
+
+            const data = {
+                title: form.title.value,
+                description: form.description.value,
+                date: form.date.value,
+                time: form.time.value
+            };
+
+            let response;
+            try {
+                response = await fetch("/tasks", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(data)
+                });
+            } catch (err) {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+                errorBox.innerText = "서버와의 통신에 실패했습니다.";
+                errorBox.classList.remove("hidden");
+                return;
+            }
+
+            if (response.ok) {
+                btn.innerHTML = "✔ 등록 완료";
+                showToast("일정이 등록되었습니다!");
+                openModal();
+                form.reset();
+
+                setTimeout(() => {
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                }, 1000);
+
+            } else {
+                const result = await response.json().catch(() => null);
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+
+                errorBox.innerText = result?.message || "등록 실패";
+                errorBox.classList.remove("hidden");
+            }
+        });
+    });
+</script>
+
+</body>
+</html>

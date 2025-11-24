@@ -10,8 +10,8 @@ public class ToDoALabApplication {
 
     public static void main(String[] args) {
         SpringApplication.run(ToDoALabApplication.class, args);
-        log.info("==================================" +
-                 "  To Do Lab Application           " +
-                 "==================================");
+        log.info("\n==================================" +
+                 "\n  To Do Lab Application           " +
+                 "\n==================================");
     }
 }
