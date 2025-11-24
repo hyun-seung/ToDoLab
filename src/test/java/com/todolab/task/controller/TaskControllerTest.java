@@ -39,7 +39,6 @@ class TaskControllerTest extends ControllerTestSupport {
                     TaskResponse data = res.data();
                     assert data != null;
 
-                    assert data.id() != null;
                     assert data.title().equals("테스트 코드 작성");
                     assert data.description().equals("까먹지 말자..!");
                 });

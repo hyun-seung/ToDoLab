@@ -8,7 +8,6 @@ import java.time.LocalTime;
 
 @Builder
 public record TaskResponse(
-        Long id,
         String title,
         String description,
         LocalDate date,

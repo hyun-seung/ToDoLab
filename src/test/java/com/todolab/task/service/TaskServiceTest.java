@@ -19,7 +19,6 @@ class TaskServiceTest extends ServiceTestSupport {
 
         StepVerifier.create(taskService.create(request))
                 .assertNext(saved -> {
-                    assertThat(saved.id()).isNotNull();
                     assertThat(saved.title()).isEqualTo("title");
                     assertThat(saved.createdAt()).isNotNull();
                 })

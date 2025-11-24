@@ -24,7 +24,6 @@ public class TaskService {
 
         return taskRepository.save(task)
                 .map(saved -> TaskResponse.builder()
-                        .id(saved.getId())
                         .title(saved.getTitle())
                         .description(saved.getDescription())
                         .date(saved.getTaskDate())
