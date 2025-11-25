@@ -1,7 +1,6 @@
 package com.todolab.common.api;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.todolab.common.error.ErrorCode;
 
 import java.time.LocalDateTime;
 

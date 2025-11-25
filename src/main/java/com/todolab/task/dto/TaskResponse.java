@@ -1,5 +1,6 @@
 package com.todolab.task.dto;
 
+import com.todolab.task.domain.Task;
 import lombok.Builder;
 
 import java.time.LocalDate;
@@ -13,4 +14,14 @@ public record TaskResponse(
         LocalDate date,
         LocalTime time,
         LocalDateTime createdAt
-) {}
+) {
+    public static TaskResponse from(Task t) {
+        return new TaskResponse(
+                t.getTitle(),
+                t.getDescription(),
+                t.getTaskDate(),
+                t.getTaskTime(),
+                t.getCreatedAt()
+        );
+    }
+}

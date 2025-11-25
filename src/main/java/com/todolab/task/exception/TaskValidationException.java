@@ -1,6 +1,6 @@
 package com.todolab.task.exception;
 
-import com.todolab.common.error.ErrorCode;
+import com.todolab.common.api.ErrorCode;
 import lombok.Getter;
 
 @Getter

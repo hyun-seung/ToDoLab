@@ -1,6 +1,6 @@
 package com.todolab.common.api;
 
-import com.todolab.common.error.ErrorCode;
+import com.todolab.task.exception.TaskValidationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -24,6 +24,14 @@ public class ApiExceptionHandler {
         log.error("Validation Failed : {}", detail);
         return ResponseEntity.badRequest().body(ApiResponse.failure(ErrorCode.INVALID_INPUT));
     }
+
+    @ExceptionHandler(TaskValidationException.class)
+    public ResponseEntity<ApiResponse<?>> handleTaskValidationException(TaskValidationException e) {
+        log.error("Task Validation Failed : {}", e.getDetail());
+        return ResponseEntity.badRequest().body(ApiResponse.failure(ErrorCode.INVALID_INPUT));
+    }
+
+
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<?>> handleException(Exception e) {
