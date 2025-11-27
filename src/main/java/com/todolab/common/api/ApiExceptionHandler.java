@@ -7,6 +7,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.bind.support.WebExchangeBindException;
+import org.springframework.web.server.MissingRequestValueException;
 
 @Slf4j
 @RestControllerAdvice
@@ -31,7 +32,11 @@ public class ApiExceptionHandler {
         return ResponseEntity.badRequest().body(ApiResponse.failure(ErrorCode.INVALID_INPUT));
     }
 
-
+    @ExceptionHandler(MissingRequestValueException.class)
+    public ResponseEntity<ApiResponse<?>> handleMissingRequestValueException(MissingRequestValueException e) {
+        log.error("Missing Validation Failed : {}", e.getMessage());
+        return ResponseEntity.badRequest().body(ApiResponse.failure(ErrorCode.INVALID_INPUT));
+    }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<?>> handleException(Exception e) {
