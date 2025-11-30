@@ -13,7 +13,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -83,7 +82,7 @@ class TaskServiceTest {
         );
 
         Mockito.when(taskRepository.findByDateRange(start, end))
-                .thenReturn(Flux.fromIterable(dummy));
+                .thenReturn(dummy);
 
         StepVerifier.create(taskService.getTasks(request))
                 .assertNext(list -> {
@@ -91,7 +90,7 @@ class TaskServiceTest {
                     assertThat(list.getFirst().title()).isEqualTo("일정1");
                     assertThat(list.getFirst().description()).isEqualTo("desc1");
                     assertThat(list.get(1).title()).isEqualTo("일정3");
-                    assertThat(list.get(1).description()).isEqualTo("desc2ㄲㄲ");
+                    assertThat(list.get(1).description()).isEqualTo("desc2");
                     assertThat(list.get(1).title()).isEqualTo("일정2");
                     assertThat(list.get(1).description()).isEqualTo("desc3");
                 });
@@ -117,7 +116,7 @@ class TaskServiceTest {
         );
 
         Mockito.when(taskRepository.findByDateRange(expectedRange.getStart(), expectedRange.getEnd()))
-                .thenReturn(Flux.fromIterable(dummy));
+                .thenReturn(dummy);
 
         StepVerifier.create(taskService.getTasks(request))
                 .assertNext(list -> {
@@ -156,7 +155,7 @@ class TaskServiceTest {
         );
 
         Mockito.when(taskRepository.findByDateRange(expectedRange.getStart(), expectedRange.getEnd()))
-                .thenReturn(Flux.fromIterable(dummy));
+                .thenReturn(dummy);
 
         StepVerifier.create(taskService.getTasks(request))
                 .assertNext(list -> {

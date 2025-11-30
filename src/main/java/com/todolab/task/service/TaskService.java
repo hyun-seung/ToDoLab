@@ -9,7 +9,9 @@ import com.todolab.task.dto.TaskResponse;
 import com.todolab.task.repository.TaskRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Scheduler;
 
 import java.util.List;
 
@@ -18,6 +20,7 @@ import java.util.List;
 public class TaskService {
 
     private final TaskRepository taskRepository;
+    private final Scheduler jpaScheduler;
 
     public Mono<List<TaskResponse>> getTasks(TaskQueryRequest request) {
         final TaskQueryType type = request.getType();
@@ -25,7 +28,9 @@ public class TaskService {
 
         DateRange range = type.calculate(strDate);
 
-        return taskRepository.findByDateRange(range.getStart(), range.getEnd())
+        return Mono.fromCallable(() -> taskRepository.findByDateRange(range.getStart(), range.getEnd()))
+                .publishOn(jpaScheduler)
+                .flatMapMany(Flux::fromIterable)
                 .map(TaskResponse::from)
                 .collectList();
     }
@@ -38,7 +43,8 @@ public class TaskService {
                 .taskTime(req.time())
                 .build();
 
-        return taskRepository.save(task)
+        return Mono.fromCallable(() -> taskRepository.save(task))
+                .publishOn(jpaScheduler)
                 .map(saved -> TaskResponse.builder()
                         .title(saved.getTitle())
                         .description(saved.getDescription())
