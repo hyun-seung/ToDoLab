@@ -9,8 +9,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.List;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class TaskRepositoryTest extends RepositoryTestSupport {
 
@@ -58,5 +59,48 @@ class TaskRepositoryTest extends RepositoryTestSupport {
         // then
         assertThat(saved.getCreatedAt()).isNotNull();
         assertThat(saved.getCreatedAt()).isBeforeOrEqualTo(LocalDateTime.now());
+    }
+
+    @Test
+    @DisplayName("findByDateRange()는 지정한 날짜 범위 내의 Task만 조회한다")
+    void findByDateRange_success() {
+        LocalDate start = LocalDate.of(2025, 11, 1);
+        LocalDate end = LocalDate.of(2025, 11, 7);
+
+        List<Task> days = List.of(
+                Task.builder()
+                        .title("day1")
+                        .description("desc1")
+                        .taskDate(LocalDate.of(2025, 11, 1))
+                        .taskTime(LocalTime.of(10, 0))
+                        .build(),
+                Task.builder()
+                        .title("day2")
+                        .description("desc2")
+                        .taskDate(LocalDate.of(2025, 11, 5))
+                        .taskTime(LocalTime.of(20, 30))
+                        .build(),
+                Task.builder()
+                        .title("day3")
+                        .description("desc3")
+                        .taskDate(LocalDate.of(2025, 11, 7))
+                        .taskTime(LocalTime.of(23, 30))
+                        .build(),
+                Task.builder()
+                        .title("day4")
+                        .description("desc4")
+                        .taskDate(LocalDate.of(2025, 11, 8))
+                        .taskTime(LocalTime.of(9, 0))
+                        .build()
+        );
+        taskRepository.saveAll(days);
+        flushAndClear();
+
+        List<Task> results = taskRepository.findByDateRange(start, end);
+
+        assertThat(results).hasSize(3);
+        assertThat(results)
+                .extracting("title")
+                .containsExactlyInAnyOrder("day1", "day2", "day3");
     }
 }
