@@ -1,0 +1,129 @@
+<!-- src/main/resources/templates/pages/task/week.html -->
+
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" th:inline="html">
+
+<div class="w-full px-4 py-4">
+
+    <!-- 상단: 네비게이션 + 주간 범위 -->
+    <div class="flex justify-between items-center mb-8">
+
+        <!-- 지난주 버튼 -->
+        <a th:href="'/tasks/week?move=prev&date=' + ${currentDate}"
+           class="px-5 py-2 bg-white border border-gray-200 rounded-lg shadow-sm
+                  flex items-center gap-2 text-gray-700 hover:bg-gray-50 font-medium">
+
+            <!-- 뒤로가기 아이콘 -->
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+                 viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M15 19l-7-7 7-7" />
+            </svg>
+            지난주
+        </a>
+
+        <!-- 주간 범위 (2025-12-01 ~ 2025-12-07) -->
+        <div class="text-xl font-semibold"
+             th:text="${weekRange}">
+            2025-12-01 ~ 2025-12-07
+        </div>
+
+        <!-- 다음주 버튼 -->
+        <a th:href="'/tasks/week?move=next&date=' + ${currentDate}"
+           class="px-5 py-2 bg-white border border-gray-200 rounded-lg shadow-sm
+                  flex items-center gap-2 text-gray-700 hover:bg-gray-50 font-medium">
+
+            다음주
+
+            <!-- 앞으로가기 아이콘 -->
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+                 viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M9 5l7 7-7 7" />
+            </svg>
+        </a>
+    </div>
+
+    <!-- 가로 스크롤 컨테이너 -->
+    <div class="overflow-x-auto no-scrollbar pb-8 week-scroll">
+
+        <!-- 7개 요일 카드 -->
+        <div class="flex space-x-6 min-w-max">
+
+            <div th:each="day : ${weeklyTasks}"
+                 class="bg-white rounded-xl shadow p-5 border w-[320px] flex-shrink-0 day-column">
+
+                <!-- 요일 + 날짜 한 줄 -->
+                <div class="flex justify-between items-center mb-4">
+
+                    <!-- 요일 -->
+                    <span class="text-gray-500 font-semibold text-sm"
+                          th:text="${day.date.dayOfWeek.getDisplayName(T(java.time.format.TextStyle).SHORT, T(java.util.Locale).KOREAN)}">
+                        월
+                    </span>
+
+                    <!-- 날짜 (오늘 강조) -->
+                    <span th:if="${day.date.equals(T(java.time.LocalDate).now())}"
+                          class="bg-blue-600 text-white rounded-full px-3 py-1 font-bold">
+                        [[${day.date.dayOfMonth}]]
+                    </span>
+
+                    <span th:unless="${day.date.equals(T(java.time.LocalDate).now())}"
+                          class="text-gray-900 font-bold">
+                        [[${day.date.dayOfMonth}]]
+                    </span>
+
+                </div>
+
+                <hr class="mb-4"/>
+
+                <!-- 일정 목록 -->
+                <div class="space-y-2">
+
+                    <!-- 일정 없음 -->
+                    <div th:if="${#lists.isEmpty(day.tasks)}"
+                         class="text-gray-400 text-sm text-center py-8">
+                        일정 없음
+                    </div>
+
+                    <!-- 일정 카드 -->
+                    <div th:each="t : ${day.tasks}"
+                         class="rounded-lg p-3 text-sm text-gray-800 shadow-sm border"
+                         style="background: [[${t.color}]]">
+
+                        <div class="font-bold" th:text="${t.title}">일정 제목</div>
+
+                        <div class="text-xs mt-1 text-gray-700"
+                             th:text="${t.description}">
+                            설명
+                        </div>
+
+                        <div class="text-xs mt-1 text-gray-600"
+                             th:text="${t.time != null ? t.time : '종일'}">
+                            10:00
+                        </div>
+
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+<style>
+    .week-scroll {
+        scroll-snap-type: x mandatory;
+    }
+
+    .day-column {
+        scroll-snap-align: start;
+    }
+
+    .no-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+</style>
+
+</html>

@@ -1,39 +1,54 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="UTF-8">
-    <title th:text="${title}">일정 관리</title>
-
-    <script src="https://cdn.tailwindcss.com"></script>
+    <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <!-- flatpickr + material_green -->
+    <title th:text="${title}">ToDoLab</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- flatpickr (create 페이지에서만 쓰지만 공용으로 둬도 무방) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/material_green.css">
 </head>
 
-<body class="bg-gray-100 min-h-screen flex flex-col">
+<body class="bg-[#F7F6F2] min-h-screen flex flex-col">
 
-<header class="bg-white shadow p-4">
-    <h1 class="text-xl font-semibold text-gray-900">🗓️ 일정 관리</h1>
+<header class="w-full py-6 text-center">
+    <h1 class="text-3xl font-bold" th:text="${headerTitle}">ToDoLab</h1>
 </header>
 
-<main class="flex-1 px-4 py-6">
-    <div class="max-w-lg mx-auto">
-        <div th:utext="${body}"></div>
-    </div>
+<!-- 페이지 콘텐츠 -->
+<main class="flex-1 w-full max-w-7xl mx-auto">
+    <div th:utext="${body}"></div>
 </main>
 
-<footer class="text-center text-gray-500 text-sm py-4">
-    © 2025 일정 관리 시스템
+<!-- Floating + 버튼 -->
+<a href="/tasks/create"
+   class="fixed bottom-20 right-10 bg-blue-600 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-xl text-3xl">
+    +
+</a>
+
+<!-- 하단 네비게이션 -->
+<footer class="w-full bg-white py-4 border-t flex justify-around text-gray-500 text-sm">
+    <a href="/tasks/day"
+       th:classappend="${activeTab == 'day'} ? ' font-semibold text-blue-600' : ''"
+       class="hover:text-black">일</a>
+    <a href="/tasks/week"
+       th:classappend="${activeTab == 'week'} ? ' font-semibold text-blue-600' : ''"
+       class="hover:text-black">주</a>
+    <a href="/tasks/month"
+       th:classappend="${activeTab == 'month'} ? ' font-semibold text-blue-600' : ''"
+       class="hover:text-black">월</a>
 </footer>
 
-<!-- 성공 모달 -->
+<!-- ✅ 기존 등록 기능(성공 모달/토스트) 공용 배치 -->
 <div id="successModal"
      class="fixed inset-0 hidden bg-black/40 flex items-center justify-center z-50">
     <div class="bg-white shadow-xl rounded-xl px-6 py-5 text-center animate-fade-in">
         <div class="text-4xl mb-2">🎉</div>
         <div class="text-lg font-bold mb-4">일정이 등록되었습니다!</div>
-        <button onclick="closeModal()"
+        <button type="button" onclick="closeModal()"
                 class="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
             확인
         </button>
@@ -44,8 +59,8 @@
 
 <style>
     @keyframes fade-in {
-      from { opacity: 0; transform: scale(0.95); }
-      to   { opacity: 1; transform: scale(1); }
+        from { opacity: 0; transform: scale(0.95); }
+        to   { opacity: 1; transform: scale(1); }
     }
     .animate-fade-in { animation: fade-in 0.25s ease-out; }
 </style>
@@ -57,19 +72,20 @@
 <script>
     /* ---- 모달 ---- */
     function openModal() {
-        document.getElementById("successModal").classList.remove("hidden");
+        document.getElementById("successModal")?.classList.remove("hidden");
     }
     function closeModal() {
-        document.getElementById("successModal").classList.add("hidden");
+        document.getElementById("successModal")?.classList.add("hidden");
     }
 
     /* ---- Toast ---- */
     function showToast(message) {
         const container = document.getElementById("toast-container");
-        const toast = document.createElement("div");
+        if (!container) return;
 
+        const toast = document.createElement("div");
         toast.className =
-                "bg-black text-white px-4 py-2 rounded shadow-lg opacity-90 transition transform text-sm";
+            "bg-black text-white px-4 py-2 rounded shadow-lg opacity-90 transition transform text-sm";
         toast.innerHTML = "✔️ " + message;
 
         container.appendChild(toast);
@@ -81,15 +97,15 @@
     }
 
     /* ------------------------------
-       🌟 create 페이지 전용 JS
+       ✅ create 페이지 전용 JS (안정화)
+       - taskForm이 있을 때만 바인딩
        ------------------------------ */
     document.addEventListener("DOMContentLoaded", () => {
-        const createPage = document.getElementById("create-page");
-        if (!createPage) return;
-
         const form = document.getElementById("taskForm");
         const btn = document.getElementById("submitBtn");
         const errorBox = document.getElementById("error-box");
+
+        if (!form || !btn || !errorBox) return;
 
         const originalText = btn.innerHTML;
 
@@ -101,10 +117,10 @@
             btn.innerHTML = "⏳ 등록 중...";
 
             const data = {
-                title: form.title.value,
-                description: form.description.value,
-                date: form.date.value,
-                time: form.time.value
+                title: form.title?.value,
+                description: form.description?.value,
+                date: form.date?.value,
+                time: form.time?.value
             };
 
             let response;
@@ -132,7 +148,6 @@
                     btn.disabled = false;
                     btn.innerHTML = originalText;
                 }, 1000);
-
             } else {
                 const result = await response.json().catch(() => null);
                 btn.disabled = false;
