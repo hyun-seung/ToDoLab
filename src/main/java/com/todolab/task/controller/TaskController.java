@@ -31,6 +31,13 @@ public class TaskController {
                 .map(ResponseEntity::ok);
     }
 
+    @GetMapping("/{id}")
+    public Mono<ResponseEntity<ApiResponse<TaskResponse>>> getTask(@PathVariable Long id) {
+        return taskService.getTask(id)
+                .map(ApiResponse::success)
+                .map(ResponseEntity::ok);
+    }
+
     @GetMapping
     public Mono<ResponseEntity<ApiResponse<List<TaskResponse>>>> getTasks(
             @RequestParam String type,

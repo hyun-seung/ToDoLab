@@ -11,6 +11,9 @@ public enum ErrorCode {
     INVALID_INPUT(10001, "값이 올바르지 않습니다."),
     REQUIRED_VALUE_MISSING(10002, "필수값이 없습니다."),
 
+    // Task
+    TASK_NOT_FOUND(20001, "일정을 찾을 수 없습니다."),
+
     // 서버 내부 오류
     INTERNAL_ERROR(99999, "서버 오류가 발생했습니다.");
 
