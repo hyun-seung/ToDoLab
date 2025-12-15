@@ -2,8 +2,6 @@
 
 <html lang="ko" xmlns:th="http://www.thymeleaf.org" th:inline="html">
 
-<!-- src/main/resources/templates/pages/task/week.html -->
-
 <div class="w-full px-4 py-4">
 
     <!-- 상단: 네비게이션 + 주간 범위 -->
@@ -24,8 +22,7 @@
         </a>
 
         <!-- 주간 범위 -->
-        <div class="text-xl font-semibold"
-             th:text="${weekRange}">
+        <div class="text-xl font-semibold" th:text="${weekRange}">
             2025-12-01 ~ 2025-12-07
         </div>
 
@@ -54,8 +51,9 @@
             <div th:each="day : ${weeklyTasks}"
                  class="bg-white rounded-xl shadow p-5 border w-[320px] flex-shrink-0 day-column">
 
-                <!-- 요일 + 날짜 한 줄 -->
-                <div class="flex justify-between items-center mb-4">
+                <!-- ✅ 요일 + 날짜 클릭 → /tasks/day?date=YYYY-MM-DD -->
+                <a class="flex justify-between items-center mb-4 hover:opacity-80 transition"
+                   th:href="'/tasks/day?date=' + ${day.date}">
 
                     <!-- 요일 -->
                     <span class="text-gray-500 font-semibold text-sm"
@@ -74,7 +72,7 @@
                         [[${day.date.dayOfMonth}]]
                     </span>
 
-                </div>
+                </a>
 
                 <hr class="mb-4"/>
 
@@ -115,15 +113,7 @@
 </div>
 
 <style>
-    .week-scroll {
-        scroll-snap-type: x mandatory;
-    }
-
-    .day-column {
-        scroll-snap-align: start;
-    }
-
-    .no-scrollbar::-webkit-scrollbar {
-        display: none;
-    }
+    .week-scroll { scroll-snap-type: x mandatory; }
+    .day-column { scroll-snap-align: start; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
 </style>
