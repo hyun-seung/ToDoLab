@@ -52,6 +52,70 @@ public class TaskPageController {
     }
 
     // ===========================
+    // 🔵 일간 일정 페이지
+    // ===========================
+    @GetMapping("/tasks/day")
+    public Mono<String> day(
+            @RequestParam(required = false) String move,   // prev | next
+            @RequestParam(required = false) String date,   // YYYY-MM-DD
+            Model model
+    ) {
+        LocalDate targetDate = (date != null && !date.isBlank())
+                ? LocalDate.parse(date)
+                : LocalDate.now();
+
+        if ("prev".equals(move)) {
+            targetDate = targetDate.minusDays(1);
+        } else if ("next".equals(move)) {
+            targetDate = targetDate.plusDays(1);
+        }
+
+        LocalDate finalDate = targetDate;
+        String queryDate = finalDate.toString(); // YYYY-MM-DD
+
+        return webClient.get()
+                .uri(uri -> uri
+                        .path("/tasks")
+                        .queryParam("type", "DAY")
+                        .queryParam("date", queryDate)
+                        .build())
+                .retrieve()
+                .bodyToMono(new ParameterizedTypeReference<ApiResponse<List<TaskResponse>>>() {
+                })
+                .map(ApiResponse::data)
+                .map(taskList -> {
+
+                    List<TaskUi> tasks = taskList.stream()
+                            .map(t -> new TaskUi(
+                                    t.title(),
+                                    t.description(),
+                                    t.date(),
+                                    t.time(),
+                                    pickColor(t.title(), t.date(), t.time())
+                            ))
+                            .toList();
+
+                    Context ctx = new Context();
+                    ctx.setVariable("date", finalDate);
+                    ctx.setVariable("tasks", tasks);
+                    ctx.setVariable("isToday", finalDate.equals(LocalDate.now()));
+
+                    String bodyHtml = templateEngine.process("pages/task/day", ctx);
+
+                    model.addAttribute("title", "일간 일정 - ToDoLab");
+                    model.addAttribute("headerTitle",
+                            finalDate.getYear() + "년 "
+                                    + finalDate.getMonthValue() + "월 "
+                                    + finalDate.getDayOfMonth() + "일");
+                    model.addAttribute("activeTab", "day");
+                    model.addAttribute("body", bodyHtml);
+
+                    return "layout/base";
+                });
+    }
+
+
+    // ===========================
     // 🔵 주간 일정 페이지
     // ===========================
     @GetMapping("/tasks/week")
@@ -133,10 +197,6 @@ public class TaskPageController {
                     return "layout/base";
                 });
     }
-
-    // ===========================
-    // 내부 DTO
-    // ===========================
 
     // ===========================
     // 색상 알고리즘

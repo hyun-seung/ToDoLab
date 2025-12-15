@@ -1,0 +1,65 @@
+<!-- src/main/resources/templates/pages/task/day.html -->
+
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" th:inline="html">
+
+<div class="px-4">
+
+    <!-- =========================
+         상단 날짜 이동
+         ========================= -->
+    <div class="flex items-center justify-between mb-6">
+        <a class="px-4 py-2 bg-white rounded-lg shadow hover:bg-gray-50"
+           th:href="'/tasks/day?move=prev&date=' + ${date}">
+            ← 이전
+        </a>
+
+        <div class="text-lg font-semibold">
+            <span th:text="${date}">2025-12-15</span>
+            <span th:if="${isToday}"
+                  class="ml-2 text-xs px-2 py-1 rounded-full bg-blue-600 text-white">
+                오늘
+            </span>
+        </div>
+
+        <a class="px-4 py-2 bg-white rounded-lg shadow hover:bg-gray-50"
+           th:href="'/tasks/day?move=next&date=' + ${date}">
+            다음 →
+        </a>
+    </div>
+
+    <!-- =========================
+         일정 목록
+         ========================= -->
+    <div class="space-y-4">
+
+        <!-- 일정 없음 -->
+        <div th:if="${#lists.isEmpty(tasks)}"
+             class="text-center text-gray-400 py-20">
+            등록된 일정이 없습니다
+        </div>
+
+        <!-- 일정 카드 -->
+        <div th:each="t : ${tasks}"
+             class="bg-white rounded-xl shadow border p-4">
+
+            <div class="flex items-center justify-between mb-2">
+                <div class="font-bold text-gray-800"
+                     th:text="${t.title()}">
+                    일정 제목
+                </div>
+
+                <span class="text-xs px-2 py-1 rounded-full"
+                      th:style="'background:' + ${t.color()}">
+                    <span th:text="${t.time() != null ? t.time() : '종일'}">10:00</span>
+                </span>
+            </div>
+
+            <div class="text-sm text-gray-600"
+                 th:text="${t.description()}">
+                설명
+            </div>
+
+        </div>
+    </div>
+
+</div>
