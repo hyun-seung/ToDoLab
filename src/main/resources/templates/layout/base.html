@@ -24,9 +24,11 @@
     <div th:utext="${body}"></div>
 </main>
 
-<!-- Floating + 버튼 (footer에 가리지 않게 bottom을 올림) -->
-<a href="/tasks/create"
-   class="fixed bottom-24 right-10 bg-blue-600 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-xl text-3xl z-50">
+<!-- Floating + 버튼 -->
+<a id="floatingCreateBtn"
+   href="/tasks/create"
+   class="fixed bottom-24 right-10 bg-blue-600 text-white w-14 h-14
+          rounded-full flex items-center justify-center shadow-xl text-3xl z-50">
     +
 </a>
 
@@ -98,8 +100,25 @@
     }
 
     /* ------------------------------
-       ✅ create 페이지 전용 JS (안정화)
-       - taskForm이 있을 때만 바인딩
+       + 버튼: day 페이지면 날짜 포함해서 create 이동
+       ------------------------------ */
+    document.addEventListener("DOMContentLoaded", () => {
+        const createBtn = document.getElementById("floatingCreateBtn");
+        if (!createBtn) return;
+
+        createBtn.addEventListener("click", (e) => {
+            const dayPage = document.getElementById("day-page");
+            const date = dayPage?.dataset?.date;
+
+            if (date) {
+                e.preventDefault();
+                window.location.href = `/tasks/create?date=${date}`;
+            }
+        });
+    });
+
+    /* ------------------------------
+       create 페이지 전용 submit 로직
        ------------------------------ */
     document.addEventListener("DOMContentLoaded", () => {
         const form = document.getElementById("taskForm");

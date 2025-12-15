@@ -2,7 +2,9 @@
 
 <html lang="ko" xmlns:th="http://www.thymeleaf.org" th:inline="html">
 
-<div class="px-4">
+<div class="px-4"
+     id="day-page"
+     th:attr="data-date=${date}">
 
     <!-- =========================
          상단 날짜 이동
