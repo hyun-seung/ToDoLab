@@ -1,0 +1,82 @@
+<!-- src/main/resources/templates/pages/task/month.html -->
+
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" th:inline="html">
+
+<div class="px-4">
+
+    <!-- =========================
+         상단 월 이동
+         ========================= -->
+    <div class="flex items-center justify-between mb-4">
+        <a class="px-3 py-2 rounded-lg bg-white shadow hover:bg-gray-50"
+           th:href="'/tasks/month?move=prev&month=' + ${yearMonth}">
+            ← 이전
+        </a>
+
+        <div class="text-sm font-semibold text-gray-700"
+             th:text="${yearMonth.getYear()} + '년 ' + ${yearMonth.getMonthValue()} + '월'">
+            2025년 12월
+        </div>
+
+        <a class="px-3 py-2 rounded-lg bg-white shadow hover:bg-gray-50"
+           th:href="'/tasks/month?move=next&month=' + ${yearMonth}">
+            다음 →
+        </a>
+    </div>
+
+    <!-- =========================
+         요일 헤더
+         ========================= -->
+    <div class="grid grid-cols-7 gap-2 text-xs text-gray-500 mb-2 px-1">
+        <div class="text-center">월</div>
+        <div class="text-center">화</div>
+        <div class="text-center">수</div>
+        <div class="text-center">목</div>
+        <div class="text-center">금</div>
+        <div class="text-center text-blue-600">토</div>
+        <div class="text-center text-red-600">일</div>
+    </div>
+
+    <!-- =========================
+         캘린더 그리드 (6 x 7)
+         ========================= -->
+    <div class="grid grid-cols-7 gap-2">
+        <div th:each="cell : ${cells}"
+             class="bg-white rounded-xl shadow-sm p-2 min-h-[110px] border"
+             th:classappend="${!cell.inMonth()} ? ' opacity-50' : ''">
+
+            <!-- 날짜 / 오늘 표시 -->
+            <div class="flex items-center justify-between mb-1">
+                <div class="text-sm font-semibold"
+                     th:text="${cell.date().getDayOfMonth()}">
+                    1
+                </div>
+
+                <div th:if="${cell.date().equals(today)}"
+                     class="text-[10px] px-2 py-[2px] rounded-full bg-blue-600 text-white">
+                    오늘
+                </div>
+            </div>
+
+            <!-- 일정 목록 (최대 3개) -->
+            <div class="space-y-1">
+                <div th:each="task, stat : ${cell.tasks()}"
+                     th:if="${stat.index < 3}"
+                     class="text-[11px] rounded-md px-2 py-1 truncate"
+                     th:style="'background:' + ${task.color()}">
+                    <span th:text="${task.title()}">일정 제목</span>
+                </div>
+
+                <!-- +n more -->
+                <div th:if="${cell.tasks().size() > 3}"
+                     class="text-[11px] text-gray-500 px-1">
+                    <span th:text="'+' + (${cell.tasks().size()} - 3) + ' more'">
+                        +2 more
+                    </span>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</div>

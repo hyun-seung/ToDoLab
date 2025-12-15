@@ -16,8 +16,11 @@ import reactor.core.publisher.Mono;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Controller
 @RequiredArgsConstructor
@@ -78,7 +81,8 @@ public class TaskPageController {
                         .queryParam("date", queryDate)
                         .build())
                 .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<ApiResponse<List<TaskResponse>>>() {})
+                .bodyToMono(new ParameterizedTypeReference<ApiResponse<List<TaskResponse>>>() {
+                })
                 .map(ApiResponse::data)
                 .map(taskList -> {
 
@@ -134,19 +138,6 @@ public class TaskPageController {
     // 내부 DTO
     // ===========================
 
-    public record TaskUi(
-            String title,
-            String description,
-            LocalDate date,
-            LocalTime time,
-            String color
-    ) {}
-
-    public record DaySchedule(
-            LocalDate date,
-            List<TaskUi> tasks
-    ) {}
-
     // ===========================
     // 색상 알고리즘
     // ===========================
@@ -159,4 +150,114 @@ public class TaskPageController {
         String key = title + date + (time != null ? time.toString() : "");
         return colors[Math.abs(key.hashCode() % colors.length)];
     }
+
+    // ===========================
+    // 🟣 월간 일정 페이지
+    // ===========================
+    @GetMapping("/tasks/month")
+    public Mono<String> month(
+            @RequestParam(required = false) String move,   // prev | next
+            @RequestParam(required = false) String month,  // YYYY-MM
+            Model model
+    ) {
+        YearMonth ym = (month != null && !month.isBlank())
+                ? YearMonth.parse(month)
+                : YearMonth.from(LocalDate.now());
+
+        if ("prev".equals(move)) {
+            ym = ym.minusMonths(1);
+        } else if ("next".equals(move)) {
+            ym = ym.plusMonths(1);
+        }
+
+        String queryDate = ym.toString();
+
+        YearMonth finalYm = ym;
+
+        return webClient.get()
+                .uri(uri -> uri
+                        .path("/tasks")
+                        .queryParam("type", "MONTH")
+                        .queryParam("date", queryDate)
+                        .build())
+                .retrieve()
+                .bodyToMono(new ParameterizedTypeReference<ApiResponse<List<TaskResponse>>>() {
+                })
+                .map(ApiResponse::data)
+                .map(taskList -> {
+
+                    // ✅ 캘린더는 "월 1일"이 포함된 주의 월요일부터 시작해서,
+                    //    "월 말일"이 포함된 주의 일요일까지 (보통 5~6주)
+                    LocalDate firstDay = finalYm.atDay(1);
+                    LocalDate lastDay = finalYm.atEndOfMonth();
+
+                    LocalDate start = firstDay.with(DayOfWeek.MONDAY);
+                    LocalDate end = lastDay.with(DayOfWeek.SUNDAY);
+
+                    // date -> tasks 그룹핑 (UI 변환 포함)
+                    Map<LocalDate, List<TaskUi>> byDate = taskList.stream()
+                            .collect(Collectors.groupingBy(
+                                    TaskResponse::date,
+                                    Collectors.mapping(t -> new TaskUi(
+                                            t.title(),
+                                            t.description(),
+                                            t.date(),
+                                            t.time(),
+                                            pickColor(t.title(), t.date(), t.time())
+                                    ), Collectors.toList())
+                            ));
+
+                    List<CalendarCell> cells = new ArrayList<>();
+                    for (LocalDate d = start; !d.isAfter(end); d = d.plusDays(1)) {
+                        boolean inMonth = (d.getMonthValue() == finalYm.getMonthValue());
+                        List<TaskUi> tasks = byDate.getOrDefault(d, List.of());
+                        cells.add(new CalendarCell(d, inMonth, tasks));
+                    }
+
+                    Context ctx = new Context();
+                    ctx.setVariable("yearMonth", finalYm); // YYYY-MM
+                    ctx.setVariable("cells", cells);
+                    ctx.setVariable("today", LocalDate.now());
+
+                    String bodyHtml = templateEngine.process("pages/task/month", ctx);
+
+                    // ✅ base.html용 모델 값
+                    model.addAttribute("title", "월간 일정 - ToDoLab");
+                    model.addAttribute("headerTitle", finalYm.getYear() + "년 " + finalYm.getMonthValue() + "월");
+                    model.addAttribute("activeTab", "month");
+
+                    // ✅ 기존 호환 변수(남겨둬도 됨)
+                    model.addAttribute("monthTitle", finalYm.getMonthValue() + "월 " + finalYm.getYear());
+
+                    model.addAttribute("body", bodyHtml);
+
+                    return "layout/base";
+                });
+    }
+
+    public record TaskUi(
+            String title,
+            String description,
+            LocalDate date,
+            LocalTime time,
+            String color
+    ) {
+    }
+
+    public record DaySchedule(
+            LocalDate date,
+            List<TaskUi> tasks
+    ) {
+    }
+
+    // ===========================
+    // 월 캘린더 셀 DTO
+    // ===========================
+    public record CalendarCell(
+            LocalDate date,
+            boolean inMonth,
+            List<TaskUi> tasks
+    ) {
+    }
+
 }
