@@ -2,6 +2,8 @@
 
 <html lang="ko" xmlns:th="http://www.thymeleaf.org" th:inline="html">
 
+<!-- src/main/resources/templates/pages/task/week.html -->
+
 <div class="w-full px-4 py-4">
 
     <!-- 상단: 네비게이션 + 주간 범위 -->
@@ -21,7 +23,7 @@
             지난주
         </a>
 
-        <!-- 주간 범위 (2025-12-01 ~ 2025-12-07) -->
+        <!-- 주간 범위 -->
         <div class="text-xl font-semibold"
              th:text="${weekRange}">
             2025-12-01 ~ 2025-12-07
@@ -44,7 +46,7 @@
     </div>
 
     <!-- 가로 스크롤 컨테이너 -->
-    <div class="overflow-x-auto no-scrollbar pb-8 week-scroll">
+    <div class="overflow-x-auto no-scrollbar pb-6 week-scroll">
 
         <!-- 7개 요일 카드 -->
         <div class="flex space-x-6 min-w-max">
@@ -125,5 +127,3 @@
         display: none;
     }
 </style>
-
-</html>

@@ -12,25 +12,26 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/material_green.css">
 </head>
 
-<body class="bg-[#F7F6F2] min-h-screen flex flex-col">
+<body class="bg-[#F7F6F2] h-screen flex flex-col">
 
-<header class="w-full py-6 text-center">
+<!-- ✅ 헤더는 고정(스크롤에 밀리지 않게 shrink-0) -->
+<header class="w-full py-6 text-center shrink-0">
     <h1 class="text-3xl font-bold" th:text="${headerTitle}">ToDoLab</h1>
 </header>
 
-<!-- 페이지 콘텐츠 -->
-<main class="flex-1 w-full max-w-7xl mx-auto">
+<!-- ✅ main만 스크롤되도록 overflow-y-auto + footer 높이만큼 padding-bottom -->
+<main class="flex-1 w-full max-w-7xl mx-auto overflow-y-auto pb-28">
     <div th:utext="${body}"></div>
 </main>
 
-<!-- Floating + 버튼 -->
+<!-- Floating + 버튼 (footer에 가리지 않게 bottom을 올림) -->
 <a href="/tasks/create"
-   class="fixed bottom-20 right-10 bg-blue-600 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-xl text-3xl">
+   class="fixed bottom-24 right-10 bg-blue-600 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-xl text-3xl z-50">
     +
 </a>
 
-<!-- 하단 네비게이션 -->
-<footer class="w-full bg-white py-4 border-t flex justify-around text-gray-500 text-sm">
+<!-- ✅ 하단 네비게이션: 화면에 고정 -->
+<footer class="fixed bottom-0 inset-x-0 w-full bg-white py-4 border-t flex justify-around text-gray-500 text-sm z-40">
     <a href="/tasks/day"
        th:classappend="${activeTab == 'day'} ? ' font-semibold text-blue-600' : ''"
        class="hover:text-black">일</a>

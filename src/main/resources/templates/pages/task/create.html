@@ -1,63 +1,56 @@
-<div id="create-page">
+<div id="error-box"
+     class="hidden mb-4 p-3 bg-red-100 text-red-700 border border-red-300 rounded">
+</div>
 
-    <h2 class="text-2xl font-bold mb-6 text-gray-800">📅 일정 등록</h2>
+<form id="taskForm" class="space-y-4">
 
-    <div id="error-box"
-         class="hidden mb-4 p-3 bg-red-100 text-red-700 border border-red-300 rounded">
+    <!-- 제목만 필수 -->
+    <div>
+        <label class="block text-gray-700 font-medium mb-1">제목*</label>
+        <input name="title" type="text"
+               class="w-full p-3 border rounded-lg"
+               required>
     </div>
 
-    <form id="taskForm" class="space-y-4">
+    <div>
+        <label class="block text-gray-700 font-medium mb-1">설명</label>
+        <textarea name="description"
+                  class="w-full p-3 border rounded-lg"
+                  rows="3"></textarea>
+    </div>
 
-        <!-- 제목만 필수 -->
-        <div>
-            <label class="block text-gray-700 font-medium mb-1">제목*</label>
-            <input name="title" type="text"
-                   class="w-full p-3 border rounded-lg"
-                   required>
-        </div>
+    <!-- 날짜 -->
+    <div>
+        <label class="block text-gray-700 font-medium mb-1">날짜</label>
+        <input name="date" id="dateInput"
+               class="w-full p-3 border rounded-lg"
+               placeholder="날짜 선택">
+    </div>
 
-        <div>
-            <label class="block text-gray-700 font-medium mb-1">설명</label>
-            <textarea name="description"
-                      class="w-full p-3 border rounded-lg"
-                      rows="3"></textarea>
-        </div>
+    <!-- 시간 -->
+    <div>
+        <label class="block text-gray-700 font-medium mb-1">시간</label>
+        <input name="time" id="timeSelect"
+               class="w-full p-3 border rounded-lg"
+               placeholder="시간 선택">
+    </div>
 
-        <!-- flatpickr 날짜 -->
-        <div>
-            <label class="block text-gray-700 font-medium mb-1">날짜</label>
-            <input name="date" id="dateInput"
-                   class="w-full p-3 border rounded-lg"
-                   placeholder="날짜 선택">
-        </div>
+    <button id="submitBtn" type="submit"
+            class="w-full py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700">
+        일정 등록
+    </button>
 
-        <!-- flatpickr 시간 -->
-        <div>
-            <label class="block text-gray-700 font-medium mb-1">시간</label>
-            <input name="time" id="timeSelect"
-                   class="w-full p-3 border rounded-lg"
-                   placeholder="시간 선택">
-        </div>
-
-        <button id="submitBtn" type="submit"
-                class="w-full py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700">
-            일정 등록
-        </button>
-
-    </form>
-</div>
+</form>
 
 <script>
     document.addEventListener("DOMContentLoaded", () => {
 
-        /* 날짜 - material_green theme */
         flatpickr("#dateInput", {
             dateFormat: "Y-m-d",
             defaultDate: "today",
             locale: "ko"
         });
 
-        /* 시간 - material_green theme */
         flatpickr("#timeSelect", {
             enableTime: true,
             noCalendar: true,
