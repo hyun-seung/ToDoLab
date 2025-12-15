@@ -1,53 +1,56 @@
-<div id="error-box"
-     class="hidden mb-4 p-3 bg-red-100 text-red-700 border border-red-300 rounded">
+<!-- src/main/resources/templates/pages/task/create.html -->
+
+<div id="create-page">
+
+    <!-- 에러 박스 -->
+    <div id="error-box"
+         class="hidden mb-4 p-3 bg-red-100 text-red-700 border border-red-300 rounded">
+    </div>
+
+    <form id="taskForm" class="space-y-4">
+
+        <!-- 제목만 필수 -->
+        <div>
+            <label class="block text-gray-700 font-medium mb-1">제목*</label>
+            <input name="title" type="text"
+                   class="w-full p-3 border rounded-lg"
+                   required>
+        </div>
+
+        <div>
+            <label class="block text-gray-700 font-medium mb-1">설명</label>
+            <textarea name="description"
+                      class="w-full p-3 border rounded-lg"
+                      rows="3"></textarea>
+        </div>
+
+        <!-- 날짜 -->
+        <div>
+            <label class="block text-gray-700 font-medium mb-1">날짜</label>
+            <input name="date" id="dateInput"
+                   class="w-full p-3 border rounded-lg"
+                   placeholder="날짜 선택">
+        </div>
+
+        <!-- 시간 -->
+        <div>
+            <label class="block text-gray-700 font-medium mb-1">시간</label>
+            <input name="time" id="timeSelect"
+                   class="w-full p-3 border rounded-lg"
+                   placeholder="시간 선택">
+        </div>
+
+        <!-- ✅ 버튼은 모달 하단 sticky footer로 이동 (base.html에서 렌더링) -->
+
+    </form>
 </div>
-
-<form id="taskForm" class="space-y-4">
-
-    <!-- 제목만 필수 -->
-    <div>
-        <label class="block text-gray-700 font-medium mb-1">제목*</label>
-        <input name="title" type="text"
-               class="w-full p-3 border rounded-lg"
-               required>
-    </div>
-
-    <div>
-        <label class="block text-gray-700 font-medium mb-1">설명</label>
-        <textarea name="description"
-                  class="w-full p-3 border rounded-lg"
-                  rows="3"></textarea>
-    </div>
-
-    <!-- 날짜 -->
-    <div>
-        <label class="block text-gray-700 font-medium mb-1">날짜</label>
-        <input name="date" id="dateInput"
-               class="w-full p-3 border rounded-lg"
-               placeholder="날짜 선택">
-    </div>
-
-    <!-- 시간 -->
-    <div>
-        <label class="block text-gray-700 font-medium mb-1">시간</label>
-        <input name="time" id="timeSelect"
-               class="w-full p-3 border rounded-lg"
-               placeholder="시간 선택">
-    </div>
-
-    <button id="submitBtn" type="submit"
-            class="w-full py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700">
-        일정 등록
-    </button>
-
-</form>
 
 <script>
     document.addEventListener("DOMContentLoaded", () => {
 
-        // ✅ 추가: URL 파라미터(date=YYYY-MM-DD)가 있으면 그 값을 기본 날짜로 사용
+        // URL 파라미터(date=YYYY-MM-DD)가 있으면 그 값을 기본 날짜로 사용
         const params = new URLSearchParams(window.location.search);
-        const dateParam = params.get("date"); // ex) "2025-12-15" or null
+        const dateParam = params.get("date");
 
         flatpickr("#dateInput", {
             dateFormat: "Y-m-d",

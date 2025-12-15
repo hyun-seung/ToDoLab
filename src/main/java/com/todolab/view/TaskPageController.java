@@ -4,15 +4,19 @@ import com.todolab.common.api.ApiResponse;
 import com.todolab.task.dto.TaskResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.server.ServerWebExchange;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringWebFluxTemplateEngine;
 import reactor.core.publisher.Mono;
 
+import java.io.StringWriter;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -20,6 +24,7 @@ import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Controller
@@ -32,23 +37,25 @@ public class TaskPageController {
     // ===========================
     // 🔵 일정 등록 페이지
     // ===========================
-    @GetMapping("/tasks/create")
-    public Mono<String> createPage(Model model) {
+    @GetMapping(
+            value = "/tasks/create",
+            headers = "X-Requested-With=fetch",
+            produces = MediaType.TEXT_HTML_VALUE
+    )
+    @ResponseBody
+    public Mono<String> createFragment(ServerWebExchange exchange) {
 
-        Context ctx = new Context(); // 특별한 데이터 없음
-        String body = templateEngine.process("pages/task/create", ctx);
+        Context ctx = new Context();
 
-        // ✅ base.html에서 사용하는 공용 모델 값들
-        model.addAttribute("title", "일정 등록 - ToDoLab");
-        model.addAttribute("headerTitle", "일정 등록");
-        model.addAttribute("activeTab", ""); // create는 탭 강조 안 함
+        StringWriter writer = new StringWriter();
+        templateEngine.process(
+                "pages/task/create",
+                Set.of("#create-page"),
+                ctx,
+                writer
+        );
 
-        // ✅ 기존 레이아웃 호환(남겨둬도 무방)
-        model.addAttribute("monthTitle", "");
-
-        model.addAttribute("body", body);
-
-        return Mono.just("layout/base");
+        return Mono.just(writer.toString());
     }
 
     // ===========================
