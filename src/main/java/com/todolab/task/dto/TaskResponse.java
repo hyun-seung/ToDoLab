@@ -9,6 +9,7 @@ import java.time.LocalTime;
 
 @Builder
 public record TaskResponse(
+        Long id,
         String title,
         String description,
         LocalDate date,
@@ -17,6 +18,7 @@ public record TaskResponse(
 ) {
     public static TaskResponse from(Task t) {
         return new TaskResponse(
+                t.getId(),
                 t.getTitle(),
                 t.getDescription(),
                 t.getTaskDate(),

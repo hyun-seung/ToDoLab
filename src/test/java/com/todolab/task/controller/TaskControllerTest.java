@@ -48,6 +48,7 @@ class TaskControllerTest {
     @DisplayName("일정 등록 성공")
     void createTask_success() {
         TaskResponse mockRes = TaskResponse.builder()
+                .id(1L)
                 .title("테스트 코드 작성")
                 .description("까먹지 말자..!")
                 .date(LocalDate.of(2025,11, 18))
@@ -77,6 +78,7 @@ class TaskControllerTest {
 
                     TaskResponse data = res.data();
                     assert data != null;
+                    assert data.id().equals(1L);
                     assert data.title().equals("테스트 코드 작성");
                     assert data.description().equals("까먹지 말자..!");
                 });
@@ -112,6 +114,7 @@ class TaskControllerTest {
         long id = 1L;
 
         TaskResponse resp = TaskResponse.builder()
+                .id(11L)
                 .title("테스트")
                 .description("설명")
                 .date(LocalDate.of(2025, 12, 15))
@@ -127,6 +130,7 @@ class TaskControllerTest {
                 .expectBody(new ParameterizedTypeReference<ApiResponse<TaskResponse>>() {})
                 .value(res -> {
                     assert res.status().equals("success");
+                    assert res.data().id().equals(11L);
                     assert res.data().title().equals("테스트");
                     assert res.data().description().equals("설명");
                     assert res.data().date().equals(LocalDate.of(2025, 12, 15));
@@ -175,6 +179,7 @@ class TaskControllerTest {
     void getTasks_DAY_success() {
         List<TaskResponse> dummy = List.of(
                 TaskResponse.builder()
+                        .id(999L)
                         .title("일정 조회 DAY")
                         .description("일정 조회")
                         .date(LocalDate.of(2025, 11, 25))
@@ -197,6 +202,7 @@ class TaskControllerTest {
                 .value(res -> {
                     assert res.status().equals("success");
                     assert res.data().size() == 1;
+                    assert res.data().getFirst().id().equals(999L);
                     assert res.data().getFirst().title().equals("일정 조회 DAY");
                     assert res.data().getFirst().description().equals("일정 조회");
                     assert res.data().getFirst().date().equals(LocalDate.of(2025, 11, 25));
@@ -209,6 +215,7 @@ class TaskControllerTest {
     void getTasks_WEEK_success() {
         List<TaskResponse> dummy = List.of(
                 TaskResponse.builder()
+                        .id(11L)
                         .title("WEEK 일정 1")
                         .description("설명1")
                         .date(LocalDate.of(2025, 11, 24))
@@ -216,6 +223,7 @@ class TaskControllerTest {
                         .createdAt(null)
                         .build(),
                 TaskResponse.builder()
+                        .id(21L)
                         .title("WEEK 일정 2")
                         .description("설명2")
                         .date(LocalDate.of(2025, 11, 30))
@@ -238,11 +246,13 @@ class TaskControllerTest {
                 .value(res -> {
                     assert res.status().equals("success");
                     assert res.data().size() == 2;
+                    assert res.data().getFirst().id().equals(11L);
                     assert res.data().getFirst().title().equals("WEEK 일정 1");
                     assert res.data().getFirst().description().equals("설명1");
                     assert res.data().getFirst().date().equals(LocalDate.of(2025, 11, 24));
                     assert res.data().getFirst().time().equals(LocalTime.of(1, 0));
 
+                    assert res.data().get(1).id().equals(21L);
                     assert res.data().get(1).title().equals("WEEK 일정 2");
                     assert res.data().get(1).description().equals("설명2");
                     assert res.data().get(1).date().equals(LocalDate.of(2025, 11, 30));
@@ -255,6 +265,7 @@ class TaskControllerTest {
     void getTasks_MONTH_success() {
         List<TaskResponse> dummy = List.of(
                 TaskResponse.builder()
+                        .id(111L)
                         .title("MONTH 일정 1")
                         .description("설명1")
                         .date(LocalDate.of(2025, 11, 3))
@@ -262,6 +273,7 @@ class TaskControllerTest {
                         .createdAt(null)
                         .build(),
                 TaskResponse.builder()
+                        .id(112L)
                         .title("MONTH 일정 2")
                         .description("설명2")
                         .date(LocalDate.of(2025, 11, 10))
@@ -269,6 +281,7 @@ class TaskControllerTest {
                         .createdAt(null)
                         .build(),
                 TaskResponse.builder()
+                        .id(113L)
                         .title("MONTH 일정 3")
                         .description("설명3")
                         .date(LocalDate.of(2025, 11, 18))
@@ -276,6 +289,7 @@ class TaskControllerTest {
                         .createdAt(null)
                         .build(),
                 TaskResponse.builder()
+                        .id(114L)
                         .title("MONTH 일정 4")
                         .description("설명4")
                         .date(LocalDate.of(2025, 11, 28))
@@ -300,24 +314,28 @@ class TaskControllerTest {
                     assert res.data().size() == 4;
 
                     // 1번 요소
+                    assert res.data().getFirst().id().equals(111L);
                     assert res.data().getFirst().title().equals("MONTH 일정 1");
                     assert res.data().getFirst().description().equals("설명1");
                     assert res.data().getFirst().date().equals(LocalDate.of(2025, 11, 3));
                     assert res.data().getFirst().time().equals(LocalTime.of(8, 0));
 
                     // 2번 요소
+                    assert res.data().get(1).id().equals(112L);
                     assert res.data().get(1).title().equals("MONTH 일정 2");
                     assert res.data().get(1).description().equals("설명2");
                     assert res.data().get(1).date().equals(LocalDate.of(2025, 11, 10));
                     assert res.data().get(1).time().equals(LocalTime.of(9, 30));
 
                     // 3번 요소
+                    assert res.data().get(2).id().equals(113L);
                     assert res.data().get(2).title().equals("MONTH 일정 3");
                     assert res.data().get(2).description().equals("설명3");
                     assert res.data().get(2).date().equals(LocalDate.of(2025, 11, 18));
                     assert res.data().get(2).time().equals(LocalTime.of(14, 0));
 
                     // 4번 요소
+                    assert res.data().get(3).id().equals(114L);
                     assert res.data().get(3).title().equals("MONTH 일정 4");
                     assert res.data().get(3).description().equals("설명4");
                     assert res.data().get(3).date().equals(LocalDate.of(2025, 11, 28));

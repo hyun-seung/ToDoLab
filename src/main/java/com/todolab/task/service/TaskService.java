@@ -34,13 +34,7 @@ public class TaskService {
 
         return Mono.fromCallable(() -> taskRepository.save(task))
                 .publishOn(jpaScheduler)
-                .map(saved -> TaskResponse.builder()
-                        .title(saved.getTitle())
-                        .description(saved.getDescription())
-                        .date(saved.getTaskDate())
-                        .time(saved.getTaskTime())
-                        .createdAt(saved.getCreatedAt())
-                        .build());
+                .map(TaskResponse::from);
     }
 
     public Mono<TaskResponse> getTask(Long id) {
