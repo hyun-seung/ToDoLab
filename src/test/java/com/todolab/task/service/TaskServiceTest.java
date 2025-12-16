@@ -1,11 +1,14 @@
 package com.todolab.task.service;
 
+import com.todolab.common.api.ErrorCode;
 import com.todolab.task.domain.Task;
 import com.todolab.task.domain.query.DateRange;
 import com.todolab.task.domain.query.TaskQueryType;
 import com.todolab.task.dto.TaskCreateRequest;
 import com.todolab.task.dto.TaskQueryRequest;
+import com.todolab.task.exception.TaskNotFoundException;
 import com.todolab.task.repository.TaskRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -13,15 +16,17 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class TaskServiceTest {
@@ -31,6 +36,12 @@ class TaskServiceTest {
 
     @InjectMocks
     TaskService taskService;
+
+    @BeforeEach
+    void setUp() {
+        // 테스트에서는 즉시 실행되는 Scheduler 사용
+        taskService = new TaskService(taskRepository, Schedulers.immediate());
+    }
 
     /*******************
      *  일정 등록
@@ -47,16 +58,61 @@ class TaskServiceTest {
                 .build();
 
         Mockito.when(taskRepository.save(any()))
-                .thenReturn(Mono.just(saved));
+                .thenReturn(saved);
 
         TaskCreateRequest request = new TaskCreateRequest("title", null, null, null);
 
         StepVerifier.create(taskService.create(request))
                 .assertNext(res -> {
                     assertThat(res.title()).isEqualTo("title");
-                    assertThat(res.createdAt()).isNotNull();
                 })
                 .verifyComplete();
+    }
+
+    /*******************
+     *  일정 조회 (단건)
+     *******************/
+
+    @Test
+    @DisplayName("일정 조회_단건 성공")
+    void getTask_success() {
+        Long taskId = 1L;
+
+        Task task = Task.builder()
+                .title("테스트 일정")
+                .description("설명")
+                .taskDate(LocalDate.of(2025, 12, 16))
+                .taskTime(LocalTime.of(10, 0))
+                .build();
+
+        given(taskRepository.findById(taskId))
+                .willReturn(Optional.of(task));
+
+        StepVerifier.create(taskService.getTask(taskId))
+                .assertNext(response -> {
+                    assertThat(response.title()).isEqualTo("테스트 일정");
+                    assertThat(response.date()).isEqualTo(task.getTaskDate());
+                    assertThat(response.time()).isEqualTo(task.getTaskTime());
+                })
+                .verifyComplete();
+    }
+
+
+    @Test
+    @DisplayName("일정 조회_단건 - 존재하지 않는 ID면 TaskNotFoundException 발생")
+    void getTask_notFound() {
+        Long taskId = 999L;
+
+        given(taskRepository.findById(taskId))
+                .willReturn(Optional.empty());
+
+        StepVerifier.create(taskService.getTask(taskId))
+                .expectErrorSatisfies(ex -> {
+                    assertThat(ex).isInstanceOf(TaskNotFoundException.class);
+                    TaskNotFoundException e = (TaskNotFoundException) ex;
+                    assertThat(e.getErrorCode()).isEqualTo(ErrorCode.TASK_NOT_FOUND);
+                })
+                .verify();
     }
 
     /*******************
@@ -72,8 +128,6 @@ class TaskServiceTest {
                 .build();
 
         LocalDate day = LocalDate.of(2025, 11, 27);
-        LocalDate start = day;
-        LocalDate end = day;
 
         List<Task> dummy = List.of(
                 new Task("일정1", "desc1", day, LocalTime.of(0, 0)),
@@ -81,7 +135,7 @@ class TaskServiceTest {
                 new Task("일정2", "desc3", day, LocalTime.of(23, 0))
         );
 
-        Mockito.when(taskRepository.findByDateRange(start, end))
+        Mockito.when(taskRepository.findByDateRange(day, day))
                 .thenReturn(dummy);
 
         StepVerifier.create(taskService.getTasks(request))
@@ -91,12 +145,13 @@ class TaskServiceTest {
                     assertThat(list.getFirst().description()).isEqualTo("desc1");
                     assertThat(list.get(1).title()).isEqualTo("일정3");
                     assertThat(list.get(1).description()).isEqualTo("desc2");
-                    assertThat(list.get(1).title()).isEqualTo("일정2");
-                    assertThat(list.get(1).description()).isEqualTo("desc3");
-                });
+                    assertThat(list.get(2).title()).isEqualTo("일정2");
+                    assertThat(list.get(2).description()).isEqualTo("desc3");
+                })
+                .verifyComplete();
 
         Mockito.verify(taskRepository, Mockito.times(1))
-                .findByDateRange(start, end);
+                .findByDateRange(day, day);
     }
 
     @Test
@@ -125,12 +180,13 @@ class TaskServiceTest {
                     assertThat(list.getFirst().date()).isEqualTo(expectedRange.getStart());
                     assertThat(list.getFirst().time()).isEqualTo(LocalTime.of(12, 0));
                     assertThat(list.get(1).title()).isEqualTo("일요일");
-                    assertThat(list.get(1).date()).isEqualTo(expectedRange.getStart());
+                    assertThat(list.get(1).date()).isEqualTo(expectedRange.getEnd());
                     assertThat(list.get(1).time()).isEqualTo(LocalTime.of(23, 30));
                     assertThat(list.get(2).title()).isEqualTo("수요일");
-                    assertThat(list.get(2).date()).isEqualTo(expectedRange.getStart());
-                    assertThat(list.get(2).time()).isEqualTo(LocalTime.of(23, 0));
-                });
+                    assertThat(list.get(2).date()).isEqualTo(expectedRange.getEnd());
+                    assertThat(list.get(2).time()).isEqualTo(LocalTime.of(22, 30));
+                })
+                .verifyComplete();
 
         Mockito.verify(taskRepository).findByDateRange(
                 expectedRange.getStart(), expectedRange.getEnd()

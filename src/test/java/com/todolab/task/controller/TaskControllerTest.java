@@ -2,9 +2,11 @@ package com.todolab.task.controller;
 
 import com.todolab.common.api.ApiExceptionHandler;
 import com.todolab.common.api.ApiResponse;
+import com.todolab.common.api.ErrorCode;
 import com.todolab.support.TestMockConfig;
 import com.todolab.task.dto.TaskCreateRequest;
 import com.todolab.task.dto.TaskResponse;
+import com.todolab.task.exception.TaskNotFoundException;
 import com.todolab.task.service.TaskService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -23,6 +25,7 @@ import java.time.LocalTime;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 
 @WebFluxTest(controllers = TaskController.class)
 @Import({
@@ -100,6 +103,70 @@ class TaskControllerTest {
     }
 
     /*******************
+     *  일정 조회 (단건)
+     *******************/
+
+    @Test
+    @DisplayName("일정 단건 조회 성공 - 존재하는 일정이면 200과 data를 반환한다")
+    void getTask_success() {
+        long id = 1L;
+
+        TaskResponse resp = TaskResponse.builder()
+                .title("테스트")
+                .description("설명")
+                .date(LocalDate.of(2025, 12, 15))
+                .time(LocalTime.of(10, 0))
+                .build();
+
+        given(taskService.getTask(id)).willReturn(Mono.just(resp));
+
+        webTestClient.get()
+                .uri("/tasks/{id}", id)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(new ParameterizedTypeReference<ApiResponse<TaskResponse>>() {})
+                .value(res -> {
+                    assert res.status().equals("success");
+                    assert res.data().title().equals("테스트");
+                    assert res.data().description().equals("설명");
+                    assert res.data().date().equals(LocalDate.of(2025, 12, 15));
+                    assert res.data().time().equals(LocalTime.of(10, 0));
+                });
+    }
+
+    @Test
+    @DisplayName("일정 단건 조회 실패 - 존재하지 않으면 400과 TASK_NOT_FOUND를 반환한다")
+    void getTask_taskNotFound() {
+        long id = 999L;
+
+        given(taskService.getTask(id)).willReturn(Mono.error(new TaskNotFoundException(ErrorCode.TASK_NOT_FOUND, "ID (" + id + ") 가 없습니다.")));
+
+        webTestClient.get()
+                .uri("/tasks/{id}", id)
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody(new ParameterizedTypeReference<ApiResponse<TaskResponse>>() {})
+                .value(res -> {
+                    assert res.status().equals("fail");
+                    assert res.error().code() == ErrorCode.TASK_NOT_FOUND.getCode();
+                });
+    }
+
+    @Test
+    @DisplayName("일정 단건 조회 실패 - PathVariable 타입이 잘못되면 400 에러를 반환한다")
+    void getTask_invalidPathVariable() {
+        webTestClient.get()
+                .uri("/tasks/{id}", "abc")
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody(new ParameterizedTypeReference<ApiResponse<TaskResponse>>() {})
+                .value(res -> {
+                    assert res.status().equals("fail");
+                    assert res.error().code() == ErrorCode.INVALID_INPUT.getCode();
+                });
+    }
+
+    /*******************
      *  일정 조회 (DAY / WEEK / MONTH)
      *******************/
 
@@ -127,7 +194,8 @@ class TaskControllerTest {
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody(new ParameterizedTypeReference<ApiResponse<List<TaskResponse>>>() {})
-                .value(res -> {assert res.status().equals("success");
+                .value(res -> {
+                    assert res.status().equals("success");
                     assert res.data().size() == 1;
                     assert res.data().getFirst().title().equals("일정 조회 DAY");
                     assert res.data().getFirst().description().equals("일정 조회");
@@ -167,12 +235,13 @@ class TaskControllerTest {
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody(new ParameterizedTypeReference<ApiResponse<List<TaskResponse>>>() {})
-                .value(res -> {assert res.status().equals("success");
+                .value(res -> {
+                    assert res.status().equals("success");
                     assert res.data().size() == 2;
                     assert res.data().getFirst().title().equals("WEEK 일정 1");
                     assert res.data().getFirst().description().equals("설명1");
                     assert res.data().getFirst().date().equals(LocalDate.of(2025, 11, 24));
-                    assert res.data().getFirst().time().equals(LocalTime.of(1, 00));
+                    assert res.data().getFirst().time().equals(LocalTime.of(1, 0));
 
                     assert res.data().get(1).title().equals("WEEK 일정 2");
                     assert res.data().get(1).description().equals("설명2");
