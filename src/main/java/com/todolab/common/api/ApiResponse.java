@@ -16,7 +16,7 @@ public record ApiResponse<T>(
         return new ApiResponse<>("success", data, null, LocalDateTime.now());
     }
 
-    public static ApiResponse<?> failure(ErrorCode errorCode) {
+    public static <T> ApiResponse<T> failure(ErrorCode errorCode) {
         return new ApiResponse<>("fail", null, new ErrorBody(errorCode.getCode(), errorCode.getMessage()), LocalDateTime.now());
     }
 

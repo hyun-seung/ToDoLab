@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.bind.support.WebExchangeBindException;
 import org.springframework.web.server.MissingRequestValueException;
+import org.springframework.web.server.ServerWebInputException;
 
 @Slf4j
 @RestControllerAdvice
@@ -18,9 +19,7 @@ public class ApiExceptionHandler {
     public ResponseEntity<ApiResponse<?>> handleBindException(WebExchangeBindException e) {
         FieldError error = e.getFieldErrors().getFirst();
 
-        StringBuilder sb = new StringBuilder();
-        sb.append(error.getField()).append(": ").append(error.getDefaultMessage());
-        String detail = sb.toString();
+        String detail = error.getField() + ": " + error.getDefaultMessage();
 
         log.error("Validation Failed : {}", detail);
         return ResponseEntity.badRequest().body(ApiResponse.failure(ErrorCode.INVALID_INPUT));
@@ -35,6 +34,13 @@ public class ApiExceptionHandler {
     @ExceptionHandler(MissingRequestValueException.class)
     public ResponseEntity<ApiResponse<?>> handleMissingRequestValueException(MissingRequestValueException e) {
         log.error("Missing Validation Failed : {}", e.getMessage());
+        return ResponseEntity.badRequest().body(ApiResponse.failure(ErrorCode.INVALID_INPUT));
+    }
+
+    @ExceptionHandler(ServerWebInputException.class)
+    public ResponseEntity<ApiResponse<?>> handleServerWebInputException(ServerWebInputException e) {
+        // PathVariable/RequestParam 타입 미스매치, 바인딩 실패 등
+        log.error("Wrong Request : {}", e.getMessage());
         return ResponseEntity.badRequest().body(ApiResponse.failure(ErrorCode.INVALID_INPUT));
     }
 

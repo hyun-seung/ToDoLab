@@ -4,9 +4,11 @@ import com.todolab.common.api.ApiResponse;
 import com.todolab.task.dto.TaskCreateRequest;
 import com.todolab.task.dto.TaskQueryRequest;
 import com.todolab.task.dto.TaskResponse;
+import com.todolab.task.exception.TaskNotFoundException;
 import com.todolab.task.service.TaskService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
@@ -34,8 +36,11 @@ public class TaskController {
     @GetMapping("/{id}")
     public Mono<ResponseEntity<ApiResponse<TaskResponse>>> getTask(@PathVariable Long id) {
         return taskService.getTask(id)
-                .map(ApiResponse::success)
-                .map(ResponseEntity::ok);
+                .map(task -> ResponseEntity.ok(ApiResponse.success(task)))
+                .onErrorResume(TaskNotFoundException.class, e -> Mono.just(
+                        ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                                .body(ApiResponse.failure(e.getErrorCode()))
+                ));
     }
 
     @GetMapping
