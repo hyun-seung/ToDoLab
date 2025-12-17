@@ -4,9 +4,7 @@
 
 <div class="px-4">
 
-    <!-- =========================
-         상단 월 이동
-         ========================= -->
+    <!-- 상단 월 이동 -->
     <div class="flex items-center justify-between mb-4">
         <a class="px-3 py-2 rounded-lg bg-white shadow hover:bg-gray-50"
            th:href="'/tasks/month?move=prev&month=' + ${yearMonth}">
@@ -24,9 +22,7 @@
         </a>
     </div>
 
-    <!-- =========================
-         요일 헤더
-         ========================= -->
+    <!-- 요일 헤더 -->
     <div class="grid grid-cols-7 gap-2 text-xs text-gray-500 mb-2 px-1">
         <div class="text-center">월</div>
         <div class="text-center">화</div>
@@ -37,12 +33,10 @@
         <div class="text-center text-red-600">일</div>
     </div>
 
-    <!-- =========================
-         캘린더 그리드 (6 x 7)
-         ========================= -->
+    <!-- 캘린더 그리드 (6 x 7) -->
     <div class="grid grid-cols-7 gap-2">
 
-        <!-- ✅ 날짜 클릭 → day 페이지 이동 -->
+        <!-- 날짜 셀: 클릭 시 day 이동 -->
         <a th:each="cell : ${cells}"
            th:href="'/tasks/day?date=' + ${cell.date()}"
            class="block bg-white rounded-xl shadow-sm p-2 min-h-[110px] border
@@ -66,8 +60,10 @@
             <div class="space-y-1">
                 <div th:each="task, stat : ${cell.tasks()}"
                      th:if="${stat.index < 3}"
-                     class="text-[11px] rounded-md px-2 py-1 truncate"
-                     th:style="'background:' + ${task.color()}">
+                     class="text-[11px] rounded-md px-2 py-1 truncate cursor-pointer hover:brightness-95 transition"
+                     th:attr="data-task-id=${task.id()}"
+                     th:style="'background:' + ${task.color()}"
+                     onclick="event.preventDefault(); event.stopPropagation();">
                     <span th:text="${task.title()}">일정 제목</span>
                 </div>
 

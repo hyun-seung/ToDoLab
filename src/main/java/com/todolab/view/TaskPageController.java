@@ -35,7 +35,7 @@ public class TaskPageController {
     private final WebClient webClient;
 
     // ===========================
-    // 🔵 일정 등록 페이지
+    // 🔵 일정 등록 모달
     // ===========================
     @GetMapping(
             value = "/tasks/create",
@@ -57,6 +57,39 @@ public class TaskPageController {
 
         return Mono.just(writer.toString());
     }
+
+    // ===========================
+    // 🟣 일정 상세 모달
+    // ===========================
+    @GetMapping(
+            value = "/tasks/detail",
+            headers = "X-Requested-With=fetch",
+            produces = MediaType.TEXT_HTML_VALUE)
+    @ResponseBody
+    public Mono<String> detailFragment(
+            @RequestParam Long id,
+            ServerWebExchange exchange
+    ) {
+        return webClient.get()
+                .uri(uri -> uri.path("/tasks/{id}").build(id))
+                .retrieve()
+                .bodyToMono(new ParameterizedTypeReference<ApiResponse<TaskResponse>>() {})
+                .map(ApiResponse::data)
+                .map(task -> {
+                    Context ctx = new Context();
+                    ctx.setVariable("task", task);
+
+                    StringWriter writer = new StringWriter();
+                    templateEngine.process(
+                            "pages/task/detail",
+                            Set.of("#detail-fragment"),
+                            ctx,
+                            writer
+                    );
+                    return writer.toString();
+                });
+    }
+
 
     // ===========================
     // 🔵 일간 일정 페이지
@@ -87,18 +120,18 @@ public class TaskPageController {
                         .queryParam("date", queryDate)
                         .build())
                 .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<ApiResponse<List<TaskResponse>>>() {
-                })
+                .bodyToMono(new ParameterizedTypeReference<ApiResponse<List<TaskResponse>>>() {})
                 .map(ApiResponse::data)
                 .map(taskList -> {
 
                     List<TaskUi> tasks = taskList.stream()
                             .map(t -> new TaskUi(
+                                    t.id(),
                                     t.title(),
                                     t.description(),
                                     t.date(),
                                     t.time(),
-                                    pickColor(t.title(), t.date(), t.time())
+                                    pickColor(t.id())
                             ))
                             .toList();
 
@@ -121,7 +154,6 @@ public class TaskPageController {
                 });
     }
 
-
     // ===========================
     // 🔵 주간 일정 페이지
     // ===========================
@@ -132,7 +164,7 @@ public class TaskPageController {
             Model model
     ) {
 
-        LocalDate computedDate = (date != null)
+        LocalDate computedDate = (date != null && !date.isBlank())
                 ? LocalDate.parse(date)
                 : LocalDate.now();
 
@@ -152,8 +184,7 @@ public class TaskPageController {
                         .queryParam("date", queryDate)
                         .build())
                 .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<ApiResponse<List<TaskResponse>>>() {
-                })
+                .bodyToMono(new ParameterizedTypeReference<ApiResponse<List<TaskResponse>>>() {})
                 .map(ApiResponse::data)
                 .map(taskList -> {
 
@@ -167,15 +198,15 @@ public class TaskPageController {
                     for (int i = 0; i < 7; i++) {
                         LocalDate day = monday.plusDays(i);
 
-                        // TaskResponse -> TaskUi 변환
                         List<TaskUi> uiTasks = taskList.stream()
                                 .filter(t -> t.date().equals(day))
                                 .map(t -> new TaskUi(
+                                        t.id(),
                                         t.title(),
                                         t.description(),
                                         t.date(),
                                         t.time(),
-                                        pickColor(t.title(), t.date(), t.time())
+                                        pickColor(t.id())
                                 ))
                                 .toList();
 
@@ -189,7 +220,6 @@ public class TaskPageController {
 
                     String bodyHtml = templateEngine.process("pages/task/week", ctx);
 
-                    // ✅ base.html에서 사용하는 공용 모델 값들
                     model.addAttribute("title", "주간 일정 - ToDoLab");
                     model.addAttribute("headerTitle",
                             finalDate.getYear() + "년 " + finalDate.getMonthValue() + "월");
@@ -203,19 +233,6 @@ public class TaskPageController {
 
                     return "layout/base";
                 });
-    }
-
-    // ===========================
-    // 색상 알고리즘
-    // ===========================
-    private String pickColor(String title, LocalDate date, LocalTime time) {
-        String[] colors = {
-                "#BFDBFE", "#C4B5FD", "#FDE68A",
-                "#FBCFE8", "#BBF7D0"
-        };
-
-        String key = title + date + (time != null ? time.toString() : "");
-        return colors[Math.abs(key.hashCode() % colors.length)];
     }
 
     // ===========================
@@ -248,29 +265,26 @@ public class TaskPageController {
                         .queryParam("date", queryDate)
                         .build())
                 .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<ApiResponse<List<TaskResponse>>>() {
-                })
+                .bodyToMono(new ParameterizedTypeReference<ApiResponse<List<TaskResponse>>>() {})
                 .map(ApiResponse::data)
                 .map(taskList -> {
 
-                    // ✅ 캘린더는 "월 1일"이 포함된 주의 월요일부터 시작해서,
-                    //    "월 말일"이 포함된 주의 일요일까지 (보통 5~6주)
                     LocalDate firstDay = finalYm.atDay(1);
                     LocalDate lastDay = finalYm.atEndOfMonth();
 
                     LocalDate start = firstDay.with(DayOfWeek.MONDAY);
                     LocalDate end = lastDay.with(DayOfWeek.SUNDAY);
 
-                    // date -> tasks 그룹핑 (UI 변환 포함)
                     Map<LocalDate, List<TaskUi>> byDate = taskList.stream()
                             .collect(Collectors.groupingBy(
                                     TaskResponse::date,
                                     Collectors.mapping(t -> new TaskUi(
+                                            t.id(),
                                             t.title(),
                                             t.description(),
                                             t.date(),
                                             t.time(),
-                                            pickColor(t.title(), t.date(), t.time())
+                                            pickColor(t.id())
                                     ), Collectors.toList())
                             ));
 
@@ -288,7 +302,6 @@ public class TaskPageController {
 
                     String bodyHtml = templateEngine.process("pages/task/month", ctx);
 
-                    // ✅ base.html용 모델 값
                     model.addAttribute("title", "월간 일정 - ToDoLab");
                     model.addAttribute("headerTitle", finalYm.getYear() + "년 " + finalYm.getMonthValue() + "월");
                     model.addAttribute("activeTab", "month");
@@ -302,20 +315,34 @@ public class TaskPageController {
                 });
     }
 
+    // ===========================
+    // 색상 알고리즘 (✅ id 기반)
+    // ===========================
+    private String pickColor(Long id) {
+        String[] colors = {
+                "#BFDBFE", "#C4B5FD", "#FDE68A",
+                "#FBCFE8", "#BBF7D0"
+        };
+        if (id == null) {
+            return colors[0];
+        }
+        int idx = Math.floorMod(id.hashCode(), colors.length);
+        return colors[idx];
+    }
+
     public record TaskUi(
+            Long id,
             String title,
             String description,
             LocalDate date,
             LocalTime time,
             String color
-    ) {
-    }
+    ) {}
 
     public record DaySchedule(
             LocalDate date,
             List<TaskUi> tasks
-    ) {
-    }
+    ) {}
 
     // ===========================
     // 월 캘린더 셀 DTO
@@ -324,7 +351,5 @@ public class TaskPageController {
             LocalDate date,
             boolean inMonth,
             List<TaskUi> tasks
-    ) {
-    }
-
+    ) {}
 }

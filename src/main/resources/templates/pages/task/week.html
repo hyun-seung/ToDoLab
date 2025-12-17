@@ -7,12 +7,10 @@
     <!-- 상단: 네비게이션 + 주간 범위 -->
     <div class="flex justify-between items-center mb-8">
 
-        <!-- 지난주 버튼 -->
+        <!-- 지난주 -->
         <a th:href="'/tasks/week?move=prev&date=' + ${currentDate}"
            class="px-5 py-2 bg-white border border-gray-200 rounded-lg shadow-sm
                   flex items-center gap-2 text-gray-700 hover:bg-gray-50 font-medium">
-
-            <!-- 뒤로가기 아이콘 -->
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
                  viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -26,14 +24,11 @@
             2025-12-01 ~ 2025-12-07
         </div>
 
-        <!-- 다음주 버튼 -->
+        <!-- 다음주 -->
         <a th:href="'/tasks/week?move=next&date=' + ${currentDate}"
            class="px-5 py-2 bg-white border border-gray-200 rounded-lg shadow-sm
                   flex items-center gap-2 text-gray-700 hover:bg-gray-50 font-medium">
-
             다음주
-
-            <!-- 앞으로가기 아이콘 -->
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
                  viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -42,26 +37,29 @@
         </a>
     </div>
 
-    <!-- 가로 스크롤 컨테이너 -->
-    <div class="overflow-x-auto no-scrollbar pb-6 week-scroll">
+    <!-- 가로 스크롤 영역 -->
+    <div id="weekScroll"
+         class="overflow-x-auto no-scrollbar pb-6 week-scroll">
 
-        <!-- 7개 요일 카드 -->
-        <div class="flex space-x-6 min-w-max">
+        <div id="weekColumns"
+             class="flex space-x-6 min-w-max">
 
             <div th:each="day : ${weeklyTasks}"
-                 class="bg-white rounded-xl shadow p-5 border w-[320px] flex-shrink-0 day-column">
+                 class="bg-white rounded-xl shadow p-5 border w-[320px]
+                        flex-shrink-0 day-column"
+                 th:attr="data-date=${day.date}">
 
-                <!-- ✅ 요일 + 날짜 클릭 → /tasks/day?date=YYYY-MM-DD -->
+                <!-- 요일 / 날짜 -->
                 <a class="flex justify-between items-center mb-4 hover:opacity-80 transition"
                    th:href="'/tasks/day?date=' + ${day.date}">
 
-                    <!-- 요일 -->
                     <span class="text-gray-500 font-semibold text-sm"
-                          th:text="${day.date.dayOfWeek.getDisplayName(T(java.time.format.TextStyle).SHORT, T(java.util.Locale).KOREAN)}">
+                          th:text="${day.date.dayOfWeek.getDisplayName(
+                            T(java.time.format.TextStyle).SHORT,
+                            T(java.util.Locale).KOREAN)}">
                         월
                     </span>
 
-                    <!-- 날짜 (오늘 강조) -->
                     <span th:if="${day.date.equals(T(java.time.LocalDate).now())}"
                           class="bg-blue-600 text-white rounded-full px-3 py-1 font-bold">
                         [[${day.date.dayOfMonth}]]
@@ -71,7 +69,6 @@
                           class="text-gray-900 font-bold">
                         [[${day.date.dayOfMonth}]]
                     </span>
-
                 </a>
 
                 <hr class="mb-4"/>
@@ -79,15 +76,15 @@
                 <!-- 일정 목록 -->
                 <div class="space-y-2">
 
-                    <!-- 일정 없음 -->
                     <div th:if="${#lists.isEmpty(day.tasks)}"
                          class="text-gray-400 text-sm text-center py-8">
                         일정 없음
                     </div>
 
-                    <!-- 일정 카드 -->
                     <div th:each="t : ${day.tasks}"
-                         class="rounded-lg p-3 text-sm text-gray-800 shadow-sm border"
+                         th:attr="data-task-id=${t.id}"
+                         class="rounded-lg p-3 text-sm text-gray-800 shadow-sm border
+                                cursor-pointer hover:shadow-md hover:brightness-95 transition"
                          style="background: [[${t.color}]]">
 
                         <div class="font-bold" th:text="${t.title}">일정 제목</div>
@@ -113,7 +110,78 @@
 </div>
 
 <style>
-    .week-scroll { scroll-snap-type: x mandatory; }
-    .day-column { scroll-snap-align: start; }
-    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .week-scroll {
+        scroll-snap-type: x mandatory;
+        cursor: grab;
+    }
+    .week-scroll.dragging {
+        cursor: grabbing;
+        scroll-snap-type: none; /* 드래그 중에는 스냅 해제 */
+    }
+    .day-column {
+        scroll-snap-align: start;
+    }
+    .no-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
 </style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const scroll = document.getElementById("weekScroll");
+        const container = document.getElementById("weekColumns");
+        if (!scroll || !container) return;
+
+        /* 초기 진입: 오늘 칼럼을 왼쪽으로 */
+        const today = new Date().toISOString().slice(0, 10);
+        const todayCol = container.querySelector(
+            `.day-column[data-date="${today}"]`
+        );
+        if (todayCol) {
+            scroll.scrollLeft = todayCol.offsetLeft - container.offsetLeft;
+        }
+
+        /* 부드러운 마우스 드래그 스크롤 */
+        let isDown = false;
+        let startX = 0;
+        let startLeft = 0;
+        let targetLeft = 0;
+        let rafId = 0;
+
+        const applyScroll = () => {
+            rafId = 0;
+            scroll.scrollLeft = targetLeft;
+        };
+
+        scroll.addEventListener("mousedown", (e) => {
+            if (e.button !== 0) return; // 좌클릭만
+            isDown = true;
+            scroll.classList.add("dragging");
+
+            startX = e.pageX;
+            startLeft = scroll.scrollLeft;
+            targetLeft = startLeft;
+        });
+
+        window.addEventListener("mousemove", (e) => {
+            if (!isDown) return;
+            const dx = e.pageX - startX;
+            targetLeft = startLeft - dx;
+
+            if (!rafId) {
+                rafId = requestAnimationFrame(applyScroll);
+            }
+        });
+
+        const endDrag = () => {
+            if (!isDown) return;
+            isDown = false;
+            scroll.classList.remove("dragging");
+        };
+
+        window.addEventListener("mouseup", endDrag);
+        scroll.addEventListener("mouseleave", endDrag);
+    });
+</script>
+
+</html>

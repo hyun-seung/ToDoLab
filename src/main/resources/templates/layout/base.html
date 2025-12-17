@@ -8,23 +8,21 @@
 
     <script src="https://cdn.tailwindcss.com"></script>
 
-    <!-- flatpickr (create 페이지에서만 쓰지만 공용으로 둬도 무방) -->
+    <!-- flatpickr -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/material_green.css">
 </head>
 
 <body class="bg-[#F7F6F2] h-screen flex flex-col">
 
-<!-- ✅ 헤더는 고정(스크롤에 밀리지 않게 shrink-0) -->
 <header class="w-full py-6 text-center shrink-0">
     <h1 class="text-3xl font-bold" th:text="${headerTitle}">ToDoLab</h1>
 </header>
 
-<!-- ✅ main만 스크롤되도록 overflow-y-auto + footer 높이만큼 padding-bottom -->
 <main class="flex-1 w-full max-w-7xl mx-auto overflow-y-auto pb-28">
     <div th:utext="${body}"></div>
 </main>
 
-<!-- Floating + 버튼 -->
+<!-- + 버튼 -->
 <a id="floatingCreateBtn"
    href="/tasks/create"
    class="fixed bottom-24 right-10 bg-blue-600 text-white w-14 h-14
@@ -32,7 +30,7 @@
     +
 </a>
 
-<!-- ✅ 하단 네비게이션: 화면에 고정 -->
+<!-- 하단 탭 -->
 <footer class="fixed bottom-0 inset-x-0 w-full bg-white py-4 border-t flex justify-around text-gray-500 text-sm z-40">
     <a href="/tasks/day"
        th:classappend="${activeTab == 'day'} ? ' font-semibold text-blue-600' : ''"
@@ -45,7 +43,7 @@
        class="hover:text-black">월</a>
 </footer>
 
-<!-- ✅ 기존 등록 기능(성공 모달/토스트) 공용 배치 -->
+<!-- 성공 모달/토스트 -->
 <div id="successModal"
      class="fixed inset-0 hidden bg-black/40 flex items-center justify-center z-50">
     <div class="bg-white shadow-xl rounded-xl px-6 py-5 text-center animate-fade-in">
@@ -68,30 +66,20 @@
     .animate-fade-in { animation: fade-in 0.25s ease-out; }
 </style>
 
-<!-- ✅ 일정 등록(모달) -->
+<!-- 등록 모달 -->
 <div id="appModal" class="fixed inset-0 hidden bg-black/40 z-50">
     <div id="appModalBackdrop" class="w-full h-full flex items-center justify-center p-4">
-
         <div id="appModalPanel"
-             class="bg-white rounded-2xl shadow-2xl w-full max-w-lg
-                    flex flex-col overflow-hidden">
+             class="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col overflow-hidden">
 
-            <!-- header -->
             <div class="flex items-center justify-between px-5 py-4 border-b shrink-0">
                 <div class="font-bold text-gray-800">일정 등록</div>
                 <button type="button" id="appModalCloseBtn"
-                        class="text-gray-400 hover:text-gray-700 text-2xl leading-none">
-                    ×
-                </button>
+                        class="text-gray-400 hover:text-gray-700 text-2xl leading-none">×</button>
             </div>
 
-            <!-- ✅ body: flex-1 제거 + 필요한 경우에만 스크롤 -->
-            <div id="appModalContent"
-                 class="p-5 overflow-y-auto max-h-[65vh]">
-                <!-- create fragment가 여기로 주입됨 -->
-            </div>
+            <div id="appModalContent" class="p-5 overflow-y-auto max-h-[65vh]"></div>
 
-            <!-- footer -->
             <div id="appModalFooter" class="shrink-0 border-t bg-white">
                 <div class="p-4">
                     <button id="submitBtn" type="button"
@@ -105,12 +93,29 @@
     </div>
 </div>
 
-<!-- flatpickr JS -->
+<!-- 상세 모달 -->
+<div id="detailModal" class="fixed inset-0 hidden bg-black/40 z-50">
+    <div id="detailModalBackdrop" class="w-full h-full flex items-center justify-center p-4">
+        <div id="detailModalPanel"
+             class="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col overflow-hidden">
+
+            <div class="flex items-center justify-between px-5 py-4 border-b shrink-0">
+                <div class="font-bold text-gray-800">일정 상세</div>
+                <button type="button" id="detailModalCloseBtn"
+                        class="text-gray-400 hover:text-gray-700 text-2xl leading-none">×</button>
+            </div>
+
+            <div id="detailModalContent" class="p-5 overflow-y-auto max-h-[70vh]"></div>
+
+        </div>
+    </div>
+</div>
+
+<!-- flatpickr -->
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ko.js"></script>
 
 <script>
-    /* ---- 성공 모달 ---- */
     function openModal() {
         document.getElementById("successModal")?.classList.remove("hidden");
     }
@@ -118,14 +123,12 @@
         document.getElementById("successModal")?.classList.add("hidden");
     }
 
-    /* ---- Toast ---- */
     function showToast(message) {
         const container = document.getElementById("toast-container");
         if (!container) return;
 
         const toast = document.createElement("div");
-        toast.className =
-            "bg-black text-white px-4 py-2 rounded shadow-lg opacity-90 transition transform text-sm";
+        toast.className = "bg-black text-white px-4 py-2 rounded shadow-lg opacity-90 transition transform text-sm";
         toast.innerHTML = "✔️ " + message;
 
         container.appendChild(toast);
@@ -136,9 +139,7 @@
         }, 2000);
     }
 
-    /* ==========================
-       ✅ 추가: AppModal 컨트롤
-       ========================== */
+    // 등록 모달 (예전 정상 버전 유지)
     const AppModal = (() => {
         const modal = () => document.getElementById("appModal");
         const content = () => document.getElementById("appModalContent");
@@ -155,18 +156,14 @@
         }
 
         async function loadCreate(date) {
-            // date가 있으면 /tasks/create?date=... 없으면 /tasks/create
             const url = date ? `/tasks/create?date=${encodeURIComponent(date)}` : `/tasks/create`;
 
-            // ✅ create.html(부분)만 받아온다고 가정 (지금은 타이틀 크게 보이는 건 무시한다고 했으니,
-            //    혹시 layout/base가 내려와도 일단 주입되긴 합니다. 버튼 보이게가 우선.)
             const res = await fetch(url, { headers: { "X-Requested-With": "fetch" }});
             const html = await res.text();
 
             content().innerHTML = html;
             open();
 
-            // innerHTML로 주입된 script는 실행 안됨 → 여기서 직접 init
             initCreatePickersIfPresent(date);
             bindCreateSubmitIfPresent();
         }
@@ -176,7 +173,6 @@
             const timeSelect = document.getElementById("timeSelect");
             if (!dateInput || !timeSelect) return;
 
-            // 기존 인풋에 이미 flatpickr가 붙어있으면 중복 방지
             if (dateInput._flatpickr) dateInput._flatpickr.destroy();
             if (timeSelect._flatpickr) timeSelect._flatpickr.destroy();
 
@@ -199,13 +195,10 @@
             const submitBtn = document.getElementById("submitBtn");
             const form = document.getElementById("taskForm");
             const errorBox = document.getElementById("error-box");
-
             if (!submitBtn || !form || !errorBox) return;
 
-            // 버튼 클릭 → submit
             submitBtn.onclick = () => form.requestSubmit();
 
-            // submit 이벤트 (중복 바인딩 방지 위해 onsubmit로 교체)
             form.onsubmit = async (e) => {
                 e.preventDefault();
                 errorBox.classList.add("hidden");
@@ -244,7 +237,6 @@
                     form.reset();
                     AppModal.close();
 
-                    // 화면 갱신(당장 빠르게)
                     setTimeout(() => window.location.reload(), 150);
 
                     setTimeout(() => {
@@ -275,23 +267,84 @@
         return { bindClose, loadCreate, close };
     })();
 
-    /* ------------------------------
-       ✅ 기존 + 버튼 로직 교체: 페이지 이동 대신 모달
-       (기본 페이지는 그대로, 모달만 띄움)
-       ------------------------------ */
+    // 상세 모달
+    const DetailModal = (() => {
+        const modal = () => document.getElementById("detailModal");
+        const content = () => document.getElementById("detailModalContent");
+
+        function open() {
+            modal()?.classList.remove("hidden");
+            document.body.style.overflow = "hidden";
+        }
+
+        function close() {
+            modal()?.classList.add("hidden");
+            document.body.style.overflow = "";
+            if (content()) content().innerHTML = "";
+        }
+
+        async function loadDetail(taskId) {
+            if (!taskId) return;
+
+            const url = `/tasks/detail?id=${encodeURIComponent(taskId)}`;
+            content().innerHTML = "<div class='text-gray-400 text-sm'>불러오는 중...</div>";
+
+            let res;
+            try {
+                res = await fetch(url, { headers: { "X-Requested-With": "fetch" }});
+            } catch (e) {
+                showToast("상세 정보를 불러오지 못했습니다.");
+                return;
+            }
+
+            if (!res.ok) {
+                showToast("상세 정보를 불러오지 못했습니다.");
+                return;
+            }
+
+            const html = await res.text();
+            content().innerHTML = html;
+            open();
+        }
+
+        function bindClose() {
+            document.getElementById("detailModalCloseBtn")?.addEventListener("click", close);
+            document.getElementById("detailModalBackdrop")?.addEventListener("click", (e) => {
+                if (e.target?.id === "detailModalBackdrop") close();
+            });
+            document.addEventListener("keydown", (e) => {
+                if (e.key === "Escape" && !modal()?.classList.contains("hidden")) close();
+            });
+        }
+
+        return { bindClose, loadDetail, close };
+    })();
+
+    // detail.html에서 호출
+    function closeTaskDetailModal() {
+        DetailModal.close();
+    }
+
     document.addEventListener("DOMContentLoaded", () => {
         AppModal.bindClose();
+        DetailModal.bindClose();
 
         const createBtn = document.getElementById("floatingCreateBtn");
-        if (!createBtn) return;
-
-        createBtn.addEventListener("click", async (e) => {
+        createBtn?.addEventListener("click", async (e) => {
             e.preventDefault();
-
             const dayPage = document.getElementById("day-page");
             const date = dayPage?.dataset?.date || null;
-
             await AppModal.loadCreate(date);
+        });
+
+        // 상세 열기: data-task-id 클릭
+        document.addEventListener("click", async (e) => {
+            const el = e.target?.closest?.("[data-task-id]");
+            if (!el) return;
+
+            // 모달 내부 클릭/버튼 등에 data-task-id가 실수로 있으면 방지하고 싶으면 여기서 필터 추가 가능
+            const taskId = el.getAttribute("data-task-id");
+            await DetailModal.loadDetail(taskId);
         });
     });
 </script>

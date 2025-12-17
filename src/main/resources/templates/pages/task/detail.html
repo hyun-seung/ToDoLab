@@ -1,0 +1,30 @@
+<!-- src/main/resources/templates/pages/task/detail.html -->
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" th:inline="html">
+
+<div id="detail-fragment">
+
+    <!-- 제목/메타 -->
+    <div class="min-w-0">
+        <div class="text-base font-bold text-gray-900 truncate"
+             th:text="${task.title() != null && !task.title().isBlank() ? task.title() : '(제목 없음)'}">
+            제목
+        </div>
+
+        <div class="mt-1 text-xs text-gray-500">
+            <span th:text="${task.date()}">2025-12-16</span>
+            <span class="mx-1">·</span>
+            <span th:text="${task.time() != null ? task.time() : '종일'}">12:00</span>
+        </div>
+    </div>
+
+    <!-- 본문 -->
+    <div class="mt-4">
+        <div class="text-sm text-gray-700 whitespace-pre-wrap"
+             th:text="${task.description() != null && !task.description().isBlank() ? task.description() : '설명이 없습니다.'}">
+            설명
+        </div>
+    </div>
+
+</div>
+
+</html>

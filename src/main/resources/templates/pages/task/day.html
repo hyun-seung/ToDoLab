@@ -42,7 +42,8 @@
 
         <!-- 일정 카드 -->
         <div th:each="t : ${tasks}"
-             class="bg-white rounded-xl shadow border p-4">
+             th:attr="data-task-id=${t.id()}"
+             class="bg-white rounded-xl shadow border p-4 cursor-pointer hover:shadow-md hover:bg-gray-50 transition">
 
             <div class="flex items-center justify-between mb-2">
                 <div class="font-bold text-gray-800"
