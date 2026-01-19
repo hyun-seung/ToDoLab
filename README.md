@@ -8,42 +8,61 @@ ToDoLab은 **일정 관리 기능을 베이스로**,
 ## 🧱 기술 스택
 
 ### Backend
-- Java 21
-- Spring Boot 3.4
-- Spring WebFlux
+- ~~Java 21~~ → **Java 25**
+- ~~Spring Boot 3.4~~ → **Spring Boot 4.0.1**
+- ~~Spring WebFlux~~ → **Spring MVC (Virtual Thread 기반)**
 - Spring Validation
-- Project Reactor
+- ~~Project Reactor~~ → *(Virtual Thread 도입으로 의존성 제거)*
 - Spring Data JPA
 
 ### Frontend
 - Thymeleaf
 
 ### Database
-- MySQL 8.x
+- MySQL 8.x 
 
 ---
 
 ## 💡 기술 선택 이유
 
 ### Spring WebFlux vs Spring MVC
-**비교군:** Spring MVC
-- MVC는 쓰레드 기반 동기 모델로 구조는 단순하지만 고부하 환경에서 비효율적
-- WebFlux는 논블로킹 기반으로 높은 동시성 처리에 유리함
 
-**선택 이유:**  
-리액티브 기반 고성능 구조를 직접 실험해보고 싶었고,  
-Reactor 기반 데이터 흐름을 자연스럽게 다뤄보는 데 WebFlux가 더 적합하다고 판단했습니다.
+**비교군:** Spring MVC
+
+- ~~MVC는 쓰레드 기반 동기 모델로 구조는 단순하지만 고부하 환경에서 비효율적~~  
+  → **Virtual Thread 도입으로 Thread-per-request 모델의 확장성 한계가 크게 완화됨**
+
+- ~~WebFlux는 논블로킹 기반으로 높은 동시성 처리에 유리함~~  
+  → **논블로킹의 이점은 여전히 존재하지만, 단순 CRUD 도메인에서는 구조 복잡도가 더 큼**
+
+**선택 이력:**
+- ~~리액티브 기반 고성능 구조를 직접 실험해보고 싶었고, Reactor 기반 데이터 흐름을 다뤄보기 위해 WebFlux 선택~~
+- **Java 21+ 이후 Virtual Thread 등장으로, 기존 MVC 모델을 유지하면서도 고동시성 처리가 가능해짐**
+- **코드 가독성, 디버깅, 트랜잭션 처리 측면에서 MVC + Virtual Thread가 더 합리적이라고 판단**
 
 ---
 
-### Thymeleaf vs React/Vue
-**비교군:** React / Vue
-- SPA는 확장성과 자유도가 높지만 초기 세팅이 무겁고 번거로움
-- 이번 프로젝트의 목적은 복잡한 UI가 아니라 빠른 프로토타이핑
+### Virtual Thread 도입으로 바뀐 전제
 
-**선택 이유:**  
-서버 사이드 렌더링 기반인 Thymeleaf로  
-간단한 UI를 빠르게 구성하고, 핵심인 백엔드 구조에 집중하기 위해 선택했습니다.
+- ~~논블로킹이 아니면 고동시성 처리가 어렵다~~  
+  → **블로킹 코드도 대량 동시성 처리 가능**
+
+- ~~WebFlux가 고성능 서버의 기본 선택~~  
+  → **MVC + Virtual Thread가 새로운 범용 선택지로 부상**
+
+- ~~Reactor 기반 흐름 제어가 필수~~  
+  → **명령형 코드 기반 구조로 단순화 가능**
+
+---
+
+### WebFlux vs Virtual Thread 기반 MVC
+
+| 항목 | ~~WebFlux~~ | Virtual Thread + MVC |
+|----|------------|---------------------|
+| 동시성 모델 | 논블로킹 | 경량 블로킹 |
+| 코드 복잡도 | 높음 | 낮음 |
+| 디버깅 | 어려움 | 쉬움 |
+| JPA 궁합 | 제한적 | 매우 좋음 |
 
 ---
 
@@ -54,47 +73,22 @@ Reactor 기반 데이터 흐름을 자연스럽게 다뤄보는 데 WebFlux가 �
 
 ### ❌ R2DBC 유지가 어려웠던 이유
 1. **생태계 부족**
-    - JPA가 제공하는 연관관계, 영속성 컨텍스트, Auditing 기능을 사용할 수 없음
-    - QueryDSL, EntityGraph 등 고급 기능 미지원
-
+   - JPA 연관관계, 영속성 컨텍스트, Auditing 미지원
 2. **테스트 환경 불편**
-    - R2DBC는 H2 Memory 테스트가 사실상 불가
-    - Testcontainers 의존 → 테스트 실행 속도 저하
-
-3. **WebFlux + JDBC 조합도 실무에서 많이 사용됨**
-    - Spring 공식 문서에서도 허용된 구조
-    - DB I/O는 별도 Scheduler로 분리하면 안정적
-
-4. **프로젝트 목적과의 괴리**
-    - 목적은 일정 관리 기능 + 구조 설계
-    - DB 계층 실험이 발목을 잡으며 생산성 저하
+   - H2 Memory 테스트 사실상 불가
+   - Testcontainers 의존으로 테스트 속도 저하
+3. **실무 구조와의 괴리**
+   - 리액티브 DB 계층 실험이 프로젝트 본질을 흐림
 
 ---
 
-### ✔ 최종 결정: JDBC + JPA
+### Thymeleaf vs React / Vue
 
-### JDBC + JPA를 선택한 이유
-- JPA 기능(매핑, Auditing, 변경 감지 등)을 모두 활용 가능
-- `@DataJpaTest` 를 통한 **빠르고 간편한 테스트 환경** 구축
-- H2 Memory 기반 테스트로 개발 생산성 향상
-- QueryDSL, JPQL 등 다양한 확장 기능 사용 가능
-- WebFlux는 그대로 유지하여 서버는 논블로킹 구조를 유지
-- **개발 효율성과 유지보수성이 전체적으로 개선됨**
+**비교군:** React / Vue
 
----
+- SPA는 확장성과 자유도가 높지만 초기 세팅이 무겁고 번거로움 *(기존 판단 유지)*
+- 이번 프로젝트의 목적은 복잡한 UI가 아니라 **백엔드 구조 실험**
 
-### 🗄️ MySQL 선택 이유 (JDBC 환경 기준)
-
-| DB | 안정성(JDBC) | 성능 | 사용성 | 비고 |
-|----|--------------|------|--------|------|
-| PostgreSQL | 매우 안정적 | 우수 | 보통 | 기능 강하지만 초기 설정 부담 존재 |
-| MariaDB | 보통 | 좋음 | MySQL과 유사 | 사소한 문법 차이 존재 |
-| Oracle | 매우 안정적 | 최고 | 낮음 | 개인 프로젝트에는 과한 선택 |
-| **MySQL** | 안정적 ✔ | 빠름 ✔ | 매우 쉬움 ✔ | 개발 생산성 최적 |
-
-**최종 선택 — MySQL**
-- 가장 익숙하고 오류 해결이 빠름
-- JPA + MySQL 조합은 실무 표준
-- 무료 + 설정 간단
-
----
+**선택 이유:**
+- 서버 사이드 렌더링 기반으로 빠른 프로토타이핑 가능
+- 프론트엔드 복잡도를 최소화하고 서버 구조에 집중하기 위함
