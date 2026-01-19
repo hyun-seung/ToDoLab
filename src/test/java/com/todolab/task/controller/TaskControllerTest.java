@@ -4,12 +4,15 @@ import com.todolab.common.api.ApiExceptionHandler;
 import com.todolab.common.api.ApiResponse;
 import com.todolab.common.api.ErrorCode;
 import com.todolab.support.TestMockConfig;
-import com.todolab.task.dto.TaskCreateRequest;
+import com.todolab.task.domain.Task;
+import com.todolab.task.dto.TaskQueryRequest;
+import com.todolab.task.dto.TaskRequest;
 import com.todolab.task.dto.TaskResponse;
 import com.todolab.task.exception.TaskNotFoundException;
 import com.todolab.task.service.TaskService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperties;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
@@ -17,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Mono;
 
@@ -25,7 +29,9 @@ import java.time.LocalTime;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.*;
 
 @WebFluxTest(controllers = TaskController.class)
 @Import({
@@ -55,10 +61,10 @@ class TaskControllerTest {
                 .time(LocalTime.of(10, 42))
                 .build();
 
-        Mockito.when(taskService.create(any()))
+        when(taskService.create(any()))
                 .thenReturn(Mono.just(mockRes));
 
-        TaskCreateRequest req = new TaskCreateRequest(
+        TaskRequest req = new TaskRequest(
                 "테스트 코드 작성",
                 "까먹지 말자..!",
                 LocalDate.of(2025, 11, 18),
@@ -87,7 +93,7 @@ class TaskControllerTest {
     @Test
     @DisplayName("일정 등록 실패 - title은 필수이며 없을 경우 400, 10001 에러를 반환한다")
     void createTask_fail_titleMissing() {
-        TaskCreateRequest req = new TaskCreateRequest(
+        TaskRequest req = new TaskRequest(
                 null, "desc", null, null
         );
 
@@ -143,7 +149,7 @@ class TaskControllerTest {
     void getTask_taskNotFound() {
         long id = 999L;
 
-        given(taskService.getTask(id)).willReturn(Mono.error(new TaskNotFoundException(ErrorCode.TASK_NOT_FOUND, "ID (" + id + ") 가 없습니다.")));
+        given(taskService.getTask(id)).willReturn(Mono.error(new TaskNotFoundException(id)));
 
         webTestClient.get()
                 .uri("/tasks/{id}", id)
@@ -188,7 +194,7 @@ class TaskControllerTest {
                         .build()
         );
 
-        Mockito.when(taskService.getTasks(any()))
+        when(taskService.getTasks(any()))
                 .thenReturn(Mono.just(dummy));
 
         webTestClient.get()
@@ -232,7 +238,7 @@ class TaskControllerTest {
                         .build()
         );
 
-        Mockito.when(taskService.getTasks(any()))
+        when(taskService.getTasks(any()))
                 .thenReturn(Mono.just(dummy));
 
         webTestClient.get()
@@ -298,7 +304,7 @@ class TaskControllerTest {
                         .build()
         );
 
-        Mockito.when(taskService.getTasks(any()))
+        when(taskService.getTasks(any()))
                 .thenReturn(Mono.just(dummy));
 
         webTestClient.get()
@@ -453,5 +459,67 @@ class TaskControllerTest {
                     assert res.status().equals("fail");
                     assert res.error().code() == 10001;
                 });
+    }
+
+    @Test
+    @DisplayName("일정 정상 수정")
+    void updateTask_success() {
+        long id = 10L;
+
+        TaskRequest req = new TaskRequest("updated title", null, null, null);
+
+        TaskResponse serviceRes = TaskResponse.builder()
+                .id(id)
+                .title("updated title2")
+                .build();
+
+        when(taskService.update(eq(id), any(TaskRequest.class)))
+                .thenReturn(Mono.just(serviceRes));
+
+        webTestClient.put()
+                .uri("/tasks/{id}", id)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(req)
+                .exchange()
+                .expectStatus().isOk()
+                .expectHeader().contentTypeCompatibleWith(MediaType.APPLICATION_JSON)
+                .expectBody(new ParameterizedTypeReference<ApiResponse<TaskResponse>>() {
+                })
+                .value(res -> {
+                    assert res.status().equals("success");
+                    assert res.data().id().equals(id);
+                    assert res.data().title().equals("updated title2");
+                });
+
+        verify(taskService, times(1)).update(eq(id), any(TaskRequest.class));
+        verifyNoMoreInteractions(taskService);
+    }
+
+    @Test
+    @DisplayName("일정 수정 실패 - 없는 id일 경우 TaskNotFoundException 발생")
+    void updateTask_NotExistId() {
+        long id = 10L;
+
+        TaskRequest req = new TaskRequest("title", null, null, null);
+
+        when(taskService.update(eq(id), any(TaskRequest.class)))
+                .thenReturn(Mono.error(new TaskNotFoundException(id)));
+
+        webTestClient.put()
+                .uri("/tasks/{id}", id)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(req)
+                .exchange()
+                .expectStatus().isNotFound()
+                .expectHeader().contentTypeCompatibleWith(MediaType.APPLICATION_JSON)
+                .expectBody(new ParameterizedTypeReference<ApiResponse<TaskResponse>>() {
+                })
+                .value(res -> {
+                    assert res.status().equals("fail");
+                    assert res.error().code() == 20001;
+                });
+
+        verify(taskService, times(1)).update(eq(id), any(TaskRequest.class));
+        verifyNoMoreInteractions(taskService);
     }
 }

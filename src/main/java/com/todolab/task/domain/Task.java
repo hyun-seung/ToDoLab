@@ -34,6 +34,14 @@ public class Task {
 
     @Builder
     public Task(String title, String description, LocalDate taskDate, LocalTime taskTime) {
+        apply(title, description, taskDate, taskTime);
+    }
+
+    public void update(String title, String description, LocalDate taskDate, LocalTime taskTime) {
+        apply(title, description, taskDate, taskTime);
+    }
+
+    private void apply(String title, String description, LocalDate taskDate, LocalTime taskTime) {
         this.title = title;
         this.description = description;
         this.taskDate = taskDate;

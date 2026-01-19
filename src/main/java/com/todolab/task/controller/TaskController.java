@@ -1,7 +1,7 @@
 package com.todolab.task.controller;
 
 import com.todolab.common.api.ApiResponse;
-import com.todolab.task.dto.TaskCreateRequest;
+import com.todolab.task.dto.TaskRequest;
 import com.todolab.task.dto.TaskQueryRequest;
 import com.todolab.task.dto.TaskResponse;
 import com.todolab.task.exception.TaskNotFoundException;
@@ -23,14 +23,13 @@ public class TaskController {
     private final TaskService taskService;
 
     @PostMapping
-    public Mono<ResponseEntity<ApiResponse<TaskResponse>>> create(@Valid @RequestBody TaskCreateRequest request) {
-        return Mono.fromCallable(() -> {
-                    request.validate();
-                    return request;
-                })
-                .flatMap(taskService::create)
-                .map(ApiResponse::success)
-                .map(ResponseEntity::ok);
+    public Mono<ResponseEntity<ApiResponse<TaskResponse>>> createTask(@Valid @RequestBody TaskRequest request) {
+        request.validate();
+
+        return taskService.create(request)
+                .map(res -> ResponseEntity
+                        .status(HttpStatus.OK)
+                        .body(ApiResponse.success(res)));
     }
 
     @GetMapping("/{id}")
@@ -54,7 +53,33 @@ public class TaskController {
                 .build();
 
         return taskService.getTasks(request)
-                .map(ApiResponse::success)
-                .map(ResponseEntity::ok);
+                .map(res -> ResponseEntity
+                        .status(HttpStatus.OK)
+                        .body(ApiResponse.success(res)));
+    }
+
+    @PutMapping("/{id}")
+    public Mono<ResponseEntity<ApiResponse<TaskResponse>>> updateTask(
+            @PathVariable Long id,
+            @Valid @RequestBody TaskRequest request
+    ) {
+        request.validate();
+
+        return taskService.update(id, request)
+                .map(m -> ResponseEntity
+                        .status(HttpStatus.OK)
+                        .body(ApiResponse.success(m)))
+                .onErrorResume(TaskNotFoundException.class, e -> Mono.just(
+                        ResponseEntity.status(HttpStatus.NOT_FOUND)
+                                .body(ApiResponse.failure(e.getErrorCode()))
+                ));
+    }
+
+    @DeleteMapping("/{id}")
+    public Mono<ResponseEntity<ApiResponse<TaskResponse>>> deleteTask(@PathVariable Long id) {
+        return taskService.delete(id)
+                .map(m -> ResponseEntity
+                        .status(HttpStatus.OK)
+                        .body(ApiResponse.success(TaskResponse.builder().id(id).build())));
     }
 }

@@ -4,7 +4,7 @@ import com.todolab.common.api.ErrorCode;
 import com.todolab.task.domain.Task;
 import com.todolab.task.domain.query.DateRange;
 import com.todolab.task.domain.query.TaskQueryType;
-import com.todolab.task.dto.TaskCreateRequest;
+import com.todolab.task.dto.TaskRequest;
 import com.todolab.task.dto.TaskQueryRequest;
 import com.todolab.task.exception.TaskNotFoundException;
 import com.todolab.task.repository.TaskRepository;
@@ -34,13 +34,15 @@ class TaskServiceTest {
     @Mock
     TaskRepository taskRepository;
 
-    @InjectMocks
+    @Mock
+    TaskTxService taskTxService;
+
     TaskService taskService;
 
     @BeforeEach
     void setUp() {
-        // 테스트에서는 즉시 실행되는 Scheduler 사용
-        taskService = new TaskService(taskRepository, Schedulers.immediate());
+        // Schedulers.trampoline() 변경?
+        taskService = new TaskService(taskTxService, taskRepository, Schedulers.immediate());
     }
 
     /*******************
@@ -60,7 +62,7 @@ class TaskServiceTest {
         Mockito.when(taskRepository.save(any()))
                 .thenReturn(saved);
 
-        TaskCreateRequest request = new TaskCreateRequest("title", null, null, null);
+        TaskRequest request = new TaskRequest("title", null, null, null);
 
         StepVerifier.create(taskService.create(request))
                 .assertNext(res -> {
