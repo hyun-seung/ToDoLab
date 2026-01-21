@@ -1,28 +1,22 @@
 package com.todolab.task.controller;
 
 import com.todolab.common.api.ApiExceptionHandler;
-import com.todolab.common.api.ApiResponse;
 import com.todolab.common.api.ErrorCode;
-import com.todolab.support.TestMockConfig;
-import com.todolab.task.domain.Task;
-import com.todolab.task.dto.TaskQueryRequest;
 import com.todolab.task.dto.TaskRequest;
 import com.todolab.task.dto.TaskResponse;
 import com.todolab.task.exception.TaskNotFoundException;
 import com.todolab.task.service.TaskService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperties;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
-import org.springframework.test.web.reactive.server.WebTestClient;
-import reactor.core.publisher.Mono;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -30,40 +24,28 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.*;
+import static org.mockito.BDDMockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebFluxTest(controllers = TaskController.class)
-@Import({
-        ApiExceptionHandler.class,
-        TestMockConfig.class
-})
+@Import(ApiExceptionHandler.class)
+@WebMvcTest(controllers = TaskController.class)
 class TaskControllerTest {
 
     @Autowired
-    WebTestClient webTestClient;
-
+    MockMvc mockMvc;
     @Autowired
+    ObjectMapper objectMapper;
+
+    @MockitoBean
     TaskService taskService;
 
     /*******************
      *  일정 등록
      *******************/
-
     @Test
     @DisplayName("일정 등록 성공")
-    void createTask_success() {
-        TaskResponse mockRes = TaskResponse.builder()
-                .id(1L)
-                .title("테스트 코드 작성")
-                .description("까먹지 말자..!")
-                .date(LocalDate.of(2025,11, 18))
-                .time(LocalTime.of(10, 42))
-                .build();
-
-        when(taskService.create(any()))
-                .thenReturn(Mono.just(mockRes));
-
+    void createTask_success() throws Exception {
         TaskRequest req = new TaskRequest(
                 "테스트 코드 작성",
                 "까먹지 말자..!",
@@ -71,53 +53,54 @@ class TaskControllerTest {
                 LocalTime.of(10, 42)
         );
 
-        webTestClient.post()
-                .uri("/tasks")
-                .bodyValue(req)
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody(new ParameterizedTypeReference<ApiResponse<TaskResponse>>() {
-                })
-                .value(res -> {
-                    assert res != null;
-                    assert res.status().equals("success");
+        TaskResponse mockRes = TaskResponse.builder()
+                .id(1L)
+                .title("테스트 코드 작성")
+                .description("까먹지 말자..!")
+                .date(LocalDate.of(2025, 11, 18))
+                .time(LocalTime.of(10, 42))
+                .build();
 
-                    TaskResponse data = res.data();
-                    assert data != null;
-                    assert data.id().equals(1L);
-                    assert data.title().equals("테스트 코드 작성");
-                    assert data.description().equals("까먹지 말자..!");
-                });
+        given(taskService.create(any(TaskRequest.class))).willReturn(mockRes);
+
+        mockMvc.perform(post("/tasks")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.data.id").value(1))
+                .andExpect(jsonPath("$.data.title").value("테스트 코드 작성"))
+                .andExpect(jsonPath("$.data.description").value("까먹지 말자..!"));
+
+        then(taskService).should().create(any(TaskRequest.class));
+        then(taskService).shouldHaveNoMoreInteractions();
     }
 
     @Test
     @DisplayName("일정 등록 실패 - title은 필수이며 없을 경우 400, 10001 에러를 반환한다")
-    void createTask_fail_titleMissing() {
+    void createTask_fail_titleMissing() throws Exception {
         TaskRequest req = new TaskRequest(
                 null, "desc", null, null
         );
 
-        webTestClient.post()
-                .uri("/tasks")
-                .bodyValue(req)
-                .exchange()
-                .expectStatus().isBadRequest()
-                .expectBody(new ParameterizedTypeReference<ApiResponse<Void>>() {
-                })
-                .value(res -> {
-                    assert res.status().equals("fail");
-                    assert res.error().code() == 10001;
-                });
+        mockMvc.perform(post("/tasks")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value("fail"))
+                .andExpect(jsonPath("$.error.code").value(10001));
+
+        then(taskService).shouldHaveNoInteractions();
     }
 
     /*******************
      *  일정 조회 (단건)
      *******************/
-
     @Test
-    @DisplayName("일정 단건 조회 성공 - 존재하는 일정이면 200과 data를 반환한다")
-    void getTask_success() {
-        long id = 1L;
+    @DisplayName("일정 단건 조회 성공")
+    void getTask_success() throws Exception {
+        long id = 11L;
 
         TaskResponse resp = TaskResponse.builder()
                 .id(11L)
@@ -127,62 +110,54 @@ class TaskControllerTest {
                 .time(LocalTime.of(10, 0))
                 .build();
 
-        given(taskService.getTask(id)).willReturn(Mono.just(resp));
+        given(taskService.getTask(id)).willReturn(resp);
 
-        webTestClient.get()
-                .uri("/tasks/{id}", id)
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody(new ParameterizedTypeReference<ApiResponse<TaskResponse>>() {})
-                .value(res -> {
-                    assert res.status().equals("success");
-                    assert res.data().id().equals(11L);
-                    assert res.data().title().equals("테스트");
-                    assert res.data().description().equals("설명");
-                    assert res.data().date().equals(LocalDate.of(2025, 12, 15));
-                    assert res.data().time().equals(LocalTime.of(10, 0));
-                });
+        mockMvc.perform(get("/tasks/{id}", id))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.data.id").value(11))
+                .andExpect(jsonPath("$.data.title").value("테스트"))
+                .andExpect(jsonPath("$.data.description").value("설명"))
+                .andExpect(jsonPath("$.data.date").value("2025-12-15"))
+                .andExpect(jsonPath("$.data.time").value("10:00:00"));
+
+        then(taskService).should().getTask(id);
+        then(taskService).shouldHaveNoMoreInteractions();
     }
 
     @Test
-    @DisplayName("일정 단건 조회 실패 - 존재하지 않으면 400과 TASK_NOT_FOUND를 반환한다")
-    void getTask_taskNotFound() {
+    @DisplayName("일정 단건 조회 실패 - 존재하지 않으면 404와 TASK_NOT_FOUND를 반환한다")
+    void getTask_taskNotFound() throws Exception {
         long id = 999L;
 
-        given(taskService.getTask(id)).willReturn(Mono.error(new TaskNotFoundException(id)));
+        given(taskService.getTask(id)).willThrow(new TaskNotFoundException(id));
 
-        webTestClient.get()
-                .uri("/tasks/{id}", id)
-                .exchange()
-                .expectStatus().isBadRequest()
-                .expectBody(new ParameterizedTypeReference<ApiResponse<TaskResponse>>() {})
-                .value(res -> {
-                    assert res.status().equals("fail");
-                    assert res.error().code() == ErrorCode.TASK_NOT_FOUND.getCode();
-                });
+        mockMvc.perform(get("/tasks/{id}", id))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value("fail"))
+                .andExpect(jsonPath("$.error.code").value(ErrorCode.TASK_NOT_FOUND.getCode()));
+
+        then(taskService).should().getTask(id);
+        then(taskService).shouldHaveNoMoreInteractions();
     }
 
     @Test
     @DisplayName("일정 단건 조회 실패 - PathVariable 타입이 잘못되면 400 에러를 반환한다")
-    void getTask_invalidPathVariable() {
-        webTestClient.get()
-                .uri("/tasks/{id}", "abc")
-                .exchange()
-                .expectStatus().isBadRequest()
-                .expectBody(new ParameterizedTypeReference<ApiResponse<TaskResponse>>() {})
-                .value(res -> {
-                    assert res.status().equals("fail");
-                    assert res.error().code() == ErrorCode.INVALID_INPUT.getCode();
-                });
+    void getTask_invalidPathVariable() throws Exception {
+        mockMvc.perform(get("/tasks/{id}", "abc"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value("fail"))
+                .andExpect(jsonPath("$.error.code").value(ErrorCode.INVALID_INPUT.getCode()));
+
+        then(taskService).shouldHaveNoInteractions();
     }
 
     /*******************
      *  일정 조회 (DAY / WEEK / MONTH)
      *******************/
-
     @Test
     @DisplayName("일정 조회 성공 - DAY 타입으로 정상 조회된다")
-    void getTasks_DAY_success() {
+    void getTasks_DAY_success() throws Exception {
         List<TaskResponse> dummy = List.of(
                 TaskResponse.builder()
                         .id(999L)
@@ -194,31 +169,24 @@ class TaskControllerTest {
                         .build()
         );
 
-        when(taskService.getTasks(any()))
-                .thenReturn(Mono.just(dummy));
+        given(taskService.getTasks(any())).willReturn(dummy);
 
-        webTestClient.get()
-                .uri(uri -> uri.path("/tasks")
-                        .queryParam("type", "DAY")
-                        .queryParam("date" , "2025-11-25")
-                        .build())
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody(new ParameterizedTypeReference<ApiResponse<List<TaskResponse>>>() {})
-                .value(res -> {
-                    assert res.status().equals("success");
-                    assert res.data().size() == 1;
-                    assert res.data().getFirst().id().equals(999L);
-                    assert res.data().getFirst().title().equals("일정 조회 DAY");
-                    assert res.data().getFirst().description().equals("일정 조회");
-                    assert res.data().getFirst().date().equals(LocalDate.of(2025, 11, 25));
-                    assert res.data().getFirst().time().equals(LocalTime.of(10, 30));
-                });
+        mockMvc.perform(get("/tasks")
+                        .param("type", "DAY")
+                        .param("date", "2025-11-25"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].id").value(999))
+                .andExpect(jsonPath("$.data[0].title").value("일정 조회 DAY"));
+
+        then(taskService).should().getTasks(any());
+        then(taskService).shouldHaveNoMoreInteractions();
     }
 
     @Test
     @DisplayName("일정 조회 성공 - WEEK 타입으로 정상 조회된다")
-    void getTasks_WEEK_success() {
+    void getTasks_WEEK_success() throws Exception {
         List<TaskResponse> dummy = List.of(
                 TaskResponse.builder()
                         .id(11L)
@@ -238,37 +206,24 @@ class TaskControllerTest {
                         .build()
         );
 
-        when(taskService.getTasks(any()))
-                .thenReturn(Mono.just(dummy));
+        given(taskService.getTasks(any())).willReturn(dummy);
 
-        webTestClient.get()
-                .uri(uri -> uri.path("/tasks")
-                        .queryParam("type", "DAY")
-                        .queryParam("date" , "2025-11-25")
-                        .build())
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody(new ParameterizedTypeReference<ApiResponse<List<TaskResponse>>>() {})
-                .value(res -> {
-                    assert res.status().equals("success");
-                    assert res.data().size() == 2;
-                    assert res.data().getFirst().id().equals(11L);
-                    assert res.data().getFirst().title().equals("WEEK 일정 1");
-                    assert res.data().getFirst().description().equals("설명1");
-                    assert res.data().getFirst().date().equals(LocalDate.of(2025, 11, 24));
-                    assert res.data().getFirst().time().equals(LocalTime.of(1, 0));
+        mockMvc.perform(get("/tasks")
+                        .param("type", "WEEK")
+                        .param("date", "2025-11-25"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.data.length()").value(2))
+                .andExpect(jsonPath("$.data[0].id").value(11))
+                .andExpect(jsonPath("$.data[1].id").value(21));
 
-                    assert res.data().get(1).id().equals(21L);
-                    assert res.data().get(1).title().equals("WEEK 일정 2");
-                    assert res.data().get(1).description().equals("설명2");
-                    assert res.data().get(1).date().equals(LocalDate.of(2025, 11, 30));
-                    assert res.data().get(1).time().equals(LocalTime.of(23, 0));
-                });
+        then(taskService).should().getTasks(any());
+        then(taskService).shouldHaveNoMoreInteractions();
     }
 
     @Test
     @DisplayName("일정 조회 성공 - MONTH 타입으로 정상 조회된다")
-    void getTasks_MONTH_success() {
+    void getTasks_MONTH_success() throws Exception {
         List<TaskResponse> dummy = List.of(
                 TaskResponse.builder()
                         .id(111L)
@@ -304,166 +259,112 @@ class TaskControllerTest {
                         .build()
         );
 
-        when(taskService.getTasks(any()))
-                .thenReturn(Mono.just(dummy));
+        given(taskService.getTasks(any())).willReturn(dummy);
 
-        webTestClient.get()
-                .uri(uri -> uri.path("/tasks")
-                        .queryParam("type", "MONTH")
-                        .queryParam("date", "2025-11")
-                        .build())
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody(new ParameterizedTypeReference<ApiResponse<List<TaskResponse>>>() {})
-                .value(res -> {
-                    assert res.status().equals("success");
-                    assert res.data().size() == 4;
+        mockMvc.perform(get("/tasks")
+                        .param("type", "MONTH")
+                        .param("date", "2025-11"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.data.length()").value(4))
+                .andExpect(jsonPath("$.data[0].id").value(111))
+                .andExpect(jsonPath("$.data[0].title").value("MONTH 일정 1"))
+                .andExpect(jsonPath("$.data[1].id").value(112))
+                .andExpect(jsonPath("$.data[1].title").value("MONTH 일정 2"))
+                .andExpect(jsonPath("$.data[2].id").value(113))
+                .andExpect(jsonPath("$.data[2].title").value("MONTH 일정 3"))
+                .andExpect(jsonPath("$.data[3].id").value(114))
+                .andExpect(jsonPath("$.data[3].title").value("MONTH 일정 4"));
 
-                    // 1번 요소
-                    assert res.data().getFirst().id().equals(111L);
-                    assert res.data().getFirst().title().equals("MONTH 일정 1");
-                    assert res.data().getFirst().description().equals("설명1");
-                    assert res.data().getFirst().date().equals(LocalDate.of(2025, 11, 3));
-                    assert res.data().getFirst().time().equals(LocalTime.of(8, 0));
-
-                    // 2번 요소
-                    assert res.data().get(1).id().equals(112L);
-                    assert res.data().get(1).title().equals("MONTH 일정 2");
-                    assert res.data().get(1).description().equals("설명2");
-                    assert res.data().get(1).date().equals(LocalDate.of(2025, 11, 10));
-                    assert res.data().get(1).time().equals(LocalTime.of(9, 30));
-
-                    // 3번 요소
-                    assert res.data().get(2).id().equals(113L);
-                    assert res.data().get(2).title().equals("MONTH 일정 3");
-                    assert res.data().get(2).description().equals("설명3");
-                    assert res.data().get(2).date().equals(LocalDate.of(2025, 11, 18));
-                    assert res.data().get(2).time().equals(LocalTime.of(14, 0));
-
-                    // 4번 요소
-                    assert res.data().get(3).id().equals(114L);
-                    assert res.data().get(3).title().equals("MONTH 일정 4");
-                    assert res.data().get(3).description().equals("설명4");
-                    assert res.data().get(3).date().equals(LocalDate.of(2025, 11, 28));
-                    assert res.data().get(3).time().equals(LocalTime.of(19, 45));
-                });
+        then(taskService).should().getTasks(any());
+        then(taskService).shouldHaveNoMoreInteractions();
     }
 
     @Test
     @DisplayName("일정 조회 실패 - 잘못된 type이면 400, 10001 에러를 반환한다")
-    void getTasks_fail_invalidType() {
-        webTestClient.get()
-                .uri(uriBuilder -> uriBuilder
-                        .path("/tasks")
-                        .queryParam("type", "INVALID")
-                        .queryParam("date", "2025-11-24")
-                        .build())
-                .exchange()
-                .expectStatus().isBadRequest()
-                .expectBody(new ParameterizedTypeReference<ApiResponse<Void>>() {
-                })
-                .value(res -> {
-                    assert res.status().equals("fail");
-                    assert res.error().code() == 10001;
-                });
+    void getTasks_fail_invalidType() throws Exception {
+        mockMvc.perform(get("/tasks")
+                        .param("type", "INVALID")
+                        .param("date", "2025-11-24"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value("fail"))
+                .andExpect(jsonPath("$.error.code").value("10001"));
+
+        then(taskService).shouldHaveNoInteractions();
     }
 
     @Test
     @DisplayName("일정 조회 실패 - type이 누락되면 400, 10001 에러를 반환한다")
-    void getTasks_fail_missingType() {
-        webTestClient.get()
-                .uri(uriBuilder -> uriBuilder
-                        .path("/tasks")
-                        .queryParam("date", "2025-11-24")
-                        .build())
-                .exchange()
-                .expectStatus().isBadRequest()
-                .expectBody(new ParameterizedTypeReference<ApiResponse<Void>>() {
-                })
-                .value(res -> {
-                    assert res.status().equals("fail");
-                    assert res.error().code() == 10001;
-                });
+    void getTasks_fail_missingType() throws Exception {
+        mockMvc.perform(get("/tasks")
+                        .param("type", "DAY"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value("fail"))
+                .andExpect(jsonPath("$.error.code").value("10001"));
+
+        then(taskService).shouldHaveNoInteractions();
     }
 
     @Test
     @DisplayName("일정 조회 실패 - date가 누락되면 400, 10001 에러를 반환한다")
-    void getTasks_fail_missingDate() {
-        webTestClient.get()
-                .uri(uriBuilder -> uriBuilder
-                        .path("/tasks")
-                        .queryParam("type", "DAY")
-                        .build())
-                .exchange()
-                .expectStatus().isBadRequest()
-                .expectBody(new ParameterizedTypeReference<ApiResponse<Void>>() {
-                })
-                .value(res -> {
-                    assert res.status().equals("fail");
-                    assert res.error().code() == 10001;
-                });
+    void getTasks_fail_missingDate() throws Exception {
+        mockMvc.perform(get("/tasks")
+                        .param("type", "DAY"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value("fail"))
+                .andExpect(jsonPath("$.error.code").value("10001"));
+
+        then(taskService).shouldHaveNoInteractions();
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"2025-11", "20251127", "25-11-27"})
     @DisplayName("일정 조회 실패 - DAY는 yyyy-MM-dd 형식을 요구한다")
-    void getTasks_DAY_fail_invalidDateFormat(String invalidDate) {
-        webTestClient.get()
-                .uri(uri -> uri.path("/tasks")
-                        .queryParam("type", "DAY")
-                        .queryParam("date", invalidDate)
-                        .build())
-                .exchange()
-                .expectStatus().isBadRequest()
-                .expectBody(new ParameterizedTypeReference<ApiResponse<Void>>() {
-                })
-                .value(res -> {
-                    assert res.status().equals("fail");
-                    assert res.error().code() == 10001;
-                });
+    void getTasks_DAY_fail_invalidDateFormat(String invalidDate) throws Exception {
+        mockMvc.perform(get("/tasks")
+                        .param("type", "DAY")
+                        .param("date", invalidDate))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value("fail"))
+                .andExpect(jsonPath("$.error.code").value("10001"));
+
+        then(taskService).shouldHaveNoInteractions();
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"2025-11", "20251127", "25-11-27"})
     @DisplayName("일정 조회 실패 - WEEK는 yyyy-MM-dd 형식을 요구한다")
-    void getTasks_WEEK_fail_invalidDateFormat(String invalidDate) {
-        webTestClient.get()
-                .uri(uri -> uri.path("/tasks")
-                        .queryParam("type", "WEEK")
-                        .queryParam("date", invalidDate)
-                        .build())
-                .exchange()
-                .expectStatus().isBadRequest()
-                .expectBody(new ParameterizedTypeReference<ApiResponse<Void>>() {
-                })
-                .value(res -> {
-                    assert res.status().equals("fail");
-                    assert res.error().code() == 10001;
-                });
+    void getTasks_WEEK_fail_invalidDateFormat(String invalidDate) throws Exception {
+        mockMvc.perform(get("/tasks")
+                        .param("type", "WEEK")
+                        .param("date", invalidDate))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value("fail"))
+                .andExpect(jsonPath("$.error.code").value("10001"));
+
+        then(taskService).shouldHaveNoInteractions();
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"2025-11-27", "202511", "25-11"})
-    @DisplayName("일정 조회 실패 - MONTH는 yyyy-MM-dd 형식을 요구한다")
-    void getTasks_MONTH_fail_invalidDateFormat(String invalidDate) {
-        webTestClient.get()
-                .uri(uri -> uri.path("/tasks")
-                        .queryParam("type", "MONTH")
-                        .queryParam("date", invalidDate)
-                        .build())
-                .exchange()
-                .expectStatus().isBadRequest()
-                .expectBody(new ParameterizedTypeReference<ApiResponse<Void>>() {
-                })
-                .value(res -> {
-                    assert res.status().equals("fail");
-                    assert res.error().code() == 10001;
-                });
+    @DisplayName("일정 조회 실패 - MONTH는 yyyy-MM 형식을 요구한다")
+    void getTasks_MONTH_fail_invalidDateFormat(String invalidDate) throws Exception {
+        mockMvc.perform(get("/tasks")
+                        .param("type", "MONTH")
+                        .param("date", invalidDate))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value("fail"))
+                .andExpect(jsonPath("$.error.code").value("10001"));
+
+        then(taskService).shouldHaveNoInteractions();
     }
 
+    /*******************
+     *  일정 수정
+     *******************/
     @Test
     @DisplayName("일정 정상 수정")
-    void updateTask_success() {
+    void updateTask_success() throws Exception {
         long id = 10L;
 
         TaskRequest req = new TaskRequest("updated title", null, null, null);
@@ -473,53 +374,78 @@ class TaskControllerTest {
                 .title("updated title2")
                 .build();
 
-        when(taskService.update(eq(id), any(TaskRequest.class)))
-                .thenReturn(Mono.just(serviceRes));
+        given(taskService.update(eq(id), any(TaskRequest.class))).willReturn(serviceRes);
 
-        webTestClient.put()
-                .uri("/tasks/{id}", id)
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(req)
-                .exchange()
-                .expectStatus().isOk()
-                .expectHeader().contentTypeCompatibleWith(MediaType.APPLICATION_JSON)
-                .expectBody(new ParameterizedTypeReference<ApiResponse<TaskResponse>>() {
-                })
-                .value(res -> {
-                    assert res.status().equals("success");
-                    assert res.data().id().equals(id);
-                    assert res.data().title().equals("updated title2");
-                });
+        mockMvc.perform(put("/tasks/{id}", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.data.id").value(10))
+                .andExpect(jsonPath("$.data.title").value("updated title2"));
 
-        verify(taskService, times(1)).update(eq(id), any(TaskRequest.class));
-        verifyNoMoreInteractions(taskService);
+        then(taskService).should().update(eq(id), any(TaskRequest.class));
+        then(taskService).shouldHaveNoMoreInteractions();
     }
 
     @Test
     @DisplayName("일정 수정 실패 - 없는 id일 경우 TaskNotFoundException 발생")
-    void updateTask_NotExistId() {
+    void updateTask_NotExistId() throws Exception {
+        // given
         long id = 10L;
 
         TaskRequest req = new TaskRequest("title", null, null, null);
 
-        when(taskService.update(eq(id), any(TaskRequest.class)))
-                .thenReturn(Mono.error(new TaskNotFoundException(id)));
+        given(taskService.update(eq(id), any(TaskRequest.class)))
+                .willThrow(new TaskNotFoundException(id));
 
-        webTestClient.put()
-                .uri("/tasks/{id}", id)
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(req)
-                .exchange()
-                .expectStatus().isNotFound()
-                .expectHeader().contentTypeCompatibleWith(MediaType.APPLICATION_JSON)
-                .expectBody(new ParameterizedTypeReference<ApiResponse<TaskResponse>>() {
-                })
-                .value(res -> {
-                    assert res.status().equals("fail");
-                    assert res.error().code() == 20001;
-                });
+        // when & then
+        mockMvc.perform(put("/tasks/{id}", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value("fail"))
+                .andExpect(jsonPath("$.error.code").value(ErrorCode.TASK_NOT_FOUND.getCode()));
 
-        verify(taskService, times(1)).update(eq(id), any(TaskRequest.class));
-        verifyNoMoreInteractions(taskService);
+        then(taskService).should().update(eq(id), any(TaskRequest.class));
+        then(taskService).shouldHaveNoMoreInteractions();
     }
+
+    @Test
+    @DisplayName("일정 삭제 성공 - 존재하는 id면 200과 삭제된 id를 반환한다")
+    void deleteTask_success() throws Exception {
+        // given
+        long id = 1L;
+        willDoNothing().given(taskService).delete(id);
+
+        // when & then
+        mockMvc.perform(delete("/tasks/{id}", id))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.data.id").value((int) id));
+
+        then(taskService).should().delete(id);
+        then(taskService).shouldHaveNoMoreInteractions();
+    }
+
+    @Test
+    @DisplayName("일정 삭제 실패 - 존재하지 않는 id면 404와 TASK_NOT_FOUND를 반환한다")
+    void deleteTask_notFound() throws Exception {
+        // given
+        long id = 999L;
+        willThrow(new TaskNotFoundException(id)).given(taskService).delete(id);
+
+        // when & then
+        mockMvc.perform(delete("/tasks/{id}", id))
+                .andExpect(status().isNotFound())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.status").value("fail"))
+                .andExpect(jsonPath("$.error.code").value(ErrorCode.TASK_NOT_FOUND.getCode()));
+
+        then(taskService).should().delete(id);
+        then(taskService).shouldHaveNoMoreInteractions();
+    }
+
+
 }

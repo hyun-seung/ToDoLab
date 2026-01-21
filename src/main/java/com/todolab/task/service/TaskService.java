@@ -10,9 +10,6 @@ import com.todolab.task.exception.TaskNotFoundException;
 import com.todolab.task.repository.TaskRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Scheduler;
 
 import java.util.List;
 
@@ -23,9 +20,7 @@ public class TaskService {
     private final TaskTxService taskTxService;
     private final TaskRepository taskRepository;
 
-    private final Scheduler jpaScheduler;
-
-    public Mono<TaskResponse> create(TaskRequest req) {
+    public TaskResponse create(TaskRequest req) {
         Task task = Task.builder()
                 .title(req.title())
                 .description(req.description())
@@ -33,40 +28,38 @@ public class TaskService {
                 .taskTime(req.time())
                 .build();
 
-        return Mono.fromCallable(() -> taskRepository.save(task))
-                .subscribeOn(jpaScheduler)
-                .map(TaskResponse::from);
+        Task saved = taskRepository.save(task);
+        return TaskResponse.from(saved);
     }
 
-    public Mono<TaskResponse> getTask(Long id) {
-        return Mono.fromCallable(() -> taskRepository.findById(id)
-                .orElseThrow(() -> new TaskNotFoundException(id)))
-                .subscribeOn(jpaScheduler)
-                .map(TaskResponse::from);
+    public TaskResponse getTask(Long id) {
+        Task task = taskRepository.findById(id)
+                .orElseThrow(() -> new TaskNotFoundException(id));
+
+        return TaskResponse.from(task);
     }
 
-    public Mono<List<TaskResponse>> getTasks(TaskQueryRequest request) {
+    public List<TaskResponse> getTasks(TaskQueryRequest request) {
         final TaskQueryType type = request.getType();
         final String strDate = request.getDate();
 
         DateRange range = type.calculate(strDate);
 
-        return Mono.fromCallable(() -> taskRepository.findByDateRange(range.getStart(), range.getEnd()))
-                .subscribeOn(jpaScheduler)
-                .flatMapMany(Flux::fromIterable)
+        return taskRepository.findByDateRange(range.getStart(), range.getEnd())
+                .stream()
                 .map(TaskResponse::from)
-                .collectList();
+                .toList();
     }
 
-    public Mono<TaskResponse> update(Long id, TaskRequest taskRequest) {
-        return Mono.fromCallable(() -> taskTxService.updateTx(id, taskRequest))
-                .subscribeOn(jpaScheduler)
-                .map(TaskResponse::from);
+    public TaskResponse update(Long id, TaskRequest taskRequest) {
+        Task updated = taskTxService.updateTx(id, taskRequest);
+        return TaskResponse.from(updated);
     }
 
-    public Mono<Void> delete(Long id) {
-        return Mono.fromRunnable(() -> taskRepository.deleteById(id))
-                .subscribeOn(jpaScheduler)
-                .then();
+    public void delete(Long id) {
+        if (!taskRepository.existsById(id)) {
+            throw new TaskNotFoundException(id);
+        }
+        taskRepository.deleteById(id);
     }
 }
