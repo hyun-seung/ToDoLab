@@ -1,35 +1,29 @@
 <!-- src/main/resources/templates/pages/task/week.html -->
-
 <html lang="ko" xmlns:th="http://www.thymeleaf.org" th:inline="html">
 
-<div class="w-full px-4 py-4">
+<div class="px-5 py-6">
 
-    <!-- 상단: 네비게이션 + 주간 범위 -->
-    <div class="flex justify-between items-center mb-8">
+    <!-- 상단 헤더 -->
+    <div class="flex items-center justify-between mb-4">
 
-        <!-- 지난주 -->
         <a th:href="'/tasks/week?move=prev&date=' + ${currentDate}"
-           class="px-5 py-2 bg-white border border-gray-200 rounded-lg shadow-sm
-                  flex items-center gap-2 text-gray-700 hover:bg-gray-50 font-medium">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+           class="nav-btn"
+           aria-label="지난주">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
                  viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                       d="M15 19l-7-7 7-7" />
             </svg>
-            지난주
         </a>
 
-        <!-- 주간 범위 -->
-        <div class="text-xl font-semibold" th:text="${weekRange}">
-            2025-12-01 ~ 2025-12-07
+        <div class="text-3xl font-bold text-gray-900">
+            <span th:text="${currentDate.monthValue}">12</span>월
         </div>
 
-        <!-- 다음주 -->
         <a th:href="'/tasks/week?move=next&date=' + ${currentDate}"
-           class="px-5 py-2 bg-white border border-gray-200 rounded-lg shadow-sm
-                  flex items-center gap-2 text-gray-700 hover:bg-gray-50 font-medium">
-            다음주
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+           class="nav-btn"
+           aria-label="다음주">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
                  viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                       d="M9 5l7 7-7 7" />
@@ -37,150 +31,234 @@
         </a>
     </div>
 
-    <!-- 가로 스크롤 영역 -->
-    <div id="weekScroll"
-         class="overflow-x-auto no-scrollbar pb-6 week-scroll">
+    <!-- 주간 요일/날짜 스트립 -->
+    <div class="rounded-2xl bg-white border border-gray-200 shadow-sm px-4 pt-3 pb-4">
+        <div class="grid grid-cols-7 text-center text-sm text-gray-500 font-semibold mb-2">
+            <div>일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div>토</div>
+        </div>
 
-        <div id="weekColumns"
-             class="flex space-x-6 min-w-max">
+        <div id="weekDayStrip" class="grid grid-cols-7 text-center">
+            <a th:each="day : ${weeklyTasks}"
+               th:href="'/tasks/day?date=' + ${day.date}"
+               class="day-pill"
+               th:attr="data-date=${day.date}, data-dow=${day.date.dayOfWeek.value}">
+                <span class="day-label"
+                      th:text="${day.date.dayOfMonth}">
+                    17
+                </span>
+            </a>
+        </div>
+    </div>
 
-            <div th:each="day : ${weeklyTasks}"
-                 class="bg-white rounded-xl shadow p-5 border w-[320px]
-                        flex-shrink-0 day-column"
-                 th:attr="data-date=${day.date}">
+    <!-- 선택된 날짜의 일정 -->
+    <div class="mt-6 space-y-4">
 
-                <!-- 요일 / 날짜 -->
-                <a class="flex justify-between items-center mb-4 hover:opacity-80 transition"
-                   th:href="'/tasks/day?date=' + ${day.date}">
+        <div th:each="day : ${weeklyTasks}"
+             class="task-card"
+             th:attr="data-date=${day.date}">
 
-                    <span class="text-gray-500 font-semibold text-sm"
-                          th:text="${day.date.dayOfWeek.getDisplayName(
-                            T(java.time.format.TextStyle).SHORT,
-                            T(java.util.Locale).KOREAN)}">
-                        월
-                    </span>
+            <div class="task-card-title">일정</div>
 
-                    <span th:if="${day.date.equals(T(java.time.LocalDate).now())}"
-                          class="bg-blue-600 text-white rounded-full px-3 py-1 font-bold">
-                        [[${day.date.dayOfMonth}]]
-                    </span>
+            <div th:if="${#lists.isEmpty(day.tasks)}"
+                 class="p-5 text-sm text-gray-500">
+                등록된 일정이 없습니다.
+            </div>
 
-                    <span th:unless="${day.date.equals(T(java.time.LocalDate).now())}"
-                          class="text-gray-900 font-bold">
-                        [[${day.date.dayOfMonth}]]
-                    </span>
-                </a>
+            <div th:unless="${#lists.isEmpty(day.tasks)}"
+                 class="divide-y divide-gray-100">
 
-                <hr class="mb-4"/>
+                <div th:each="t : ${day.tasks}"
+                     th:attr="data-task-id=${t.id}"
+                     class="task-row week-row">
 
-                <!-- 일정 목록 -->
-                <div class="space-y-2">
+                    <!-- 색상 바 -->
+                    <div class="task-left-bar" style="background: [[${t.color}]]"></div>
 
-                    <div th:if="${#lists.isEmpty(day.tasks)}"
-                         class="text-gray-400 text-sm text-center py-8">
-                        일정 없음
+                    <!-- 체크 -->
+                    <div class="check-box">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+                             viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M5 13l4 4L19 7" />
+                        </svg>
                     </div>
 
-                    <div th:each="t : ${day.tasks}"
-                         th:attr="data-task-id=${t.id}"
-                         class="rounded-lg p-3 text-sm text-gray-800 shadow-sm border
-                                cursor-pointer hover:shadow-md hover:brightness-95 transition"
-                         style="background: [[${t.color}]]">
+                    <!-- 좌측: 제목 / 설명 -->
+                    <div class="week-left min-w-0">
+                        <div class="week-title" th:text="${t.title}">
+                            제목
+                        </div>
 
-                        <div class="font-bold" th:text="${t.title}">일정 제목</div>
-
-                        <div class="text-xs mt-1 text-gray-700"
+                        <div th:if="${t.description != null and !#strings.isEmpty(t.description)}"
+                             class="week-sub"
                              th:text="${t.description}">
                             설명
                         </div>
+                    </div>
 
-                        <div class="text-xs mt-1 text-gray-600"
-                             th:text="${t.time != null ? t.time : '종일'}">
-                            10:00
+                    <!-- 우측: 날짜 / 시간 -->
+                    <div class="week-right">
+                        <div class="week-date">
+                            <span th:text="${day.date.monthValue}">1</span>월
+                            <span th:text="${day.date.dayOfMonth}">22</span>
                         </div>
-
+                        <div class="week-time"
+                             th:text="${t.time != null ? t.time : '종일'}">
+                            종일
+                        </div>
                     </div>
 
                 </div>
             </div>
-
         </div>
     </div>
-
 </div>
 
 <style>
-    .week-scroll {
-        scroll-snap-type: x mandatory;
-        cursor: grab;
+    /* 요일 스트립 */
+    .day-pill{
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 9999px;
+        transition: background .15s ease;
     }
-    .week-scroll.dragging {
-        cursor: grabbing;
-        scroll-snap-type: none; /* 드래그 중에는 스냅 해제 */
+    .day-pill:hover{ background: rgba(17,24,39,0.04); }
+
+    .day-label{
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        color: #111827;
+        border-radius: 9999px;
+        line-height: 1;
     }
-    .day-column {
-        scroll-snap-align: start;
+    .day-label.is-focus{
+        background: #6366f1;
+        color: #fff;
+        font-weight: 800;
+        transform: translateY(-1px);
+        box-shadow: 0 10px 18px rgba(99,102,241,0.20);
     }
-    .no-scrollbar::-webkit-scrollbar {
-        display: none;
+
+    /* 주간 row */
+    .week-row{
+        cursor: pointer;
+        padding-right: 8px;               /* ✅ row 자체 여유 */
+        transition: background .15s ease;
+    }
+    .week-row:hover{
+        background: rgba(17,24,39,0.02);
+    }
+
+    .week-left{
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        flex: 1 1 auto;
+    }
+    .week-title{
+        font-weight: 800;
+        color: #1f2937;
+        font-size: 18px;
+        line-height: 1.2;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .week-sub{
+        font-size: 13px;
+        color: #6b7280;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* ✅ 핵심: 우측 여유 */
+    .week-right{
+        margin-left: 12px;
+        min-width: 88px;                  /* 기존보다 넉넉 */
+        padding-right: 10px;              /* 체감 여유 핵심 */
+        text-align: right;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        justify-content: center;
+        flex: 0 0 auto;
+    }
+    .week-date{
+        font-size: 12px;
+        color: #9ca3af;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+    .week-time{
+        font-size: 12px;
+        color: #6b7280;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    /* 모바일 */
+    @media (max-width: 640px){
+        .week-title{ font-size: 16px; }
+        .week-right{
+            min-width: 76px;
+            padding-right: 8px;
+        }
     }
 </style>
 
 <script>
     document.addEventListener("DOMContentLoaded", () => {
-        const scroll = document.getElementById("weekScroll");
-        const container = document.getElementById("weekColumns");
-        if (!scroll || !container) return;
+        const strip = document.getElementById("weekDayStrip");
+        const cards = Array.from(document.querySelectorAll(".task-card[data-date]"));
+        if (!strip || !cards.length) return;
 
-        /* 초기 진입: 오늘 칼럼을 왼쪽으로 */
-        const today = new Date().toISOString().slice(0, 10);
-        const todayCol = container.querySelector(
-            `.day-column[data-date="${today}"]`
-        );
-        if (todayCol) {
-            scroll.scrollLeft = todayCol.offsetLeft - container.offsetLeft;
-        }
+        const items = Array.from(strip.querySelectorAll("a[data-date][data-dow]"));
+        if (!items.length) return;
 
-        /* 부드러운 마우스 드래그 스크롤 */
-        let isDown = false;
-        let startX = 0;
-        let startLeft = 0;
-        let targetLeft = 0;
-        let rafId = 0;
-
-        const applyScroll = () => {
-            rafId = 0;
-            scroll.scrollLeft = targetLeft;
+        const clearFocus = () => {
+            strip.querySelectorAll(".day-label.is-focus")
+                 .forEach(el => el.classList.remove("is-focus"));
         };
 
-        scroll.addEventListener("mousedown", (e) => {
-            if (e.button !== 0) return; // 좌클릭만
-            isDown = true;
-            scroll.classList.add("dragging");
-
-            startX = e.pageX;
-            startLeft = scroll.scrollLeft;
-            targetLeft = startLeft;
-        });
-
-        window.addEventListener("mousemove", (e) => {
-            if (!isDown) return;
-            const dx = e.pageX - startX;
-            targetLeft = startLeft - dx;
-
-            if (!rafId) {
-                rafId = requestAnimationFrame(applyScroll);
-            }
-        });
-
-        const endDrag = () => {
-            if (!isDown) return;
-            isDown = false;
-            scroll.classList.remove("dragging");
+        const showOnlyDate = (isoDate) => {
+            cards.forEach(card => {
+                card.style.display =
+                    card.getAttribute("data-date") === isoDate ? "" : "none";
+            });
         };
 
-        window.addEventListener("mouseup", endDrag);
-        scroll.addEventListener("mouseleave", endDrag);
+        const setFocusByItem = (item) => {
+            if (!item) return;
+            clearFocus();
+            const label = item.querySelector(".day-label");
+            label?.classList.add("is-focus");
+
+            const iso = item.getAttribute("data-date");
+            showOnlyDate(iso);
+        };
+
+        items.forEach(a => {
+            a.addEventListener("click", (e) => {
+                e.preventDefault();
+                setFocusByItem(a);
+            });
+        });
+
+        const todayIso = new Date().toISOString().slice(0, 10);
+        const jsDow = new Date().getDay();        // 0..6 (일..토)
+        const serverDow = jsDow === 0 ? 7 : jsDow;
+
+        const todayItem = items.find(a => a.getAttribute("data-date") === todayIso);
+        const dowItem = items.find(a => Number(a.getAttribute("data-dow")) === serverDow);
+
+        setFocusByItem(todayItem || dowItem || items[0]);
     });
 </script>
 

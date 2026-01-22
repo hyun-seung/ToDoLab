@@ -1,14 +1,18 @@
 <!-- src/main/resources/templates/pages/task/month.html -->
-
 <html lang="ko" xmlns:th="http://www.thymeleaf.org" th:inline="html">
 
-<div class="px-4">
+<div class="px-5 py-6">
 
     <!-- 상단 월 이동 -->
     <div class="flex items-center justify-between mb-4">
-        <a class="px-3 py-2 rounded-lg bg-white shadow hover:bg-gray-50"
-           th:href="'/tasks/month?move=prev&month=' + ${yearMonth}">
-            ← 이전
+        <a class="nav-btn"
+           th:href="'/tasks/month?move=prev&month=' + ${yearMonth}"
+           aria-label="이전 달">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+                 viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M15 19l-7-7 7-7" />
+            </svg>
         </a>
 
         <div class="text-sm font-semibold text-gray-700"
@@ -16,31 +20,36 @@
             2025년 12월
         </div>
 
-        <a class="px-3 py-2 rounded-lg bg-white shadow hover:bg-gray-50"
-           th:href="'/tasks/month?move=next&month=' + ${yearMonth}">
-            다음 →
+        <a class="nav-btn"
+           th:href="'/tasks/month?move=next&month=' + ${yearMonth}"
+           aria-label="다음 달">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+                 viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M9 5l7 7-7 7" />
+            </svg>
         </a>
     </div>
 
-    <!-- 요일 헤더 -->
+    <!-- ✅ 요일 헤더: 일 ~ 토 -->
     <div class="grid grid-cols-7 gap-2 text-xs text-gray-500 mb-2 px-1">
+        <div class="text-center text-red-600">일</div>
         <div class="text-center">월</div>
         <div class="text-center">화</div>
         <div class="text-center">수</div>
         <div class="text-center">목</div>
         <div class="text-center">금</div>
         <div class="text-center text-blue-600">토</div>
-        <div class="text-center text-red-600">일</div>
     </div>
 
     <!-- 캘린더 그리드 (6 x 7) -->
     <div class="grid grid-cols-7 gap-2">
 
-        <!-- 날짜 셀: 클릭 시 day 이동 -->
+        <!-- 날짜 셀: 넓은 영역 클릭 시 day 이동 -->
         <a th:each="cell : ${cells}"
            th:href="'/tasks/day?date=' + ${cell.date()}"
            class="block bg-white rounded-xl shadow-sm p-2 min-h-[110px] border
-                  hover:shadow-md hover:-translate-y-[1px] transition"
+                  hover:shadow-md hover:-translate-y-[1px] transition month-cell"
            th:classappend="${!cell.inMonth()} ? ' opacity-50' : ''">
 
             <!-- 날짜 / 오늘 표시 -->
@@ -60,10 +69,11 @@
             <div class="space-y-1">
                 <div th:each="task, stat : ${cell.tasks()}"
                      th:if="${stat.index < 3}"
-                     class="text-[11px] rounded-md px-2 py-1 truncate cursor-pointer hover:brightness-95 transition"
+                     class="text-[11px] rounded-md px-2 py-1 truncate cursor-pointer
+                            hover:brightness-95 active:scale-[0.99] transition task-chip"
                      th:attr="data-task-id=${task.id()}"
                      th:style="'background:' + ${task.color()}"
-                     onclick="event.preventDefault(); event.stopPropagation();">
+                     onclick="return openTaskDetailFromMonth(event, this);">
                     <span th:text="${task.title()}">일정 제목</span>
                 </div>
 
@@ -79,3 +89,25 @@
     </div>
 
 </div>
+
+<style>
+    .month-cell { overflow: hidden; }
+    .task-chip  { box-shadow: 0 6px 14px rgba(0,0,0,0.10); }
+</style>
+
+<script>
+    function openTaskDetailFromMonth(event, el) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const taskId = el?.getAttribute?.("data-task-id");
+        if (!taskId) return false;
+
+        if (typeof DetailModal !== "undefined" && DetailModal?.loadDetail) {
+            DetailModal.loadDetail(taskId);
+        }
+        return false;
+    }
+</script>
+
+</html>
