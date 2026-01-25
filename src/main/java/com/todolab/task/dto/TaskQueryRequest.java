@@ -26,7 +26,7 @@ public class TaskQueryRequest {
         try {
             return TaskQueryType.from(rawType);
         } catch (Exception e) {
-            throw new TaskValidationException(ErrorCode.INVALID_INPUT, "올바르지 않은 Type 값입니다.");
+            throw new TaskValidationException("올바르지 않은 Type 값입니다.");
         }
     }
 
@@ -38,7 +38,7 @@ public class TaskQueryRequest {
                 LocalDate.parse(rawDate);
             }
         } catch (Exception e) {
-            throw new TaskValidationException(ErrorCode.INVALID_INPUT, "올바르지 않은 date 값입니다.");
+            throw new TaskValidationException("올바르지 않은 date 값입니다.");
         }
     }
 }

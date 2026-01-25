@@ -18,7 +18,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
-import java.time.LocalTime;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -27,7 +27,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 
 @ExtendWith(MockitoExtension.class)
 class TaskServiceTest {
@@ -49,25 +51,121 @@ class TaskServiceTest {
      *  일정 등록
      *******************/
     @Test
-    @DisplayName("일정 등록 성공")
-    void createTask_success() {
+    @DisplayName("일정 등록 성공 - 단일 일정(endAt=null)")
+    void createTask_success_single() {
+        // given
+        LocalDateTime startAt = LocalDateTime.of(2025, 11, 27, 10, 30);
+
         Task saved = Task.builder()
                 .title("title")
                 .description("desc")
-                .taskDate(LocalDate.of(2025, 11, 27))
-                .taskTime(LocalTime.of(10, 30))
+                .startAt(startAt)
+                .endAt(null)
+                .category("일")
+                .allDay(false)
                 .build();
 
         given(taskRepository.save(any())).willReturn(saved);
 
-        TaskRequest request = new TaskRequest("title", "desc", LocalDate.of(2025, 11, 27), LocalTime.of(10, 30));
+        TaskRequest request = new TaskRequest(
+                "title",
+                "desc",
+                startAt,
+                null,
+                "일",
+                false
+        );
 
+        // when
         TaskResponse res = taskService.create(request);
 
+        // then
         assertThat(res.title()).isEqualTo("title");
-        assertThat(res.description()).isEqualTo("desc");
-        assertThat(res.date()).isEqualTo(LocalDate.of(2025, 11, 27));
-        assertThat(res.time()).isEqualTo(LocalTime.of(10, 30));
+        assertThat(res.startAt()).isEqualTo(startAt);
+        assertThat(res.endAt()).isNull();
+        assertThat(res.allDay()).isFalse();
+        assertThat(res.unscheduled()).isFalse();
+
+        then(taskRepository).should(times(1)).save(any(Task.class));
+        then(taskTxService).shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("일정 등록 성공 - 기간 일정은 [startInclusive, endExclusive)로 저장된다")
+    void createTask_success_period_endExclusive() {
+        // given
+        LocalDateTime startInclusive = LocalDateTime.of(2025, 1, 22, 10, 30);
+        LocalDateTime endExclusive = LocalDateTime.of(2025, 1, 22, 11, 30);
+
+        Task saved = Task.builder()
+                .title("period")
+                .description("desc")
+                .startAt(startInclusive)
+                .endAt(endExclusive)
+                .category("일")
+                .allDay(false)
+                .build();
+
+        given(taskRepository.save(any())).willReturn(saved);
+
+        TaskRequest request = new TaskRequest(
+                "period",
+                "desc",
+                startInclusive,
+                endExclusive,
+                "일",
+                false
+        );
+
+        // when
+        TaskResponse res = taskService.create(request);
+
+        // then
+        assertThat(res.startAt()).isEqualTo(startInclusive);
+        assertThat(res.endAt()).isEqualTo(endExclusive);
+        assertThat(res.endAt()).isAfter(res.startAt());
+
+        then(taskRepository).should(times(1)).save(any(Task.class));
+        then(taskTxService).shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("일정 등록 성공 - 종일(allDay) 일정은 00:00 ~ 다음날 00:00(endExclusive) 형태다")
+    void createTask_success_allDay_endExclusive() {
+        // given
+        LocalDateTime startInclusive = LocalDate.of(2025, 1, 22).atStartOfDay();      // 01-22 00:00
+        LocalDateTime endExclusive = LocalDate.of(2025, 1, 23).atStartOfDay();        // 01-23 00:00
+
+        Task saved = Task.builder()
+                .title("allDay")
+                .description("desc")
+                .startAt(startInclusive)
+                .endAt(endExclusive)
+                .category("집")
+                .allDay(true)
+                .build();
+
+        given(taskRepository.save(any())).willReturn(saved);
+
+        TaskRequest request = new TaskRequest(
+                "allDay",
+                "desc",
+                startInclusive,
+                endExclusive,
+                "집",
+                true
+        );
+
+        // when
+        TaskResponse res = taskService.create(request);
+
+        // then
+        assertThat(res.allDay()).isTrue();
+        assertThat(res.startAt()).isEqualTo(startInclusive);
+        assertThat(res.endAt()).isEqualTo(endExclusive);
+
+        // [start, end)로 하루 전체를 표현한다: endExclusive 는 start+1day(00:00)
+        assertThat(res.endAt()).isEqualTo(res.startAt().plusDays(1));
 
         then(taskRepository).should(times(1)).save(any(Task.class));
         then(taskTxService).shouldHaveNoInteractions();
@@ -79,37 +177,43 @@ class TaskServiceTest {
     @Test
     @DisplayName("일정 조회(단건) 성공")
     void getTask_success() {
+        // given
         Long taskId = 1L;
+        LocalDateTime startAt = LocalDateTime.of(2025, 12, 16, 10, 0);
 
         Task task = Task.builder()
                 .title("테스트 일정")
                 .description("설명")
-                .taskDate(LocalDate.of(2025, 12, 16))
-                .taskTime(LocalTime.of(10, 0))
+                .startAt(startAt)
+                .endAt(null)
+                .category("일")
+                .allDay(false)
                 .build();
 
         given(taskRepository.findById(taskId)).willReturn(Optional.of(task));
 
+        // when
         TaskResponse res = taskService.getTask(taskId);
 
+        // then
         assertThat(res.title()).isEqualTo("테스트 일정");
-        assertThat(res.description()).isEqualTo("설명");
-        assertThat(res.date()).isEqualTo(LocalDate.of(2025, 12, 16));
-        assertThat(res.time()).isEqualTo(LocalTime.of(10, 0));
+        assertThat(res.startAt()).isEqualTo(startAt);
+        assertThat(res.endAt()).isNull();
+        assertThat(res.unscheduled()).isFalse();
 
         then(taskRepository).should(times(1)).findById(taskId);
         then(taskRepository).shouldHaveNoMoreInteractions();
         then(taskTxService).shouldHaveNoMoreInteractions();
     }
 
-
     @Test
     @DisplayName("일정 조회(단건) 실패 - 존재하지 않는 ID면 TaskNotFoundException 발생")
     void getTask_notFound() {
+        // given
         Long taskId = 999L;
-
         given(taskRepository.findById(taskId)).willReturn(Optional.empty());
 
+        // when & then
         assertThatThrownBy(() -> taskService.getTask(taskId))
                 .isInstanceOf(TaskNotFoundException.class)
                 .satisfies(ex -> {
@@ -126,106 +230,117 @@ class TaskServiceTest {
      *  일정 조회 (DAY / WEEK / MONTH)
      *******************/
     @Test
-    @DisplayName("일정 조회 성공 - DAY 범위에 해당하는 데이터가 반환된다")
-    void getTasks_day_success() {
+    @DisplayName("일정 조회 성공 - DAY는 [dayStart, nextDayStart) 기준으로 조회한다")
+    void getTasks_day_success_endExclusive_boundary() {
+        // given
         TaskQueryRequest request = TaskQueryRequest.builder()
                 .rawType("DAY")
                 .rawDate("2025-11-27")
                 .build();
 
         LocalDate day = LocalDate.of(2025, 11, 27);
+        LocalDateTime dayStart = day.atStartOfDay();
+        LocalDateTime nextDayStart = day.plusDays(1).atStartOfDay();
 
-        List<Task> dummy = List.of(
-                new Task("일정1", "desc1", day, LocalTime.of(0, 0)),
-                new Task("일정3", "desc2", day, LocalTime.of(23, 0)),
-                new Task("일정2", "desc3", day, LocalTime.of(23, 0))
+        List<Task> returnedByRepo = List.of(
+                Task.builder().title("include-start").description("d1")
+                        .startAt(dayStart) // ✅ 포함
+                        .endAt(null).allDay(false).category("일").build(),
+                Task.builder().title("include-late").description("d2")
+                        .startAt(LocalDateTime.of(2025, 11, 27, 23, 59))
+                        .endAt(null).allDay(false).category("일").build()
         );
 
-        given(taskRepository.findByDateRange(day, day)).willReturn(dummy);
+        given(taskRepository.findByDateRange(dayStart, nextDayStart)).willReturn(returnedByRepo);
 
+        // when
         List<TaskResponse> res = taskService.getTasks(request);
 
-        assertThat(res).hasSize(3);
+        // then
+        assertThat(res).hasSize(2);
         assertThat(res).extracting(TaskResponse::title)
-                .containsExactly("일정1", "일정3", "일정2");
-        assertThat(res).extracting(TaskResponse::description)
-                .containsExactly("desc1", "desc2", "desc3");
+                .containsExactlyInAnyOrder("include-start", "include-late");
+        assertThat(res).allMatch(r -> !r.unscheduled());
+        assertThat(res).allMatch(r -> !r.startAt().isBefore(dayStart) && r.startAt().isBefore(nextDayStart));
 
-        then(taskRepository).should(times(1)).findByDateRange(day, day);
+        then(taskRepository).should(times(1)).findByDateRange(dayStart, nextDayStart);
         then(taskRepository).shouldHaveNoMoreInteractions();
         then(taskTxService).shouldHaveNoInteractions();
     }
 
     @Test
-    @DisplayName("일정 조회 성공 - WEEK 범위에 해당하는 데이터가 반환된다")
-    void getTasks_week_success() {
+    @DisplayName("일정 조회 성공 - WEEK는 [weekStart, weekEndExclusive) 기준으로 조회한다")
+    void getTasks_week_success_endExclusive_boundary() {
+        // given
         TaskQueryRequest request = TaskQueryRequest.builder()
                 .rawType("WEEK")
                 .rawDate("2025-11-27")
                 .build();
 
-        DateRange expectedRange = TaskQueryType.WEEK.calculate("2025-11-27");
+        DateRange week = TaskQueryType.WEEK.calculate("2025-11-27");
 
-        List<Task> dummy = List.of(
-                new Task("월요일", "desc1", expectedRange.getStart(), LocalTime.of(12, 0)),
-                new Task("일요일", "desc2", expectedRange.getEnd(), LocalTime.of(23, 30)),
-                new Task("수요일", "desc3", expectedRange.getEnd(), LocalTime.of(22, 30))
+        LocalDateTime weekStart = week.getStart();
+        LocalDateTime weekEndExclusive = week.getEnd();
+
+        List<Task> returnedByRepo = List.of(
+                Task.builder().title("mon").description("d1")
+                        .startAt(weekStart)
+                        .endAt(null).allDay(false).category("일").build(),
+                Task.builder().title("sun-2359").description("d2")
+                        .startAt(weekEndExclusive.minusMinutes(1))
+                        .endAt(null).allDay(false).category("일").build()
         );
 
-        given(taskRepository.findByDateRange(expectedRange.getStart(), expectedRange.getEnd()))
-                .willReturn(dummy);
+        given(taskRepository.findByDateRange(weekStart, weekEndExclusive)).willReturn(returnedByRepo);
 
+        // when
         List<TaskResponse> res = taskService.getTasks(request);
 
-        assertThat(res).hasSize(3);
-        assertThat(res.getFirst().title()).isEqualTo("월요일");
-        assertThat(res.getFirst().date()).isEqualTo(expectedRange.getStart());
-        assertThat(res.getFirst().time()).isEqualTo(LocalTime.of(12, 0));
-        assertThat(res.get(1).title()).isEqualTo("일요일");
-        assertThat(res.get(1).date()).isEqualTo(expectedRange.getEnd());
-        assertThat(res.get(1).time()).isEqualTo(LocalTime.of(23, 30));
-        assertThat(res.get(2).title()).isEqualTo("수요일");
-        assertThat(res.get(2).date()).isEqualTo(expectedRange.getEnd());
-        assertThat(res.get(2).time()).isEqualTo(LocalTime.of(22, 30));
+        // then
+        assertThat(res).hasSize(2);
+        assertThat(res).extracting(TaskResponse::title)
+                .containsExactlyInAnyOrder("mon", "sun-2359");
+        assertThat(res).allMatch(r -> !r.startAt().isBefore(weekStart) && r.startAt().isBefore(weekEndExclusive));
 
-        then(taskRepository).should(times(1))
-                .findByDateRange(expectedRange.getStart(), expectedRange.getEnd());
+        then(taskRepository).should(times(1)).findByDateRange(weekStart, weekEndExclusive);
         then(taskRepository).shouldHaveNoMoreInteractions();
         then(taskTxService).shouldHaveNoInteractions();
     }
 
     @Test
-    @DisplayName("일정 조회 성공 - MONTH 범위에 해당하는 데이터가 반환된다")
-    void getTasks_month_success() {
+    @DisplayName("일정 조회 성공 - MONTH는 [monthStart, monthEndExclusive) 기준으로 조회한다")
+    void getTasks_month_success_endExclusive_boundary() {
+        // given
         TaskQueryRequest request = TaskQueryRequest.builder()
                 .rawType("MONTH")
                 .rawDate("2025-11")
                 .build();
 
-        DateRange expectedRange = TaskQueryType.MONTH.calculate("2025-11");
+        DateRange month = TaskQueryType.MONTH.calculate("2025-11");
+        LocalDateTime monthStart = month.getStart();
+        LocalDateTime monthEndExclusive = month.getEnd(); // ✅ 이미 endExclusive
 
-        List<Task> dummy = List.of(
-                new Task("1일 - 1", "desc1", expectedRange.getStart(), LocalTime.of(10, 0)),
-                new Task("1일 - 3", "desc2", expectedRange.getStart(), LocalTime.of(20, 30)),
-                new Task("1일 - 2", "desc3", expectedRange.getStart(), LocalTime.of(15, 0)),
-                new Task("30일", "desc4", expectedRange.getEnd(), LocalTime.of(12, 30))
+        List<Task> returnedByRepo = List.of(
+                Task.builder().title("m-start").description("d1")
+                        .startAt(monthStart)
+                        .endAt(null).allDay(false).category("일").build(),
+                Task.builder().title("m-end-1m").description("d2")
+                        .startAt(monthEndExclusive.minusMinutes(1))
+                        .endAt(null).allDay(false).category("일").build()
         );
 
-        given(taskRepository.findByDateRange(expectedRange.getStart(), expectedRange.getEnd()))
-                .willReturn(dummy);
+        given(taskRepository.findByDateRange(monthStart, monthEndExclusive)).willReturn(returnedByRepo);
 
+        // when
         List<TaskResponse> res = taskService.getTasks(request);
 
-        assertThat(res).hasSize(4);
+        // then
+        assertThat(res).hasSize(2);
         assertThat(res).extracting(TaskResponse::title)
-                .containsExactly("1일 - 1", "1일 - 3", "1일 - 2", "30일");
-        assertThat(res.getFirst().date()).isEqualTo(expectedRange.getStart());
-        assertThat(res.get(1).date()).isEqualTo(expectedRange.getStart());
-        assertThat(res.get(2).date()).isEqualTo(expectedRange.getStart());
-        assertThat(res.get(3).date()).isEqualTo(expectedRange.getEnd());
+                .containsExactlyInAnyOrder("m-start", "m-end-1m");
+        assertThat(res).allMatch(r -> !r.startAt().isBefore(monthStart) && r.startAt().isBefore(monthEndExclusive));
 
-        then(taskRepository).should(times(1))
-                .findByDateRange(expectedRange.getStart(), expectedRange.getEnd());
+        then(taskRepository).should(times(1)).findByDateRange(monthStart, monthEndExclusive);
         then(taskRepository).shouldHaveNoMoreInteractions();
         then(taskTxService).shouldHaveNoInteractions();
     }
@@ -236,25 +351,38 @@ class TaskServiceTest {
     @Test
     @DisplayName("일정 수정 성공")
     void updateTask_success() {
+        // given
         long id = 10L;
+
+        LocalDateTime updatedStartAt = LocalDateTime.of(2026, 1, 20, 1, 20);
 
         Task updated = Task.builder()
                 .title("수정 title")
                 .description("수정 desc")
-                .taskDate(LocalDate.of(2026, 1, 20))
-                .taskTime(LocalTime.of(1, 20))
+                .startAt(updatedStartAt)
+                .endAt(null)
+                .category("집")
+                .allDay(false)
                 .build();
 
-        TaskRequest req = new TaskRequest("수정 title", "수정 desc", LocalDate.of(2026, 12, 20), LocalTime.of(9, 15));
+        TaskRequest req = new TaskRequest(
+                "수정 title",
+                "수정 desc",
+                LocalDateTime.of(2026, 12, 20, 9, 15),
+                null,
+                "집",
+                false
+        );
 
         given(taskTxService.updateTx(id, req)).willReturn(updated);
 
+        // when
         TaskResponse res = taskService.update(id, req);
 
+        // then
         assertThat(res.title()).isEqualTo("수정 title");
-        assertThat(res.description()).isEqualTo("수정 desc");
-        assertThat(res.date()).isEqualTo(LocalDate.of(2026, 1, 20));
-        assertThat(res.time()).isEqualTo(LocalTime.of(1, 20));
+        assertThat(res.startAt()).isEqualTo(updatedStartAt);
+        assertThat(res.endAt()).isNull();
 
         then(taskTxService).should(times(1)).updateTx(id, req);
         then(taskRepository).shouldHaveNoInteractions();
@@ -263,11 +391,21 @@ class TaskServiceTest {
     @Test
     @DisplayName("일정 수정 실패 - 존재하지 않는 ID면 TaskNotFoundException 발생")
     void updateTask_notFound() {
+        // given
         long id = 999L;
-        TaskRequest req = new TaskRequest("t", "d", LocalDate.of(2026, 1, 20), LocalTime.of(1, 25));
+
+        TaskRequest req = new TaskRequest(
+                "t",
+                "d",
+                LocalDateTime.of(2026, 1, 20, 1, 25),
+                null,
+                "일",
+                false
+        );
 
         given(taskTxService.updateTx(id, req)).willThrow(new TaskNotFoundException(id));
 
+        // when & then
         assertThatThrownBy(() -> taskService.update(id, req))
                 .isInstanceOf(TaskNotFoundException.class)
                 .satisfies(ex -> {
@@ -285,11 +423,14 @@ class TaskServiceTest {
     @Test
     @DisplayName("일정 삭제 성공")
     void deleteTask_success() {
+        // given
         long id = 1L;
         given(taskRepository.existsById(id)).willReturn(true);
 
+        // when
         taskService.delete(id);
 
+        // then
         InOrder inOrder = inOrder(taskRepository);
         inOrder.verify(taskRepository).existsById(id);
         inOrder.verify(taskRepository).deleteById(id);
@@ -301,9 +442,11 @@ class TaskServiceTest {
     @Test
     @DisplayName("일정 삭제 실패 - 존재하지 않는 ID면 TaskNotFoundException 발생")
     void deleteTask_notFound() {
+        // given
         long id = 999L;
         given(taskRepository.existsById(id)).willReturn(false);
 
+        // when & then
         assertThatThrownBy(() -> taskService.delete(id))
                 .isInstanceOf(TaskNotFoundException.class)
                 .satisfies(ex -> {

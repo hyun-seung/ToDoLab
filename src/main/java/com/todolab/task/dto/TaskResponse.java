@@ -12,18 +12,24 @@ public record TaskResponse(
         Long id,
         String title,
         String description,
-        LocalDate date,
-        LocalTime time,
+        LocalDateTime startAt,
+        LocalDateTime endAt,
+        boolean allDay,
+        boolean unscheduled,
+        String category,
         LocalDateTime createdAt
 ) {
     public static TaskResponse from(Task t) {
-        return new TaskResponse(
-                t.getId(),
-                t.getTitle(),
-                t.getDescription(),
-                t.getTaskDate(),
-                t.getTaskTime(),
-                t.getCreatedAt()
-        );
+        return TaskResponse.builder()
+                .id(t.getId())
+                .title(t.getTitle())
+                .description(t.getDescription())
+                .startAt(t.getStartAt())
+                .endAt(t.getEndAt())
+                .allDay(t.isAllDay())
+                .unscheduled(t.isUnscheduled())
+                .category(t.getCategory())
+                .createdAt(t.getCreatedAt())
+                .build();
     }
 }

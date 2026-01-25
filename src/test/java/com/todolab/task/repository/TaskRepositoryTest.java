@@ -6,12 +6,10 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.List;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.BDDAssertions.then;
 
 class TaskRepositoryTest extends RepositoryTestSupport {
 
@@ -19,14 +17,19 @@ class TaskRepositoryTest extends RepositoryTestSupport {
     TaskRepository taskRepository;
 
     @Test
-    @DisplayName("save() 호출 시 Task가 정상적으로 저장된다")
+    @DisplayName("일정(Task) 저장 성공")
     void save_success() {
         // given
+        LocalDateTime startAt = LocalDateTime.of(2025, 11, 27, 10, 30);
+        LocalDateTime endAt = LocalDateTime.of(2025, 11, 27, 11, 30);
+
         Task task = Task.builder()
                 .title("hello")
                 .description("desc")
-                .taskDate(LocalDate.of(2025, 11, 27))
-                .taskTime(LocalTime.of(10, 30))
+                .startAt(startAt)
+                .endAt(endAt)
+                .allDay(false)
+                .category("일")
                 .build();
 
         // when
@@ -34,11 +37,13 @@ class TaskRepositoryTest extends RepositoryTestSupport {
         flushAndClear();
 
         // then
-        assertThat(saved.getId()).isNotNull();
-        assertThat(saved.getTitle()).isEqualTo("hello");
-        assertThat(saved.getDescription()).isEqualTo("desc");
-        assertThat(saved.getTaskDate()).isEqualTo(LocalDate.of(2025, 11, 27));
-        assertThat(saved.getTaskTime()).isEqualTo(LocalTime.of(10, 30));
+        then(saved.getId()).isNotNull();
+        then(saved.getTitle()).isEqualTo("hello");
+        then(saved.getDescription()).isEqualTo("desc");
+        then(saved.getStartAt()).isEqualTo(startAt);
+        then(saved.getEndAt()).isEqualTo(endAt);
+        then(saved.isAllDay()).isFalse();
+        then(saved.getCategory()).isEqualTo("일");
     }
 
     @Test
@@ -48,8 +53,10 @@ class TaskRepositoryTest extends RepositoryTestSupport {
         Task task = Task.builder()
                 .title("created test")
                 .description("desc")
-                .taskDate(LocalDate.of(2025, 11, 30))
-                .taskTime(LocalTime.of(9, 0))
+                .startAt(LocalDateTime.of(2025, 11, 30, 9, 0))
+                .endAt(null)
+                .allDay(false)
+                .category("공부")
                 .build();
 
         // when
@@ -57,50 +64,136 @@ class TaskRepositoryTest extends RepositoryTestSupport {
         flushAndClear();
 
         // then
-        assertThat(saved.getCreatedAt()).isNotNull();
-        assertThat(saved.getCreatedAt()).isBeforeOrEqualTo(LocalDateTime.now());
+        then(saved.getCreatedAt()).isNotNull();
+        then(saved.getCreatedAt()).isBeforeOrEqualTo(LocalDateTime.now());
     }
 
     @Test
-    @DisplayName("findByDateRange()는 지정한 날짜 범위 내의 Task만 조회한다")
-    void findByDateRange_success() {
-        LocalDate start = LocalDate.of(2025, 11, 1);
-        LocalDate end = LocalDate.of(2025, 11, 7);
+    @DisplayName("findByDateRange()는 조회 범위 [start,end) 와 겹치는 기간 일정도 포함한다")
+    void findByDateRange_includes_long_period_task_on_partial_range() {
+        // given
+        // 조회 범위: 11/02 ~ 11/07(포함) => endExclusive = 11/08 00:00
+        LocalDateTime startInclusive = LocalDateTime.of(2025, 11, 2, 0, 0);
+        LocalDateTime endExclusive = LocalDateTime.of(2025, 11, 8, 0, 0);
 
-        List<Task> days = List.of(
-                Task.builder()
-                        .title("day1")
-                        .description("desc1")
-                        .taskDate(LocalDate.of(2025, 11, 1))
-                        .taskTime(LocalTime.of(10, 0))
-                        .build(),
-                Task.builder()
-                        .title("day2")
-                        .description("desc2")
-                        .taskDate(LocalDate.of(2025, 11, 5))
-                        .taskTime(LocalTime.of(20, 30))
-                        .build(),
-                Task.builder()
-                        .title("day3")
-                        .description("desc3")
-                        .taskDate(LocalDate.of(2025, 11, 7))
-                        .taskTime(LocalTime.of(23, 30))
-                        .build(),
-                Task.builder()
-                        .title("day4")
-                        .description("desc4")
-                        .taskDate(LocalDate.of(2025, 11, 8))
-                        .taskTime(LocalTime.of(9, 0))
-                        .build()
-        );
-        taskRepository.saveAll(days);
+        // A: 11월 전체(11/01~11/30) 기간 일정
+        Task a = Task.builder()
+                .title("A-11월전체")
+                .description("11월 1일부터 30일까지")
+                .startAt(LocalDateTime.of(2025, 11, 1, 0, 0))
+                .endAt(LocalDateTime.of(2025, 12, 1, 0, 0))
+                .allDay(true)
+                .category("일")
+                .build();
+
+        // 범위 내 단일 일정
+        Task b = Task.builder()
+                .title("B-단일")
+                .description("11/03 단일")
+                .startAt(LocalDateTime.of(2025, 11, 3, 10, 0))
+                .endAt(null)
+                .allDay(false)
+                .category("공부")
+                .build();
+
+        // 범위 밖(겹침 없음)
+        Task c = Task.builder()
+                .title("C-비겹침")
+                .description("10월 일정")
+                .startAt(LocalDateTime.of(2025, 10, 1, 0, 0))
+                .endAt(LocalDateTime.of(2025, 10, 2, 0, 0))
+                .allDay(true)
+                .category("기타")
+                .build();
+
+        // 미정(조회 대상 제외)
+        Task unscheduled = Task.builder()
+                .title("미정")
+                .description("미정")
+                .startAt(null)
+                .endAt(null)
+                .allDay(false)
+                .category("기타")
+                .build();
+
+        taskRepository.saveAll(List.of(a, b, c, unscheduled));
         flushAndClear();
 
-        List<Task> results = taskRepository.findByDateRange(start, end);
+        // when
+        List<Task> results = taskRepository.findByDateRange(startInclusive, endExclusive);
 
-        assertThat(results).hasSize(3);
-        assertThat(results)
-                .extracting("title")
-                .containsExactlyInAnyOrder("day1", "day2", "day3");
+        // then
+        then(results).extracting("title")
+                .contains("A-11월전체", "B-단일");
+
+        then(results).extracting("title")
+                .doesNotContain("C-비겹침", "미정");
+    }
+
+    @Test
+    @DisplayName("findByDateRange()는 전날 시작해 조회 시작일에 걸치는 기간 일정도 포함한다")
+    void findByDateRange_includes_crossing_period_task_on_day_range() {
+        // given
+        // 11/01 하루 조회: [11/01 00:00, 11/02 00:00)
+        LocalDateTime startInclusive = LocalDateTime.of(2025, 11, 1, 0, 0);
+        LocalDateTime endExclusive = LocalDateTime.of(2025, 11, 2, 0, 0);
+
+        Task crossing = Task.builder()
+                .title("crossing")
+                .description("10/31~11/01 걸침")
+                .startAt(LocalDateTime.of(2025, 10, 31, 9, 0))
+                .endAt(LocalDateTime.of(2025, 11, 1, 9, 30))
+                .allDay(false)
+                .category("기타")
+                .build();
+
+        Task boundaryExcluded = Task.builder()
+                .title("boundaryExcluded")
+                .description("startAt == endExclusive")
+                .startAt(LocalDateTime.of(2025, 11, 2, 0, 0))
+                .endAt(null)
+                .allDay(false)
+                .category("기타")
+                .build();
+
+        taskRepository.saveAll(List.of(crossing, boundaryExcluded));
+        flushAndClear();
+
+        // when
+        List<Task> results = taskRepository.findByDateRange(startInclusive, endExclusive);
+
+        // then
+        then(results).extracting("title")
+                .contains("crossing");
+
+        then(results).extracting("title")
+                .doesNotContain("boundaryExcluded");
+    }
+
+    @Test
+    @DisplayName("findByDateRange()는 조회 범위와 겹치지 않는 기간 일정은 제외한다")
+    void findByDateRange_excludes_non_overlapping_period_task() {
+        // given
+        LocalDateTime startInclusive = LocalDateTime.of(2025, 11, 2, 0, 0);
+        LocalDateTime endExclusive = LocalDateTime.of(2025, 11, 8, 0, 0);
+
+        Task nonOverlap = Task.builder()
+                .title("nonOverlap")
+                .description("겹치지 않음")
+                .startAt(LocalDateTime.of(2025, 10, 20, 0, 0))
+                .endAt(LocalDateTime.of(2025, 10, 21, 0, 0))
+                .allDay(true)
+                .category("기타")
+                .build();
+
+        taskRepository.save(nonOverlap);
+        flushAndClear();
+
+        // when
+        List<Task> results = taskRepository.findByDateRange(startInclusive, endExclusive);
+
+        // then
+        then(results).extracting("title")
+                .doesNotContain("nonOverlap");
     }
 }

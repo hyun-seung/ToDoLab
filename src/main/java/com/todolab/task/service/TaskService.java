@@ -24,8 +24,10 @@ public class TaskService {
         Task task = Task.builder()
                 .title(req.title())
                 .description(req.description())
-                .taskDate(req.date())
-                .taskTime(req.time())
+                .startAt(req.startAt())
+                .endAt(req.endAt())
+                .allDay(req.allDay())
+                .category(req.category())
                 .build();
 
         Task saved = taskRepository.save(task);

@@ -4,32 +4,39 @@ import lombok.Getter;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.YearMonth;
 
 @Getter
 public class DateRange {
-    private final LocalDate start;
-    private final LocalDate end;
 
-    private DateRange(LocalDate start, LocalDate end) {
+    private final LocalDateTime start; // Inclusive
+    private final LocalDateTime end;   // Exclusive
+
+    private DateRange(LocalDateTime start, LocalDateTime end) {
         this.start = start;
         this.end = end;
     }
 
     public static DateRange ofDay(String date) {
         LocalDate d = LocalDate.parse(date);
-        return new DateRange(d, d);
+        LocalDateTime start = d.atStartOfDay();                         // 00:00
+        LocalDateTime end = d.plusDays(1).atStartOfDay();    // 다음날 00:00
+        return new DateRange(start, end);
     }
 
     public static DateRange ofWeek(String date) {
         LocalDate d = LocalDate.parse(date);
-        LocalDate start = d.with(DayOfWeek.MONDAY);
-        LocalDate end = d.with(DayOfWeek.SUNDAY);
+        LocalDate startDate = d.with(DayOfWeek.MONDAY);      // 월요일
+        LocalDateTime start = startDate.atStartOfDay();      // 00:00
+        LocalDateTime end = start.plusDays(7);               // 다음주 월요일 00:00
         return new DateRange(start, end);
     }
 
     public static DateRange ofMonth(String date) {
         YearMonth ym = YearMonth.parse(date);
-        return new DateRange(ym.atDay(1), ym.atEndOfMonth());
+        LocalDateTime start = ym.atDay(1).atStartOfDay();                           // 1일 00:00
+        LocalDateTime end = ym.plusMonths(1).atDay(1).atStartOfDay();   // 다음달 1일 00:00 (Exclusive)
+        return new DateRange(start, end);
     }
 }

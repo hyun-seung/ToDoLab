@@ -17,13 +17,12 @@ import org.thymeleaf.spring6.SpringTemplateEngine;
 import java.io.StringWriter;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Controller
 @RequiredArgsConstructor
@@ -42,7 +41,6 @@ public class TaskPageController {
     )
     @ResponseBody
     public String createFragment() {
-
         Context ctx = new Context();
 
         StringWriter writer = new StringWriter();
@@ -65,6 +63,7 @@ public class TaskPageController {
             produces = MediaType.TEXT_HTML_VALUE)
     @ResponseBody
     public String detailFragment(@RequestParam Long id) {
+
         ApiResponse<TaskResponse> resp = restClient.get()
                 .uri("/tasks/{id}", id)
                 .retrieve()
@@ -87,7 +86,6 @@ public class TaskPageController {
         return writer.toString();
     }
 
-
     // ===========================
     //  일간 일정 페이지
     // ===========================
@@ -104,7 +102,9 @@ public class TaskPageController {
         if ("prev".equals(move)) targetDate = targetDate.minusDays(1);
         if ("next".equals(move)) targetDate = targetDate.plusDays(1);
 
-        String queryDate = targetDate.toString(); // YYYY-MM-DD
+        final LocalDate finalTargetDate = targetDate; // 람다 캡처용 고정
+
+        String queryDate = finalTargetDate.toString(); // YYYY-MM-DD
 
         ApiResponse<List<TaskResponse>> resp = restClient.get()
                 .uri(uriBuilder -> uriBuilder
@@ -119,28 +119,22 @@ public class TaskPageController {
         List<TaskResponse> taskList = resp.data();
 
         List<TaskUi> tasks = taskList.stream()
-                .map(t -> new TaskUi(
-                        t.id(),
-                        t.title(),
-                        t.description(),
-                        t.date(),
-                        t.time(),
-                        pickColor(t.id())
-                ))
+                .filter(t -> occursOn(t, finalTargetDate)) // 기간 일정 포함 + 미정 제외
+                .map(this::toUi)
                 .toList();
 
         Context ctx = new Context();
-        ctx.setVariable("date", targetDate);
+        ctx.setVariable("date", finalTargetDate);
         ctx.setVariable("tasks", tasks);
-        ctx.setVariable("isToday", targetDate.equals(LocalDate.now()));
+        ctx.setVariable("isToday", finalTargetDate.equals(LocalDate.now()));
 
         String bodyHtml = templateEngine.process("pages/task/day", ctx);
 
         model.addAttribute("title", "일간 일정 - ToDoLab");
         model.addAttribute("headerTitle",
-                targetDate.getYear() + "년 "
-                        + targetDate.getMonthValue() + "월 "
-                        + targetDate.getDayOfMonth() + "일");
+                finalTargetDate.getYear() + "년 "
+                        + finalTargetDate.getMonthValue() + "월 "
+                        + finalTargetDate.getDayOfMonth() + "일");
         model.addAttribute("activeTab", "day");
         model.addAttribute("body", bodyHtml);
 
@@ -156,7 +150,6 @@ public class TaskPageController {
             @RequestParam(name = "date", required = false) String date,
             Model model
     ) {
-
         LocalDate computedDate = (date != null && !date.isBlank())
                 ? LocalDate.parse(date)
                 : LocalDate.now();
@@ -164,7 +157,8 @@ public class TaskPageController {
         if ("prev".equals(move)) computedDate = computedDate.minusWeeks(1);
         if ("next".equals(move)) computedDate = computedDate.plusWeeks(1);
 
-        String queryDate = computedDate.toString();
+        final LocalDate finalComputedDate = computedDate; // 람다 캡처용 고정
+        String queryDate = finalComputedDate.toString();
 
         ApiResponse<List<TaskResponse>> resp = restClient.get()
                 .uri(uriBuilder -> uriBuilder
@@ -178,42 +172,36 @@ public class TaskPageController {
 
         List<TaskResponse> taskList = resp.data();
 
-        LocalDate monday = computedDate.with(DayOfWeek.MONDAY);
+        LocalDate monday = finalComputedDate.with(DayOfWeek.MONDAY);
         LocalDate sunday = monday.plusDays(6);
         String weekRange = monday + " ~ " + sunday;
 
         List<DaySchedule> weekly = new ArrayList<>(7);
         for (int i = 0; i < 7; i++) {
             LocalDate day = monday.plusDays(i);
+            final LocalDate finalDay = day; // 람다 캡처용 고정
 
             List<TaskUi> uiTasks = taskList.stream()
-                    .filter(t -> t.date().equals(day))
-                    .map(t -> new TaskUi(
-                            t.id(),
-                            t.title(),
-                            t.description(),
-                            t.date(),
-                            t.time(),
-                            pickColor(t.id())
-                    ))
+                    .filter(t -> occursOn(t, finalDay)) // 기간 일정까지 포함
+                    .map(this::toUi)
                     .toList();
 
-            weekly.add(new DaySchedule(day, uiTasks));
+            weekly.add(new DaySchedule(finalDay, uiTasks));
         }
 
         Context ctx = new Context();
         ctx.setVariable("weeklyTasks", weekly);
         ctx.setVariable("weekRange", weekRange);
-        ctx.setVariable("currentDate", computedDate);
+        ctx.setVariable("currentDate", finalComputedDate);
 
         String bodyHtml = templateEngine.process("pages/task/week", ctx);
 
         model.addAttribute("title", "주간 일정 - ToDoLab");
         model.addAttribute("headerTitle",
-                computedDate.getYear() + "년 " + computedDate.getMonthValue() + "월");
+                finalComputedDate.getYear() + "년 " + finalComputedDate.getMonthValue() + "월");
         model.addAttribute("activeTab", "week");
         model.addAttribute("monthTitle",
-                computedDate.getMonthValue() + "월 " + computedDate.getYear());
+                finalComputedDate.getMonthValue() + "월 " + finalComputedDate.getYear());
         model.addAttribute("body", bodyHtml);
 
         return "layout/base";
@@ -235,7 +223,9 @@ public class TaskPageController {
         if ("prev".equals(move)) ym = ym.minusMonths(1);
         if ("next".equals(move)) ym = ym.plusMonths(1);
 
-        String queryDate = ym.toString();
+        final YearMonth finalYm = ym; // 직접 람다 캡처는 없지만 일관성
+
+        String queryDate = finalYm.toString(); // YYYY-MM
 
         ApiResponse<List<TaskResponse>> resp = restClient.get()
                 .uri(uriBuilder -> uriBuilder
@@ -249,49 +239,93 @@ public class TaskPageController {
 
         List<TaskResponse> taskList = resp.data();
 
-        LocalDate firstDay = ym.atDay(1);
-        LocalDate lastDay = ym.atEndOfMonth();
+        LocalDate firstDay = finalYm.atDay(1);
+        LocalDate lastDay = finalYm.atEndOfMonth();
 
         LocalDate start = firstDay.with(DayOfWeek.MONDAY);
         LocalDate end = lastDay.with(DayOfWeek.SUNDAY);
 
-        Map<LocalDate, List<TaskUi>> byDate = taskList.stream()
-                .collect(Collectors.groupingBy(
-                        TaskResponse::date,
-                        Collectors.mapping(t -> new TaskUi(
-                                t.id(),
-                                t.title(),
-                                t.description(),
-                                t.date(),
-                                t.time(),
-                                pickColor(t.id())
-                        ), Collectors.toList())
-                ));
-
         List<CalendarCell> cells = new ArrayList<>();
         for (LocalDate d = start; !d.isAfter(end); d = d.plusDays(1)) {
-            boolean inMonth = (d.getMonthValue() == ym.getMonthValue());
-            List<TaskUi> tasks = byDate.getOrDefault(d, List.of());
-            cells.add(new CalendarCell(d, inMonth, tasks));
+            final LocalDate finalDate = d; // 람다 캡처용 고정
+            boolean inMonth = (finalDate.getMonthValue() == finalYm.getMonthValue());
+
+            // 기간 일정까지 고려: 날짜 셀마다 "겹치는 일정"을 필터링
+            List<TaskUi> tasks = taskList.stream()
+                    .filter(t -> occursOn(t, finalDate))
+                    .map(this::toUi)
+                    .toList();
+
+            cells.add(new CalendarCell(finalDate, inMonth, tasks));
         }
 
         Context ctx = new Context();
-        ctx.setVariable("yearMonth", ym); // YYYY-MM
+        ctx.setVariable("yearMonth", finalYm); // YYYY-MM
         ctx.setVariable("cells", cells);
         ctx.setVariable("today", LocalDate.now());
 
         String bodyHtml = templateEngine.process("pages/task/month", ctx);
 
         model.addAttribute("title", "월간 일정 - ToDoLab");
-        model.addAttribute("headerTitle", ym.getYear() + "년 " + ym.getMonthValue() + "월");
+        model.addAttribute("headerTitle", finalYm.getYear() + "년 " + finalYm.getMonthValue() + "월");
         model.addAttribute("activeTab", "month");
 
-        // ✅ 기존 호환 변수(남겨둬도 됨)
-        model.addAttribute("monthTitle", ym.getMonthValue() + "월 " + ym.getYear());
+        model.addAttribute("monthTitle", finalYm.getMonthValue() + "월 " + finalYm.getYear());
 
         model.addAttribute("body", bodyHtml);
 
         return "layout/base";
+    }
+
+    // ===========================
+    // 일정이 특정 날짜(day)에 "발생/겹침"하는지 판단
+    // - 미정(startAt null)은 제외
+    // - 단일: startAt이 그 날짜에 포함되면 true
+    // - 기간: [startAt, endAt) 과 [dayStart, dayEnd) 가 겹치면 true
+    // ===========================
+    private boolean occursOn(TaskResponse t, LocalDate day) {
+        if (t == null || t.startAt() == null) {
+            return false; // 미정 제외
+        }
+
+        LocalDateTime dayStart = day.atStartOfDay();
+        LocalDateTime dayEnd = day.plusDays(1).atStartOfDay();
+
+        LocalDateTime startAt = t.startAt();
+        LocalDateTime endAt = t.endAt();
+
+        // 단일 일정
+        if (endAt == null) {
+            return !startAt.isBefore(dayStart) && startAt.isBefore(dayEnd);
+        }
+
+        // 기간 일정: 겹침 여부
+        return startAt.isBefore(dayEnd) && endAt.isAfter(dayStart);
+    }
+
+    // ===========================
+    // TaskResponse -> TaskUi 변환
+    // - 템플릿 호환을 위해 date/time 파생 제공
+    // - allDay면 time은 null로 내려서 "종일" 표시 유도
+    // ===========================
+    private TaskUi toUi(TaskResponse t) {
+        LocalDateTime startAt = t.startAt();
+
+        LocalDate date = (startAt != null) ? startAt.toLocalDate() : null;
+        LocalTime time = (startAt != null && !t.allDay()) ? startAt.toLocalTime() : null;
+
+        return new TaskUi(
+                t.id(),
+                t.title(),
+                t.description(),
+                date,
+                time,
+                t.allDay(),
+                t.startAt(),
+                t.endAt(),
+                t.category(),
+                pickColor(t.id())
+        );
     }
 
     // ===========================
@@ -315,6 +349,10 @@ public class TaskPageController {
             String description,
             LocalDate date,
             LocalTime time,
+            boolean allDay,
+            LocalDateTime startAt,
+            LocalDateTime endAt,
+            String category,
             String color
     ) {
     }
