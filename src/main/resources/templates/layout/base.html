@@ -14,10 +14,12 @@
 
 <body class="bg-[#F7F6F2] h-screen flex flex-col">
 
-<header class="w-full py-6 text-center shrink-0">
+<header th:if="${showBaseHeader == null || showBaseHeader}"
+        class="w-full py-6 text-center shrink-0">
     <h1 class="text-3xl font-bold" th:text="${headerTitle}">ToDoLab</h1>
 </header>
 
+<!-- ✅ 하단바(footer) + 플로팅버튼 영역 고려: padding-bottom 유지 -->
 <main class="flex-1 w-full max-w-7xl mx-auto overflow-y-auto pb-28">
     <div th:utext="${body}"></div>
 </main>
@@ -30,17 +32,25 @@
     +
 </a>
 
-<!-- 하단 탭 -->
-<footer class="fixed bottom-0 inset-x-0 w-full bg-white py-4 border-t flex justify-around text-gray-500 text-sm z-40">
+<!-- ✅ 하단 탭 (3개): 미정 / 일 / 주 -->
+<footer class="fixed bottom-0 inset-x-0 w-full bg-white py-4 border-t
+               flex justify-around text-gray-500 text-sm z-40
+               pb-[calc(env(safe-area-inset-bottom)+1rem)]">
+    <a href="/tasks/unscheduled"
+       th:classappend="${activeTab == 'unscheduled'} ? ' font-semibold text-blue-600' : ''"
+       class="hover:text-black">
+        미정
+    </a>
     <a href="/tasks/day"
        th:classappend="${activeTab == 'day'} ? ' font-semibold text-blue-600' : ''"
-       class="hover:text-black">일</a>
+       class="hover:text-black">
+        일
+    </a>
     <a href="/tasks/week"
        th:classappend="${activeTab == 'week'} ? ' font-semibold text-blue-600' : ''"
-       class="hover:text-black">주</a>
-    <a href="/tasks/month"
-       th:classappend="${activeTab == 'month'} ? ' font-semibold text-blue-600' : ''"
-       class="hover:text-black">월</a>
+       class="hover:text-black">
+        주
+    </a>
 </footer>
 
 <!-- 성공 모달/토스트 -->

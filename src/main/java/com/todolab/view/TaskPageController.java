@@ -130,7 +130,8 @@ public class TaskPageController {
 
         String bodyHtml = templateEngine.process("pages/task/day", ctx);
 
-        model.addAttribute("title", "일간 일정 - ToDoLab");
+        model.addAttribute("title", "ToDoLab");
+        model.addAttribute("showBaseHeader", false);
         model.addAttribute("headerTitle",
                 finalTargetDate.getYear() + "년 "
                         + finalTargetDate.getMonthValue() + "월 "
@@ -196,7 +197,8 @@ public class TaskPageController {
 
         String bodyHtml = templateEngine.process("pages/task/week", ctx);
 
-        model.addAttribute("title", "주간 일정 - ToDoLab");
+        model.addAttribute("title", "ToDoLab");
+        model.addAttribute("showBaseHeader", false);
         model.addAttribute("headerTitle",
                 finalComputedDate.getYear() + "년 " + finalComputedDate.getMonthValue() + "월");
         model.addAttribute("activeTab", "week");
@@ -266,7 +268,8 @@ public class TaskPageController {
 
         String bodyHtml = templateEngine.process("pages/task/month", ctx);
 
-        model.addAttribute("title", "월간 일정 - ToDoLab");
+        model.addAttribute("title", "ToDoLab");
+        model.addAttribute("showBaseHeader", false);
         model.addAttribute("headerTitle", finalYm.getYear() + "년 " + finalYm.getMonthValue() + "월");
         model.addAttribute("activeTab", "month");
 

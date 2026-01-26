@@ -3,9 +3,10 @@
 
 <div class="px-5 py-6">
 
-    <!-- 상단 헤더 -->
-    <div class="flex items-center justify-between mb-4">
+    <!-- ✅ 미니멀 상단 헤더: 타이틀 정중앙 + 좌/우 버튼 -->
+    <div class="relative flex items-center justify-between mb-4">
 
+        <!-- 지난주 -->
         <a th:href="'/tasks/week?move=prev&date=' + ${currentDate}"
            class="nav-btn"
            aria-label="지난주">
@@ -16,19 +17,40 @@
             </svg>
         </a>
 
-        <div class="text-3xl font-bold text-gray-900">
-            <span th:text="${currentDate.monthValue}">12</span>월
+        <!-- ✅ 정중앙 타이틀: absolute 중앙 고정 -->
+        <div class="absolute left-1/2 -translate-x-1/2 text-lg font-bold text-gray-900 whitespace-nowrap">
+            <span th:text="${currentDate.year}">2026</span>년
+            <span th:text="${currentDate.monthValue}">1</span>월
         </div>
 
-        <a th:href="'/tasks/week?move=next&date=' + ${currentDate}"
-           class="nav-btn"
-           aria-label="다음주">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
-                 viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M9 5l7 7-7 7" />
-            </svg>
-        </a>
+        <!-- ✅ 우측 버튼 그룹: 월간 + 다음주 -->
+        <div class="flex items-center gap-3">
+
+            <!-- 월간 보기 (주 -> 월 전환) -->
+            <a th:href="'/tasks/month?month=' + ${#temporals.format(currentDate, 'yyyy-MM')} + '&from=week&date=' + ${currentDate}"
+               class="nav-btn"
+               aria-label="월간 보기"
+               title="월간 보기">
+                <!-- calendar icon -->
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+                     viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M8 7V3m8 4V3M5 11h14M6 21h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2z"/>
+                </svg>
+            </a>
+
+            <!-- 다음주 -->
+            <a th:href="'/tasks/week?move=next&date=' + ${currentDate}"
+               class="nav-btn"
+               aria-label="다음주">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+                     viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M9 5l7 7-7 7" />
+                </svg>
+            </a>
+
+        </div>
     </div>
 
     <!-- 주간 요일/날짜 스트립 -->
@@ -148,7 +170,7 @@
     /* 주간 row */
     .week-row{
         cursor: pointer;
-        padding-right: 8px;               /* ✅ row 자체 여유 */
+        padding-right: 8px;
         transition: background .15s ease;
     }
     .week-row:hover{
@@ -178,11 +200,11 @@
         text-overflow: ellipsis;
     }
 
-    /* ✅ 핵심: 우측 여유 */
+    /* 우측 여유 */
     .week-right{
         margin-left: 12px;
-        min-width: 88px;                  /* 기존보다 넉넉 */
-        padding-right: 10px;              /* 체감 여유 핵심 */
+        min-width: 88px;
+        padding-right: 10px;
         text-align: right;
         display: flex;
         flex-direction: column;
@@ -203,7 +225,6 @@
         white-space: nowrap;
     }
 
-    /* 모바일 */
     @media (max-width: 640px){
         .week-title{ font-size: 16px; }
         .week-right{
@@ -224,7 +245,7 @@
 
         const clearFocus = () => {
             strip.querySelectorAll(".day-label.is-focus")
-                 .forEach(el => el.classList.remove("is-focus"));
+                .forEach(el => el.classList.remove("is-focus"));
         };
 
         const showOnlyDate = (isoDate) => {

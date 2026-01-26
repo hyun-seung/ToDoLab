@@ -5,9 +5,10 @@
      id="day-page"
      th:attr="data-date=${date}">
 
-    <!-- 상단: 날짜 이동 -->
-    <div class="flex items-center justify-between mb-5">
+    <!-- ✅ 미니멀 상단 헤더: 타이틀 정중앙 + 좌/우 버튼 -->
+    <div class="relative flex items-center justify-between mb-5">
 
+        <!-- 이전 날짜 -->
         <a th:href="'/tasks/day?move=prev&date=' + ${date}"
            class="nav-btn"
            aria-label="이전 날짜">
@@ -18,10 +19,10 @@
             </svg>
         </a>
 
-        <div class="text-center">
+        <!-- ✅ 정중앙 타이틀 -->
+        <div class="absolute left-1/2 -translate-x-1/2 text-center whitespace-nowrap">
             <div class="inline-flex items-center gap-2">
-                <span class="text-xl font-bold text-gray-900" th:text="${date}">2025-12-15</span>
-
+                <span class="text-lg font-bold text-gray-900" th:text="${date}">2025-12-15</span>
                 <span th:if="${isToday}" class="today-badge">오늘</span>
             </div>
             <div class="mt-1 text-xs text-gray-500">
@@ -29,15 +30,34 @@
             </div>
         </div>
 
-        <a th:href="'/tasks/day?move=next&date=' + ${date}"
-           class="nav-btn"
-           aria-label="다음 날짜">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
-                 viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M9 5l7 7-7 7" />
-            </svg>
-        </a>
+        <!-- ✅ 우측 버튼 그룹: 월간 보기 + 다음 날짜 -->
+        <div class="flex items-center gap-3">
+
+            <!-- 월간 보기 (Day -> Month) -->
+            <a th:href="'/tasks/month?month=' + ${#strings.substring(date, 0, 7)} + '&from=day&date=' + ${date}"
+               class="nav-btn"
+               aria-label="월간 보기"
+               title="월간 보기">
+                <!-- calendar icon -->
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+                     viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M8 7V3m8 4V3M5 11h14M6 21h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2z"/>
+                </svg>
+            </a>
+
+            <!-- 다음 날짜 -->
+            <a th:href="'/tasks/day?move=next&date=' + ${date}"
+               class="nav-btn"
+               aria-label="다음 날짜">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+                     viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M9 5l7 7-7 7" />
+                </svg>
+            </a>
+
+        </div>
     </div>
 
     <!-- 일정 목록 -->
