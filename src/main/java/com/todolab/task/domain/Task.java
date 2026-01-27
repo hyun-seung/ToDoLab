@@ -56,7 +56,7 @@ public class Task {
     }
 
     public boolean isUnscheduled() {
-        return startAt == null;
+        return startAt == null && endAt == null;
     }
 
     public boolean isPeriodTask() {

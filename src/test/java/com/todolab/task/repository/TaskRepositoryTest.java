@@ -1,16 +1,21 @@
 package com.todolab.task.repository;
 
+import com.todolab.config.QuerydslConfig;
 import com.todolab.support.RepositoryTestSupport;
 import com.todolab.task.domain.Task;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import org.springframework.context.annotation.Import;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.BDDAssertions.then;
 
+@DataJpaTest
+@Import(QuerydslConfig.class)
 class TaskRepositoryTest extends RepositoryTestSupport {
 
     @Autowired
@@ -195,5 +200,49 @@ class TaskRepositoryTest extends RepositoryTestSupport {
         // then
         then(results).extracting("title")
                 .doesNotContain("nonOverlap");
+    }
+
+    @Test
+    @DisplayName("findUnscheduledTask()는 startAt/endAt 둘 다 null인 Task만 조회한다")
+    void findUnscheduledTask_only_null_start_end() {
+        // given
+        Task unscheduled1 = Task.builder()
+                .title("u1")
+                .description("d1")
+                .startAt(null)
+                .endAt(null)
+                .allDay(false)
+                .category("일")
+                .build();
+
+        Task scheduled1 = Task.builder()
+                .title("s1")
+                .description("d2")
+                .startAt(LocalDateTime.of(2026, 1, 1, 10, 0))
+                .endAt(null)
+                .allDay(false)
+                .category("일")
+                .build();
+
+        Task scheduled2 = Task.builder()
+                .title("s2")
+                .description("d3")
+                .startAt(LocalDateTime.of(2026, 1, 2, 10, 0))
+                .endAt(LocalDateTime.of(2026, 1, 2, 11, 0))
+                .allDay(false)
+                .category("일")
+                .build();
+
+        taskRepository.saveAll(List.of(unscheduled1, scheduled1, scheduled2));
+        flushAndClear();
+
+        // when
+        List<Task> result = taskRepository.findUnscheduledTask();
+
+        // then
+        then(result).hasSize(1);
+        then(result.getFirst().getTitle()).isEqualTo("u1");
+        then(result.getFirst().getStartAt()).isNull();
+        then(result.getFirst().getEndAt()).isNull();
     }
 }

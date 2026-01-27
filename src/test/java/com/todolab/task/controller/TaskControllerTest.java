@@ -417,6 +417,47 @@ class TaskControllerTest {
     }
 
     /*******************
+     *  미정 일정 조회
+     *******************/
+    @Test
+    @DisplayName("미정 일정 조회")
+    void getUnscheduledTasks() throws Exception {
+        TaskResponse t1 = TaskResponse.builder()
+                .id(1L)
+                .title("u1")
+                .startAt(null)
+                .endAt(null)
+                .unscheduled(true)
+                .build();
+
+        TaskResponse t2 = TaskResponse.builder()
+                .id(2L)
+                .title("u2")
+                .startAt(null)
+                .endAt(null)
+                .unscheduled(true)
+                .category("WORK")
+                .build();
+
+        given(taskService.getUnscheduledTasks()).willReturn(List.of(t1, t2));
+
+        mockMvc.perform(get("/tasks/unscheduled"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.data.length()").value(2))
+                .andExpect(jsonPath("$.data[0].id").value(1))
+                .andExpect(jsonPath("$.data[0].title").value("u1"))
+                .andExpect(jsonPath("$.data[0].startAt").isEmpty())
+                .andExpect(jsonPath("$.data[0].endAt").isEmpty())
+                .andExpect(jsonPath("$.data[0].unscheduled").value(true))
+                .andExpect(jsonPath("$.data[1].id").value(2))
+                .andExpect(jsonPath("$.data[1].title").value("u2"))
+                .andExpect(jsonPath("$.data[1].startAt").isEmpty())
+                .andExpect(jsonPath("$.data[1].endAt").isEmpty())
+                .andExpect(jsonPath("$.data[1].unscheduled").value(true));
+    }
+
+    /*******************
      *  일정 수정
      *******************/
     @Test

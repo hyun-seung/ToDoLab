@@ -2,12 +2,8 @@ package com.todolab.support;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
-import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.BeforeEach;
-import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 
-@DataJpaTest
-@Transactional
 public class RepositoryTestSupport {
 
     @PersistenceContext

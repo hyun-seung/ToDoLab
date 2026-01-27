@@ -74,6 +74,13 @@ public class TaskController {
         }
     }
 
+    @GetMapping("/unscheduled")
+    public ResponseEntity<ApiResponse<List<TaskResponse>>> getUnscheduledTasks() {
+        List<TaskResponse> res = taskService.getUnscheduledTasks();
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(ApiResponse.success(res));
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<TaskResponse>> deleteTask(@PathVariable Long id) {
         try {

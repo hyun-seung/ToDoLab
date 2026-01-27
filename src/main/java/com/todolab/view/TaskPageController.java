@@ -89,6 +89,16 @@ public class TaskPageController {
     // ===========================
     //  일간 일정 페이지
     // ===========================
+//    @GetMapping("/tasks/unscheduled")
+//    public String unscheduled(Model model) {
+//
+//    }
+
+
+
+    // ===========================
+    //  일간 일정 페이지
+    // ===========================
     @GetMapping("/tasks/day")
     public String day(
             @RequestParam(name = "move", required = false) String move,   // prev | next

@@ -9,10 +9,12 @@ import com.todolab.task.dto.TaskRequest;
 import com.todolab.task.dto.TaskResponse;
 import com.todolab.task.exception.TaskNotFoundException;
 import com.todolab.task.repository.TaskRepository;
+import org.assertj.core.api.BDDAssertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.BDDMockito;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -458,5 +460,40 @@ class TaskServiceTest {
         then(taskRepository).should(never()).deleteById(id);
         then(taskRepository).shouldHaveNoMoreInteractions();
         then(taskTxService).shouldHaveNoInteractions();
+    }
+
+    /*******************
+     *  미정 일정 조화
+     *******************/
+    @Test
+    @DisplayName("미정 일정 조회는 startAt/endAt이 모두 null 인 일정만 반환한다")
+    void getUnscheduledTasks_onlyNullStartAndEnd() {
+        // given
+        Task unscheduled1 = Task.builder()
+                .title("u1")
+                .startAt(null)
+                .endAt(null)
+                .build();
+
+        Task unscheduled2 = Task.builder()
+                .title("u2")
+                .startAt(null)
+                .endAt(null)
+                .category("WORK")
+                .build();
+
+        given(taskRepository.findUnscheduledTask())
+                .willReturn(List.of(unscheduled1, unscheduled2));
+
+        // when
+        List<TaskResponse> result = taskService.getUnscheduledTasks();
+
+        assertThat(result).hasSize(2);
+        assertThat(result.getFirst().title()).isEqualTo("u1");
+        assertThat(result.getFirst().startAt()).isNull();
+        assertThat(result.getFirst().endAt()).isNull();
+        assertThat(result.getFirst().unscheduled()).isTrue();
+        assertThat(result.get(1).title()).isEqualTo("u2");
+        assertThat(result.get(1).category()).isEqualTo("WORK");
     }
 }

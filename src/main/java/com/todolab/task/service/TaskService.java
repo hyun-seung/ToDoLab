@@ -53,6 +53,14 @@ public class TaskService {
                 .toList();
     }
 
+    public List<TaskResponse> getUnscheduledTasks() {
+        List<Task> tasks = taskRepository.findUnscheduledTask();
+
+        return tasks.stream()
+                .map(TaskResponse::from)
+                .toList();
+    }
+
     public TaskResponse update(Long id, TaskRequest taskRequest) {
         Task updated = taskTxService.updateTx(id, taskRequest);
         return TaskResponse.from(updated);
