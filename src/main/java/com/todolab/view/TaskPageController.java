@@ -15,11 +15,7 @@ import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 
 import java.io.StringWriter;
-import java.time.DayOfWeek;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.YearMonth;
+import java.time.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -87,13 +83,20 @@ public class TaskPageController {
     }
 
     // ===========================
-    //  일간 일정 페이지
+    //  일정 미정 페이지
     // ===========================
-//    @GetMapping("/tasks/unscheduled")
-//    public String unscheduled(Model model) {
-//
-//    }
+    @GetMapping("/tasks/unscheduled")
+    public String unscheduled(Model model) {
+        Context ctx = new Context();
+        String bodyHtml = templateEngine.process("pages/task/unscheduled", ctx);
 
+        model.addAttribute("title", "ToDoLab");
+        model.addAttribute("showBaseHeader", false);
+        model.addAttribute("headerTitle", "ToDoLab");
+        model.addAttribute("activeTab", "unscheduled");
+        model.addAttribute("body", bodyHtml);
+        return "layout/base";
+    }
 
 
     // ===========================

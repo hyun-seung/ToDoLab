@@ -227,7 +227,7 @@
                         class="text-gray-400 hover:text-gray-700 text-2xl leading-none">×</button>
             </div>
 
-            <div id="appModalContent" class="p-5 overflow-y-auto max-h-[65vh]"></div>
+            <div id="appModalContent" class="px-5 pb-5 pt-1 overflow-y-auto max-h-[65vh]"></div>
 
             <div id="appModalFooter" class="shrink-0 border-t bg-white">
                 <div class="p-4">
@@ -288,7 +288,23 @@
         }, 2000);
     }
 
-    // 등록 모달 (예전 정상 버전 유지)
+    // ===== util =====
+    function toIsoLocalDateTime(dateStr, timeStr) {
+        if (!dateStr) return null;
+        const t = (timeStr && timeStr.trim()) ? timeStr.trim() : "00:00";
+        return `${dateStr}T${t}:00`;
+    }
+
+    function addDays(dateStr, days) {
+        const d = new Date(dateStr + "T00:00:00");
+        d.setDate(d.getDate() + days);
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, "0");
+        const dd = String(d.getDate()).padStart(2, "0");
+        return `${yyyy}-${mm}-${dd}`;
+    }
+
+    // 등록 모달
     const AppModal = (() => {
         const modal = () => document.getElementById("appModal");
         const content = () => document.getElementById("appModalContent");
@@ -317,27 +333,90 @@
             bindCreateSubmitIfPresent();
         }
 
+        // ✅ create.html(신규 폼) 기준: start/end + allDay + unscheduled
         function initCreatePickersIfPresent(dateParam) {
-            const dateInput = document.getElementById("dateInput");
-            const timeSelect = document.getElementById("timeSelect");
-            if (!dateInput || !timeSelect) return;
+            const startDate = document.getElementById("startDateInput");
+            const endDate   = document.getElementById("endDateInput");
+            const startTime = document.getElementById("startTimeInput");
+            const endTime   = document.getElementById("endTimeInput");
 
-            if (dateInput._flatpickr) dateInput._flatpickr.destroy();
-            if (timeSelect._flatpickr) timeSelect._flatpickr.destroy();
+            const unscheduledToggle = document.getElementById("unscheduledToggle");
+            const allDayToggle      = document.getElementById("allDayToggle");
+            const scheduleFields    = document.getElementById("scheduleFields");
+            const allDayRow         = document.getElementById("allDayRow");
 
-            flatpickr("#dateInput", {
+            // create.html이 구버전(=dateInput/timeSelect)일 수도 있으니 조용히 종료
+            if (!startDate || !startTime || !unscheduledToggle || !allDayToggle || !scheduleFields) return;
+
+            [startDate, endDate, startTime, endTime].forEach(el => {
+                if (el && el._flatpickr) el._flatpickr.destroy();
+            });
+
+            flatpickr("#startDateInput", {
                 dateFormat: "Y-m-d",
                 defaultDate: dateParam ?? "today",
                 locale: "ko"
             });
 
-            flatpickr("#timeSelect", {
+            if (endDate) {
+                flatpickr("#endDateInput", {
+                    dateFormat: "Y-m-d",
+                    locale: "ko"
+                });
+            }
+
+            flatpickr("#startTimeInput", {
                 enableTime: true,
                 noCalendar: true,
                 dateFormat: "H:i",
                 time_24hr: true,
                 minuteIncrement: 30
             });
+
+            if (endTime) {
+                flatpickr("#endTimeInput", {
+                    enableTime: true,
+                    noCalendar: true,
+                    dateFormat: "H:i",
+                    time_24hr: true,
+                    minuteIncrement: 30
+                });
+            }
+
+            const applyState = () => {
+                const isUnscheduled = !!unscheduledToggle.checked;
+                const isAllDay = !!allDayToggle.checked;
+
+                // 미정이면 스케줄 비활성화 + 값 제거
+                scheduleFields.style.opacity = isUnscheduled ? "0.5" : "1";
+                [startDate, endDate, startTime, endTime].forEach(el => {
+                    if (!el) return;
+                    el.disabled = isUnscheduled;
+                    if (isUnscheduled) el.value = "";
+                });
+
+                // 미정이면 종일 금지 (DTO 규칙)
+                if (allDayRow) {
+                    allDayRow.style.opacity = isUnscheduled ? "0.5" : "1";
+                }
+                allDayToggle.disabled = isUnscheduled;
+                if (isUnscheduled) allDayToggle.checked = false;
+
+                // 종일이면 시간 입력 금지 (DTO 규칙: 00:00만)
+                const disableTime = (!isUnscheduled && isAllDay);
+                if (startTime) {
+                    startTime.disabled = isUnscheduled || disableTime;
+                    if (disableTime) startTime.value = "";
+                }
+                if (endTime) {
+                    endTime.disabled = isUnscheduled || disableTime;
+                    if (disableTime) endTime.value = "";
+                }
+            };
+
+            unscheduledToggle.addEventListener("change", applyState);
+            allDayToggle.addEventListener("change", applyState);
+            applyState();
         }
 
         function bindCreateSubmitIfPresent() {
@@ -356,11 +435,77 @@
                 submitBtn.disabled = true;
                 submitBtn.innerHTML = "⏳ 등록 중...";
 
+                // ---- create.html(신규) 기준 파싱 ----
+                const unscheduled = !!form.unscheduled?.checked;
+                const allDay = !!form.allDay?.checked;
+
+                const startDate = form.startDate?.value?.trim() || null;
+                const startTime = form.startTime?.value?.trim() || null;
+                const endDate   = form.endDate?.value?.trim() || null;
+                const endTime   = form.endTime?.value?.trim() || null;
+
+                let startAt = null;
+                let endAt = null;
+                let finalAllDay = allDay;
+
+                if (unscheduled) {
+                    startAt = null;
+                    endAt = null;
+                    finalAllDay = false; // DTO 규칙
+                } else {
+                    if (allDay) {
+                        if (!startDate) {
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = originalText;
+                            errorBox.innerText = "종일 일정은 시작 날짜가 필요합니다.";
+                            errorBox.classList.remove("hidden");
+                            return;
+                        }
+
+                        startAt = toIsoLocalDateTime(startDate, "00:00");
+
+                        // 종료 날짜가 있으면 포함 UX -> endExclusive(+1d 00:00)
+                        if (endDate) {
+                            const endExclusive = addDays(endDate, 1);
+                            endAt = toIsoLocalDateTime(endExclusive, "00:00");
+                        } else {
+                            endAt = null;
+                        }
+                    } else {
+                        // 일반 일정: 시작 날짜/시간 필수
+                        if (!startDate || !startTime) {
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = originalText;
+                            errorBox.innerText = "일정은 시작 날짜와 시간을 입력해주세요. (또는 종일/미정 선택)";
+                            errorBox.classList.remove("hidden");
+                            return;
+                        }
+
+                        startAt = toIsoLocalDateTime(startDate, startTime);
+
+                        // 종료는 선택이지만, 종료를 쓰면 날짜/시간 모두 필요
+                        if (endDate || endTime) {
+                            if (!endDate || !endTime) {
+                                submitBtn.disabled = false;
+                                submitBtn.innerHTML = originalText;
+                                errorBox.innerText = "종료를 입력하려면 종료 날짜와 시간을 모두 입력해주세요.";
+                                errorBox.classList.remove("hidden");
+                                return;
+                            }
+                            endAt = toIsoLocalDateTime(endDate, endTime);
+                        } else {
+                            endAt = null;
+                        }
+                    }
+                }
+
                 const data = {
                     title: form.title?.value,
-                    description: form.description?.value,
-                    date: form.date?.value,
-                    time: form.time?.value
+                    description: (form.description?.value || "").trim() || null,
+                    startAt: startAt,
+                    endAt: endAt,
+                    category: (form.category?.value || "").trim() || null,
+                    allDay: finalAllDay
                 };
 
                 let response;
