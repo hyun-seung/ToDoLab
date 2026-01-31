@@ -6,6 +6,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
+import java.time.temporal.TemporalAdjusters;
 
 @Getter
 public class DateRange {
@@ -27,9 +28,9 @@ public class DateRange {
 
     public static DateRange ofWeek(String date) {
         LocalDate d = LocalDate.parse(date);
-        LocalDate startDate = d.with(DayOfWeek.MONDAY);      // 월요일
+        LocalDate startDate = d.with(TemporalAdjusters.previousOrSame(DayOfWeek.SUNDAY));      // 일요일
         LocalDateTime start = startDate.atStartOfDay();      // 00:00
-        LocalDateTime end = start.plusDays(7);               // 다음주 월요일 00:00
+        LocalDateTime end = start.plusDays(7);               // 다음주 일요일 00:00
         return new DateRange(start, end);
     }
 

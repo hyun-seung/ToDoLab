@@ -21,7 +21,15 @@
 
 <!-- ✅ 하단바(footer) + 플로팅버튼 영역 고려: padding-bottom 유지 -->
 <main class="flex-1 w-full max-w-7xl mx-auto overflow-y-auto pb-28">
-    <div th:utext="${body}"></div>
+
+    <!-- ✅ NEW: contentView(fragment include) 우선 -->
+    <div th:if="${contentView != null}"
+         th:replace="~{${contentView} :: content}"></div>
+
+    <!-- ✅ BACKWARD COMPAT: 기존 bodyHtml 방식 유지 (미정/주간 등 영향 최소) -->
+    <div th:if="${contentView == null}"
+         th:utext="${body}"></div>
+
 </main>
 
 <!-- + 버튼 -->
@@ -510,7 +518,7 @@
 
                 let response;
                 try {
-                    response = await fetch("/tasks", {
+                    response = await fetch("/api/tasks", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify(data)
@@ -580,7 +588,7 @@
         async function loadDetail(taskId) {
             if (!taskId) return;
 
-            const url = `/tasks/detail?id=${encodeURIComponent(taskId)}`;
+            const url = `/api/tasks/${encodeURIComponent(taskId)}`;
             content().innerHTML = "<div class='text-gray-400 text-sm'>불러오는 중...</div>";
 
             let res;

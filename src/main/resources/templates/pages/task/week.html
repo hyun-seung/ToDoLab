@@ -1,286 +1,417 @@
 <!-- src/main/resources/templates/pages/task/week.html -->
-<html lang="ko" xmlns:th="http://www.thymeleaf.org" th:inline="html">
+<div th:fragment="content"
+     id="week-page"
+     class="px-4 pb-24 max-w-3xl mx-auto"
+     th:attr="data-current-date=${currentDate},
+              data-selected-date=${selectedDate}">
 
-<div class="px-5 py-6">
+    <!-- 상단 헤더 -->
+    <div class="relative mt-4">
+        <a id="weekPrevBtn"
+           th:href="'/tasks/week?move=prev&date=' + ${currentDate}"
+           class="w-10 h-10 flex items-center justify-center rounded-2xl bg-white border border-gray-200
+              shadow-[0_10px_24px_rgba(17,24,39,0.06)]
+              font-black text-gray-900 select-none transition active:scale-[0.98] hover:bg-gray-50
+              absolute left-0 top-1/2 -translate-y-1/2"
+           aria-label="지난주">←</a>
 
-    <!-- ✅ 미니멀 상단 헤더: 타이틀 정중앙 + 좌/우 버튼 -->
-    <div class="relative flex items-center justify-between mb-4">
+        <a id="weekNextBtn"
+           th:href="'/tasks/week?move=next&date=' + ${currentDate}"
+           class="w-10 h-10 flex items-center justify-center rounded-2xl bg-white border border-gray-200
+              shadow-[0_10px_24px_rgba(17,24,39,0.06)]
+              font-black text-gray-900 select-none transition active:scale-[0.98] hover:bg-gray-50
+              absolute right-0 top-1/2 -translate-y-1/2"
+           aria-label="다음주">→</a>
 
-        <!-- 지난주 -->
-        <a th:href="'/tasks/week?move=prev&date=' + ${currentDate}"
-           class="nav-btn"
-           aria-label="지난주">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
-                 viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M15 19l-7-7 7-7" />
-            </svg>
-        </a>
-
-        <!-- ✅ 정중앙 타이틀: absolute 중앙 고정 -->
-        <div class="absolute left-1/2 -translate-x-1/2 text-lg font-bold text-gray-900 whitespace-nowrap">
-            <span th:text="${currentDate.year}">2026</span>년
-            <span th:text="${currentDate.monthValue}">1</span>월
-        </div>
-
-        <!-- ✅ 우측 버튼 그룹: 월간 + 다음주 -->
-        <div class="flex items-center gap-3">
-
-            <!-- 월간 보기 (주 -> 월 전환) -->
-            <a th:href="'/tasks/month?month=' + ${#temporals.format(currentDate, 'yyyy-MM')} + '&from=week&date=' + ${currentDate}"
-               class="nav-btn"
-               aria-label="월간 보기"
-               title="월간 보기">
-                <!-- calendar icon -->
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
-                     viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M8 7V3m8 4V3M5 11h14M6 21h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2z"/>
-                </svg>
-            </a>
-
-            <!-- 다음주 -->
-            <a th:href="'/tasks/week?move=next&date=' + ${currentDate}"
-               class="nav-btn"
-               aria-label="다음주">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
-                     viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M9 5l7 7-7 7" />
-                </svg>
-            </a>
-
+        <div class="flex flex-col items-center text-center px-14">
+            <div class="text-sm font-semibold text-gray-800">주간 일정</div>
+            <div id="weekRangeText"
+                 class="mt-2 text-[12px] text-gray-400 font-semibold"
+                 th:text="${weekRange}">2026-01-25 ~ 2026-01-31</div>
         </div>
     </div>
 
-    <!-- 주간 요일/날짜 스트립 -->
-    <div class="rounded-2xl bg-white border border-gray-200 shadow-sm px-4 pt-3 pb-4">
-        <div class="grid grid-cols-7 text-center text-sm text-gray-500 font-semibold mb-2">
-            <div>일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div>토</div>
+    <!-- 요일/날짜 -->
+    <div class="mt-6">
+        <!-- ✅ 요일도 클릭 가능(일~토) -->
+        <div id="weekDow"
+             class="grid grid-cols-7 text-center text-[11px] font-semibold text-gray-500">
+            <button type="button" class="text-red-500 select-none py-1" data-idx="0">일</button>
+            <button type="button" class="select-none py-1" data-idx="1">월</button>
+            <button type="button" class="select-none py-1" data-idx="2">화</button>
+            <button type="button" class="select-none py-1" data-idx="3">수</button>
+            <button type="button" class="select-none py-1" data-idx="4">목</button>
+            <button type="button" class="select-none py-1" data-idx="5">금</button>
+            <button type="button" class="text-blue-500 select-none py-1" data-idx="6">토</button>
         </div>
 
-        <div id="weekDayStrip" class="grid grid-cols-7 text-center">
+        <div id="weekStrip"
+             class="mt-1.5 grid grid-cols-7 text-center"
+             th:with="today=${T(java.time.LocalDate).now()}">
+
+            <!-- ✅ 백엔드 weeklyTasks가 "일~토" 순서로 내려온다고 가정 -->
             <a th:each="day : ${weeklyTasks}"
-               th:href="'/tasks/day?date=' + ${day.date}"
-               class="day-pill"
-               th:attr="data-date=${day.date}, data-dow=${day.date.dayOfWeek.value}">
-                <span class="day-label"
-                      th:text="${day.date.dayOfMonth}">
-                    17
-                </span>
+               href="#"
+               th:attr="data-date=${day.date},
+                        data-has=${#lists.isEmpty(day.tasks) ? '0' : '1'}"
+               class="group flex flex-col items-center justify-center py-[2px] rounded-lg select-none cursor-pointer
+                transition hover:bg-black/[0.03] active:scale-[0.99] active:bg-black/[0.045]
+                focus:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/20">
+
+                <div class="relative w-9 h-9 rounded-full flex items-center justify-center transition"
+                     th:classappend="${day.date.equals(selectedDate)} ? ' bg-indigo-500 shadow-[0_10px_18px_rgba(99,102,241,0.20)] -translate-y-[1px]' : ''">
+
+                    <span th:if="${day.date.equals(today)}"
+                          class="absolute -inset-[2px] rounded-full border-2 border-indigo-500/55 pointer-events-none"
+                          th:classappend="${day.date.equals(selectedDate)} ? ' border-white/85' : ''"></span>
+
+                    <span class="text-[14px] font-black leading-none text-gray-900"
+                          th:classappend="${day.date.equals(selectedDate)} ? ' text-white' : ''"
+                          th:text="${day.date.dayOfMonth}">30</span>
+                </div>
+
+                <!-- dot -->
+                <div class="mt-1 w-1.5 h-1.5 rounded-full bg-indigo-500/70 transition"
+                     th:classappend="${#lists.isEmpty(day.tasks)} ? ' opacity-0' : ' opacity-100'"></div>
             </a>
         </div>
     </div>
 
-    <!-- 선택된 날짜의 일정 -->
-    <div class="mt-6 space-y-4">
+    <!-- 날짜별 일정 -->
+    <div id="weekDays" class="mt-8 space-y-3">
 
         <div th:each="day : ${weeklyTasks}"
-             class="task-card"
-             th:attr="data-date=${day.date}">
+             class="week-day"
+             th:attr="data-date=${day.date}"
+             th:classappend="${day.date.equals(selectedDate)} ? '' : ' hidden'">
 
-            <div class="task-card-title">일정</div>
-
-            <div th:if="${#lists.isEmpty(day.tasks)}"
-                 class="p-5 text-sm text-gray-500">
-                등록된 일정이 없습니다.
+            <!-- ✅ 일정 없음(크기 줄임) -->
+            <div th:if="${#lists.isEmpty(day.tasks)}" class="flex justify-center mt-8">
+                <div class="w-full border border-dashed border-gray-300 rounded-[22px] p-10 text-center bg-white/35">
+                    <div class="text-2xl">📭</div>
+                    <div class="mt-3 text-xl font-extrabold text-gray-800">등록된 일정이 없어요</div>
+                    <div class="mt-1 text-sm text-gray-500 font-semibold">필요한 일부터 하나씩 추가해보세요</div>
+                </div>
             </div>
 
-            <div th:unless="${#lists.isEmpty(day.tasks)}"
-                 class="divide-y divide-gray-100">
-
+            <!-- ✅ 일정 리스트 -->
+            <div th:unless="${#lists.isEmpty(day.tasks)}" class="space-y-3">
                 <div th:each="t : ${day.tasks}"
-                     th:attr="data-task-id=${t.id}"
-                     class="task-row week-row">
+                     class="bg-white border border-gray-200 rounded-2xl
+                    shadow-[0_10px_24px_rgba(17,24,39,0.06)]
+                    cursor-pointer hover:bg-gray-50 active:scale-[0.995]"
+                     th:attr="data-task-id=${t.id}">
 
-                    <!-- 색상 바 -->
-                    <div class="task-left-bar" style="background: [[${t.color}]]"></div>
+                    <div class="flex items-center gap-3 px-4 py-4">
+                        <div class="w-1.5 h-11 rounded-full flex-none bg-indigo-500/85 opacity-65"></div>
+                        <div class="w-7 h-7 rounded-xl bg-gray-100 text-gray-500 flex items-center justify-center font-black select-none flex-none">✓</div>
 
-                    <!-- 체크 -->
-                    <div class="check-box">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
-                             viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                  d="M5 13l4 4L19 7" />
-                        </svg>
-                    </div>
+                        <div class="min-w-0 flex-1">
+                            <div class="flex items-center gap-2">
+                                <div class="text-[16px] font-black text-gray-900 truncate" th:text="${t.title}">제목</div>
+                                <span th:if="${t.category != null and !#strings.isEmpty(t.category)}"
+                                      class="text-[11px] px-2 py-1 rounded-full bg-gray-100 text-gray-700"
+                                      th:text="${t.category}"></span>
+                            </div>
 
-                    <!-- 좌측: 제목 / 설명 -->
-                    <div class="week-left min-w-0">
-                        <div class="week-title" th:text="${t.title}">
-                            제목
+                            <div th:if="${t.description != null and !#strings.isEmpty(t.description)}"
+                                 class="mt-1 text-[13px] text-gray-500 font-semibold line-clamp-2"
+                                 th:text="${t.description}">설명</div>
                         </div>
 
-                        <div th:if="${t.description != null and !#strings.isEmpty(t.description)}"
-                             class="week-sub"
-                             th:text="${t.description}">
-                            설명
-                        </div>
-                    </div>
-
-                    <!-- 우측: 날짜 / 시간 -->
-                    <div class="week-right">
-                        <div class="week-date">
-                            <span th:text="${day.date.monthValue}">1</span>월
-                            <span th:text="${day.date.dayOfMonth}">22</span>
-                        </div>
-                        <div class="week-time"
-                             th:text="${t.time != null ? t.time : '종일'}">
+                        <div class="text-[12px] text-gray-500 font-extrabold whitespace-nowrap ml-2 flex-none"
+                             th:text="${t.allDay} ? '종일' : (${t.time} != null ? ${#temporals.format(t.time,'HH:mm')} : '')">
                             종일
                         </div>
                     </div>
-
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- ✅ 중요: script를 fragment 내부에 둬야 th:replace로 포함될 때도 실행됨 -->
+    <script>
+        (() => {
+          const root = document.getElementById("week-page");
+          if (!root) return;
+
+          // ✅ 중복 바인딩 방지
+          if (root.dataset.bound === "1") return;
+          root.dataset.bound = "1";
+
+          const rangeEl = document.getElementById("weekRangeText");
+          const stripEl = document.getElementById("weekStrip");
+          const daysEl  = document.getElementById("weekDays");
+          const prevBtn = document.getElementById("weekPrevBtn");
+          const nextBtn = document.getElementById("weekNextBtn");
+          const dowEl   = document.getElementById("weekDow");
+
+          // ✅ strip/dow가 없으면 바인딩 자체가 안 되므로 방어 (콘솔 에러 방지)
+          if (!stripEl || !daysEl) return;
+
+          // ===== date util (YYYY-MM-DD) =====
+          const pad2 = (n) => String(n).padStart(2, "0");
+          const parseISO = (iso) => {
+            const [y,m,d] = iso.split("-").map(Number);
+            return new Date(y, m-1, d);
+          };
+          const toISO = (d) => `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+          const addDays = (iso, n) => {
+            const d = parseISO(iso);
+            d.setDate(d.getDate() + n);
+            return toISO(d);
+          };
+
+          const weekStartISO = (anyISO) => {
+            const d = parseISO(anyISO);
+            const dow = d.getDay(); // 0=일..6=토
+            d.setDate(d.getDate() - dow);
+            return toISO(d);
+          };
+          const weekRangeText = (anyISO) => {
+            const start = weekStartISO(anyISO);
+            const end = addDays(start, 6);
+            return `${start} ~ ${end}`;
+          };
+
+          // ===== state =====
+          let selectedISO = root.getAttribute("data-selected-date");
+          let currentISO  = root.getAttribute("data-current-date");
+          const todayISO = toISO(new Date());
+
+          function setSelected(iso) {
+            if (!iso) return;
+
+            selectedISO = iso;
+            root.setAttribute("data-selected-date", iso);
+
+            // 1) 아래 일정 토글
+            daysEl.querySelectorAll(".week-day[data-date]").forEach(box => {
+              box.classList.toggle("hidden", box.getAttribute("data-date") !== iso);
+            });
+
+            // 2) strip 원/텍스트/오늘링 토글
+            stripEl.querySelectorAll("a[data-date]").forEach(a => {
+              const d = a.getAttribute("data-date");
+              const isSel = (d === iso);
+
+              const circle = a.querySelector("div.relative");
+              if (!circle) return;
+
+              const ring = circle.querySelector("span.absolute");
+              const num  = circle.querySelector("span:not(.absolute)");
+
+              circle.classList.toggle("bg-indigo-500", isSel);
+              circle.classList.toggle("shadow-[0_10px_18px_rgba(99,102,241,0.20)]", isSel);
+              circle.classList.toggle("-translate-y-[1px]", isSel);
+
+              if (num) {
+                if (isSel) {
+                  num.classList.add("text-white");
+                  num.classList.remove("text-gray-900");
+                } else {
+                  num.classList.remove("text-white");
+                  num.classList.add("text-gray-900");
+                }
+              }
+
+              if (ring) {
+                if (isSel) {
+                  ring.classList.add("border-white/85");
+                  ring.classList.remove("border-indigo-500/55");
+                } else {
+                  ring.classList.remove("border-white/85");
+                  ring.classList.add("border-indigo-500/55");
+                }
+              }
+            });
+          }
+
+          function updateNavHrefs(cur){
+            if (!prevBtn || !nextBtn) return;
+
+            const prev = new URL(prevBtn.getAttribute("href"), location.origin);
+            const next = new URL(nextBtn.getAttribute("href"), location.origin);
+
+            prev.searchParams.set("date", cur);
+            next.searchParams.set("date", cur);
+
+            prevBtn.setAttribute("href", prev.pathname + "?" + prev.searchParams.toString());
+            nextBtn.setAttribute("href", next.pathname + "?" + next.searchParams.toString());
+          }
+
+          function renderLoadingState() {
+            daysEl.innerHTML = `
+              <div class="flex justify-center mt-8">
+                <div class="w-full border border-dashed border-gray-300 rounded-[22px] p-10 text-center bg-white/35">
+                  <div class="text-2xl">⏳</div>
+                  <div class="mt-3 text-xl font-extrabold text-gray-800">불러오는 중...</div>
+                  <div class="mt-1 text-sm text-gray-500 font-semibold">잠시만 기다려주세요</div>
+                </div>
+              </div>
+            `;
+          }
+
+          function renderOptimisticWeek(curISO, selISO) {
+            currentISO = curISO;
+            selectedISO = selISO;
+
+            root.setAttribute("data-current-date", curISO);
+            root.setAttribute("data-selected-date", selISO);
+
+            if (rangeEl) rangeEl.textContent = weekRangeText(curISO);
+
+            const start = weekStartISO(curISO);
+
+            stripEl.innerHTML = "";
+            for (let i=0; i<7; i++) {
+              const iso = addDays(start, i);
+              const dayNum = parseISO(iso).getDate();
+              const isSel = (iso === selISO);
+              const isToday = (iso === todayISO);
+
+              const a = document.createElement("a");
+              a.href = "#";
+              a.setAttribute("data-date", iso);
+              a.setAttribute("data-has", "0");
+
+              a.className =
+                "group flex flex-col items-center justify-center py-[2px] rounded-lg select-none cursor-pointer " +
+                "transition hover:bg-black/[0.03] active:scale-[0.99] active:bg-black/[0.045] " +
+                "focus:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/20";
+
+              a.innerHTML = `
+                <div class="relative w-9 h-9 rounded-full flex items-center justify-center transition
+                            ${isSel ? "bg-indigo-500 shadow-[0_10px_18px_rgba(99,102,241,0.20)] -translate-y-[1px]" : ""}">
+                  ${
+                    isToday
+                      ? `<span class="absolute -inset-[2px] rounded-full border-2 ${isSel ? "border-white/85" : "border-indigo-500/55"} pointer-events-none"></span>`
+                      : ""
+                  }
+                  <span class="text-[14px] font-black leading-none ${isSel ? "text-white" : "text-gray-900"}">${dayNum}</span>
+                </div>
+                <div class="mt-1 w-1.5 h-1.5 rounded-full bg-indigo-500/70 opacity-0"></div>
+              `;
+
+              stripEl.appendChild(a);
+            }
+
+            updateNavHrefs(curISO);
+            renderLoadingState();
+            setSelected(selISO);
+          }
+
+          let reqSeq = 0;
+
+          async function fetchAndCommit(href) {
+            const mySeq = ++reqSeq;
+
+            try {
+              const res = await fetch(href, { headers: { "X-Requested-With": "fetch" } });
+              if (!res.ok) throw new Error("HTTP " + res.status);
+              const html = await res.text();
+              if (mySeq !== reqSeq) return;
+
+              const doc = new DOMParser().parseFromString(html, "text/html");
+              const newRoot = doc.getElementById("week-page");
+              if (!newRoot) return;
+
+              const newRange = newRoot.querySelector("#weekRangeText");
+              const newStrip = newRoot.querySelector("#weekStrip");
+              const newDays  = newRoot.querySelector("#weekDays");
+
+              if (newRange && rangeEl) rangeEl.textContent = newRange.textContent || "";
+              if (newStrip) stripEl.innerHTML = newStrip.innerHTML;
+              if (newDays)  daysEl.innerHTML  = newDays.innerHTML;
+
+              const cd = newRoot.getAttribute("data-current-date");
+              if (cd) {
+                currentISO = cd;
+                root.setAttribute("data-current-date", cd);
+              }
+
+              updateNavHrefs(currentISO);
+
+              const exists = !!stripEl.querySelector(`a[data-date="${CSS.escape(selectedISO)}"]`);
+              if (!exists) {
+                const first = stripEl.querySelector("a[data-date]");
+                selectedISO = first ? first.getAttribute("data-date") : selectedISO;
+              }
+              setSelected(selectedISO);
+
+            } catch (e) {
+              if (mySeq !== reqSeq) return;
+              daysEl.innerHTML = `
+                <div class="flex justify-center mt-8">
+                  <div class="w-full border border-dashed border-gray-300 rounded-[22px] p-10 text-center bg-white/35">
+                    <div class="text-2xl">⚠️</div>
+                    <div class="mt-3 text-xl font-extrabold text-gray-800">불러오지 못했어요</div>
+                    <div class="mt-1 text-sm text-gray-500 font-semibold">다시 시도해보세요</div>
+                  </div>
+                </div>
+              `;
+              console.warn("[week] fetch failed:", e);
+            }
+          }
+
+          // ✅ 날짜(원) 클릭
+          stripEl.addEventListener("click", (e) => {
+            const a = e.target.closest("a[data-date]");
+            if (!a) return;
+            e.preventDefault();
+            setSelected(a.getAttribute("data-date"));
+          });
+
+          // ✅ 요일 클릭
+          if (dowEl) {
+            dowEl.addEventListener("click", (e) => {
+              const btn = e.target.closest("button[data-idx]");
+              if (!btn) return;
+
+              const idx = Number(btn.getAttribute("data-idx"));
+              const items = Array.from(stripEl.querySelectorAll("a[data-date]"));
+              const target = items[idx];
+              if (!target) return;
+
+              setSelected(target.getAttribute("data-date"));
+            });
+          }
+
+          function bindNav(btn, deltaDays){
+            if (!btn) return;
+
+            btn.onclick = (e) => {
+              e.preventDefault();
+
+              const cur = root.getAttribute("data-current-date") || currentISO;
+              const nextCur = addDays(cur, deltaDays);
+              const nextSel = addDays(selectedISO, deltaDays);
+
+              renderOptimisticWeek(nextCur, nextSel);
+
+              const href = btn.getAttribute("href");
+              if (href) history.pushState({ href }, "", href);
+              if (href) fetchAndCommit(href);
+            };
+          }
+
+          updateNavHrefs(currentISO);
+
+          if (!selectedISO) {
+            const first = stripEl.querySelector("a[data-date]");
+            selectedISO = first ? first.getAttribute("data-date") : selectedISO;
+          }
+          setSelected(selectedISO);
+
+          bindNav(prevBtn, -7);
+          bindNav(nextBtn, +7);
+
+          window.addEventListener("popstate", () => {
+            const href = location.pathname + location.search;
+            renderLoadingState();
+            fetchAndCommit(href);
+          });
+        })();
+    </script>
+
 </div>
-
-<style>
-    /* 요일 스트립 */
-    .day-pill{
-        height: 44px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 9999px;
-        transition: background .15s ease;
-    }
-    .day-pill:hover{ background: rgba(17,24,39,0.04); }
-
-    .day-label{
-        width: 40px;
-        height: 40px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 700;
-        color: #111827;
-        border-radius: 9999px;
-        line-height: 1;
-    }
-    .day-label.is-focus{
-        background: #6366f1;
-        color: #fff;
-        font-weight: 800;
-        transform: translateY(-1px);
-        box-shadow: 0 10px 18px rgba(99,102,241,0.20);
-    }
-
-    /* 주간 row */
-    .week-row{
-        cursor: pointer;
-        padding-right: 8px;
-        transition: background .15s ease;
-    }
-    .week-row:hover{
-        background: rgba(17,24,39,0.02);
-    }
-
-    .week-left{
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-        flex: 1 1 auto;
-    }
-    .week-title{
-        font-weight: 800;
-        color: #1f2937;
-        font-size: 18px;
-        line-height: 1.2;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-    .week-sub{
-        font-size: 13px;
-        color: #6b7280;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    /* 우측 여유 */
-    .week-right{
-        margin-left: 12px;
-        min-width: 88px;
-        padding-right: 10px;
-        text-align: right;
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-        justify-content: center;
-        flex: 0 0 auto;
-    }
-    .week-date{
-        font-size: 12px;
-        color: #9ca3af;
-        font-weight: 700;
-        white-space: nowrap;
-    }
-    .week-time{
-        font-size: 12px;
-        color: #6b7280;
-        font-weight: 700;
-        white-space: nowrap;
-    }
-
-    @media (max-width: 640px){
-        .week-title{ font-size: 16px; }
-        .week-right{
-            min-width: 76px;
-            padding-right: 8px;
-        }
-    }
-</style>
-
-<script>
-    document.addEventListener("DOMContentLoaded", () => {
-        const strip = document.getElementById("weekDayStrip");
-        const cards = Array.from(document.querySelectorAll(".task-card[data-date]"));
-        if (!strip || !cards.length) return;
-
-        const items = Array.from(strip.querySelectorAll("a[data-date][data-dow]"));
-        if (!items.length) return;
-
-        const clearFocus = () => {
-            strip.querySelectorAll(".day-label.is-focus")
-                .forEach(el => el.classList.remove("is-focus"));
-        };
-
-        const showOnlyDate = (isoDate) => {
-            cards.forEach(card => {
-                card.style.display =
-                    card.getAttribute("data-date") === isoDate ? "" : "none";
-            });
-        };
-
-        const setFocusByItem = (item) => {
-            if (!item) return;
-            clearFocus();
-            const label = item.querySelector(".day-label");
-            label?.classList.add("is-focus");
-
-            const iso = item.getAttribute("data-date");
-            showOnlyDate(iso);
-        };
-
-        items.forEach(a => {
-            a.addEventListener("click", (e) => {
-                e.preventDefault();
-                setFocusByItem(a);
-            });
-        });
-
-        const todayIso = new Date().toISOString().slice(0, 10);
-        const jsDow = new Date().getDay();        // 0..6 (일..토)
-        const serverDow = jsDow === 0 ? 7 : jsDow;
-
-        const todayItem = items.find(a => a.getAttribute("data-date") === todayIso);
-        const dowItem = items.find(a => Number(a.getAttribute("data-dow")) === serverDow);
-
-        setFocusByItem(todayItem || dowItem || items[0]);
-    });
-</script>
-
-</html>

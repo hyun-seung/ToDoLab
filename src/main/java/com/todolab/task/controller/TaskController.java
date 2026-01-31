@@ -9,12 +9,14 @@ import com.todolab.task.exception.TaskNotFoundException;
 import com.todolab.task.service.TaskService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/tasks")
 @RequiredArgsConstructor
@@ -47,12 +49,14 @@ public class TaskController {
             @RequestParam(required = false) String type,
             @RequestParam(required = false) String date
     ) {
+        log.info("[API] getTasks :: Type : {} , Date : {}", type, date);
         TaskQueryRequest request = TaskQueryRequest.builder()
                 .rawType(type)
                 .rawDate(date)
                 .build();
 
         List<TaskResponse> res = taskService.getTasks(request);
+        log.info("[API] getTasks :: res :{}", res);
         return ResponseEntity.status(HttpStatus.OK)
                 .body(ApiResponse.success(res));
     }
@@ -82,11 +86,12 @@ public class TaskController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<TaskResponse>> deleteTask(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<TaskResponse>> deleteTask(@PathVariable String id) {
         try {
-            taskService.delete(id);
+            Long longId = Long.valueOf(id);
+            taskService.delete(longId);
             return ResponseEntity.status(HttpStatus.OK)
-                    .body(ApiResponse.success(TaskResponse.builder().id(id).build()));
+                    .body(ApiResponse.success(TaskResponse.builder().id(longId).build()));
         } catch (TaskNotFoundException _) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(ApiResponse.failure(ErrorCode.TASK_NOT_FOUND));

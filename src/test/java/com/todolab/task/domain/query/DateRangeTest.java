@@ -21,14 +21,14 @@ class DateRangeTest {
     }
 
     @Test
-    @DisplayName("WEEK 계산 - start 는 월요일 00:00, end 는 다음주 월요일 00:00이다")
+    @DisplayName("WEEK 계산 - start 는 일요일 00:00, end 는 다음주 일요일 00:00이다")
     void calculate_WEEK() {
         // when
-        DateRange range = DateRange.ofWeek("2025-11-27"); // 2025-11-27은 목요일
+        DateRange range = DateRange.ofWeek("2025-12-04"); // 2025-12-04은 목요일
 
         // then
-        assertThat(range.getStart()).isEqualTo(LocalDateTime.of(2025, 11, 24, 0, 0));          // 월요일 00:00
-        assertThat(range.getEnd()).isEqualTo(LocalDateTime.of(2025, 12, 1, 0, 0));    // 다음주 월요일 00:00
+        assertThat(range.getStart()).isEqualTo(LocalDateTime.of(2025, 11, 30, 0, 0)); // 일요일 00:00
+        assertThat(range.getEnd()).isEqualTo(LocalDateTime.of(2025, 12, 7, 0, 0));    // 다음주 일요일 00:00
     }
 
     @Test

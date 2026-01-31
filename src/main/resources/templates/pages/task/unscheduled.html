@@ -1,99 +1,176 @@
-<html lang="ko" xmlns:th="http://www.thymeleaf.org" th:inline="html">
+<!-- src/main/resources/templates/pages/task/unscheduled.html -->
+<div id="unscheduled-page"
+     th:fragment="content"
+     class="px-4 pb-24 max-w-3xl mx-auto">
 
-<div class="px-5 py-6" id="unscheduled-page">
+    <!-- 로딩/에러 -->
+    <div id="unscheduled-loading" class="mt-6 text-gray-500 text-sm">불러오는 중...</div>
+    <div id="unscheduled-error" class="mt-6 text-red-600 text-sm hidden"></div>
 
-    <!-- 상단 타이틀 (미니멀) -->
-    <div class="flex items-center justify-center mb-5">
-        <div class="text-xl font-bold text-gray-900">미정</div>
+    <!-- Empty State (중앙 정렬) -->
+    <div id="unscheduled-empty"
+         class="hidden mt-16 flex flex-col items-center justify-center text-center select-none">
+        <div class="w-14 h-14 rounded-2xl bg-white/60 border border-gray-200
+                    flex items-center justify-center shadow-sm">
+            <span class="text-2xl">🗂️</span>
+        </div>
+
+        <div class="mt-5 text-2xl font-extrabold text-gray-800">
+            아직 “미정 일정”이 없어요
+        </div>
+
+        <div class="mt-3 text-base text-gray-500 font-semibold">
+            언제 할 지 정해지지 않은 일정들을 모아봐요
+        </div>
     </div>
 
-    <!-- 로딩/에러/리스트 영역 -->
-    <div id="unscheduledState" class="text-sm text-gray-500 mb-3 hidden"></div>
+    <!-- 리스트 카드 -->
+    <div id="unscheduled-card" class="mt-6 task-card hidden">
+        <div class="flex items-center justify-between px-4 pt-4 pb-2">
+            <div class="text-sm font-extrabold text-gray-400">미정 일정</div>
+            <div id="unscheduled-count"
+                 class="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded-full hidden"></div>
+        </div>
 
-    <div id="unscheduledList" class="space-y-4"></div>
+        <div id="unscheduled-list" class="divide-y"></div>
+    </div>
 
-</div>
+    <script>
+        (() => {
+          const root = document.getElementById('unscheduled-page');
+          if (!root) return;
 
-<script>
-    document.addEventListener("DOMContentLoaded", async () => {
-      const listEl = document.getElementById("unscheduledList");
-      const stateEl = document.getElementById("unscheduledState");
+          const $loading = document.getElementById('unscheduled-loading');
+          const $error = document.getElementById('unscheduled-error');
+          const $empty = document.getElementById('unscheduled-empty');
+          const $card = document.getElementById('unscheduled-card');
+          const $list = document.getElementById('unscheduled-list');
+          const $count = document.getElementById('unscheduled-count');
 
-      const showState = (msg) => {
-        stateEl.textContent = msg;
-        stateEl.classList.remove("hidden");
-      };
+          function hideAll() {
+            $loading.classList.add('hidden');
+            $error.classList.add('hidden');
+            $empty.classList.add('hidden');
+            $card.classList.add('hidden');
+          }
 
-      const hideState = () => stateEl.classList.add("hidden");
+          function showError(msg) {
+            hideAll();
+            $error.textContent = msg;
+            $error.classList.remove('hidden');
+          }
 
-      const renderEmpty = () => {
-        listEl.innerHTML = `
-          <div class="empty-state">
-            미정 일정이 없습니다
-          </div>
-        `;
-      };
+          function showEmpty() {
+            hideAll();
+            $empty.classList.remove('hidden');
+          }
 
-      const escapeHtml = (s) => (s ?? "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll("\"", "&quot;")
-        .replaceAll("'", "&#039;");
+          function showList() {
+            hideAll();
+            $card.classList.remove('hidden');
+          }
 
-      try {
-        showState("불러오는 중...");
+          function escapeHtml(s) {
+            return String(s ?? '')
+              .replaceAll('&', '&amp;')
+              .replaceAll('<', '&lt;')
+              .replaceAll('>', '&gt;')
+              .replaceAll('"', '&quot;')
+              .replaceAll("'", '&#039;');
+          }
 
-        const res = await fetch("/api/tasks/unscheduled", {
-          headers: { "Accept": "application/json" }
-        });
+          function badgeCategory(cat) {
+            if (!cat) return '';
+            const safe = escapeHtml(cat);
+            return `<span class="text-[11px] px-2 py-1 rounded-full bg-gray-100 text-gray-700">${safe}</span>`;
+          }
 
-        if (!res.ok) {
-          showState("미정 일정을 불러오지 못했습니다.");
-          return;
-        }
+          function sortTasks(tasks) {
+            // 최신 생성일 우선 → title
+            return [...tasks].sort((a, b) => {
+              const ca = a.createdAt ?? '';
+              const cb = b.createdAt ?? '';
+              if (ca !== cb) return ca < cb ? 1 : -1;
 
-        const json = await res.json();
-        const tasks = json?.data ?? [];
+              const at = (a.title ?? '').toLowerCase();
+              const bt = (b.title ?? '').toLowerCase();
+              if (at === bt) return 0;
+              return at < bt ? -1 : 1;
+            });
+          }
 
-        hideState();
+          function render(tasks) {
+            if (!tasks || tasks.length === 0) {
+              showEmpty();
+              return;
+            }
 
-        if (!tasks.length) {
-          renderEmpty();
-          return;
-        }
+            showList();
 
-        listEl.innerHTML = tasks.map(t => {
-          const title = escapeHtml(t.title);
-          const desc = escapeHtml(t.description);
+            if ($count) {
+              $count.textContent = `${tasks.length}개`;
+              $count.classList.remove('hidden');
+            }
 
-          // color가 API에 없으면 기존 알고리즘 쓰거나, 고정색/카테고리 기반으로 바꿔도 됨
-          const color = "#C4B5FD";
+            $list.innerHTML = tasks.map(t => {
+              const title = escapeHtml(t.title);
+              const desc = escapeHtml(t.description);
+              const categoryHtml = badgeCategory(t.category);
 
-          return `
-            <div class="task-card cursor-pointer hover:shadow-md hover:bg-gray-50 transition"
-                 data-task-id="${t.id}">
-              <div class="p-4">
-                <div class="flex items-start justify-between gap-3">
-                  <div class="min-w-0">
-                    <div class="font-bold text-gray-900 truncate">${title}</div>
-                    ${desc ? `<div class="mt-1 text-sm text-gray-600 line-clamp-2">${desc}</div>` : ``}
+              const created = (t.createdAt && typeof t.createdAt === 'string')
+                ? escapeHtml(t.createdAt.split('T')[0])
+                : '';
+
+              const leftBarStyle = `style="background: rgba(99, 102, 241, 0.55);"`;
+
+              return `
+                <div class="task-row cursor-pointer hover:bg-gray-50"
+                     data-task-id="${t.id}">
+                  <div class="task-left-bar" ${leftBarStyle}></div>
+
+                  <div class="check-box">✓</div>
+
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-2">
+                      <div class="task-title truncate">${title}</div>
+                      ${categoryHtml}
+                    </div>
+                    ${desc ? `<div class="task-desc mt-1 line-clamp-2">${desc}</div>` : ``}
+                    ${created ? `<div class="task-time mt-2">등록일 · ${created}</div>` : ``}
                   </div>
-                  <span class="time-badge" style="background:${color}">
-                    미정
-                  </span>
+
+                  <div class="task-date">미정</div>
                 </div>
-              </div>
-            </div>
-          `;
-        }).join("");
+              `;
+            }).join('');
+          }
 
-        // ✅ 클릭하면 기존 DetailModal 로직 재사용 (base.html에 이미 전역 click 바인딩 있음)
-        // (data-task-id만 붙이면 자동으로 열림)
-      } catch (e) {
-        showState("네트워크 오류로 미정 일정을 불러오지 못했습니다.");
-      }
-    });
-</script>
+          async function load() {
+            try {
+              $loading.classList.remove('hidden');
+              $error.classList.add('hidden');
 
-</html>
+              const url = `/api/tasks/unscheduled`;
+              const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+              if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+              const body = await res.json(); // ApiResponse<List<TaskResponse>>
+              if (!body) throw new Error('응답이 비어있음');
+              if (body.success === false) throw new Error(body.message || 'API 실패');
+
+              const raw = body.data ?? [];
+              const onlyUnscheduled = raw.filter(t => t && t.unscheduled === true);
+              const sorted = sortTasks(onlyUnscheduled);
+
+              render(sorted);
+            } catch (e) {
+              showError(`미정 일정 로딩 실패: ${e.message}`);
+            } finally {
+              $loading.classList.add('hidden');
+            }
+          }
+
+          load();
+        })();
+    </script>
+</div>
