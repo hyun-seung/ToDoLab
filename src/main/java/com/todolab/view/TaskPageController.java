@@ -104,35 +104,19 @@ public class TaskPageController {
     // ===========================
     //  일간 일정 페이지
     // ===========================
-    @GetMapping("/tasks/day")
-    public String day(
-            @RequestParam(name = "move", required = false) String move,
-            @RequestParam(name = "date", required = false) String date,
-            Model model
-    ) {
-        LocalDate targetDate = (date != null && !date.isBlank())
-                ? LocalDate.parse(date)
-                : LocalDate.now();
+    @GetMapping("/tasks/today")
+    public String today(Model model) {
 
-        if ("prev".equals(move)) targetDate = targetDate.minusDays(1);
-        if ("next".equals(move)) targetDate = targetDate.plusDays(1);
+        LocalDate today = LocalDate.now();
 
         model.addAttribute("title", "ToDoLab");
         model.addAttribute("showBaseHeader", false);
-        model.addAttribute("headerTitle",
-                targetDate.getYear() + "년 "
-                        + targetDate.getMonthValue() + "월 "
-                        + targetDate.getDayOfMonth() + "일");
-        model.addAttribute("activeTab", "day");
-
-        model.addAttribute("date", targetDate);
-        model.addAttribute("isToday", targetDate.equals(LocalDate.now()));
-
-        model.addAttribute("contentView", "pages/task/day");
-
+        model.addAttribute("headerTitle", "Today");
+        model.addAttribute("activeTab", "today");
+        model.addAttribute("date", today);
+        model.addAttribute("contentView", "pages/task/today");
         return "layout/base";
     }
-
 
     // ===========================
     //  주간 일정 페이지

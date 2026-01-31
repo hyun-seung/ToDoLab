@@ -10,17 +10,17 @@
         <a id="weekPrevBtn"
            th:href="'/tasks/week?move=prev&date=' + ${currentDate}"
            class="w-10 h-10 flex items-center justify-center rounded-2xl bg-white border border-gray-200
-              shadow-[0_10px_24px_rgba(17,24,39,0.06)]
-              font-black text-gray-900 select-none transition active:scale-[0.98] hover:bg-gray-50
-              absolute left-0 top-1/2 -translate-y-1/2"
+                  shadow-[0_10px_24px_rgba(17,24,39,0.06)]
+                  font-black text-gray-900 select-none transition active:scale-[0.98] hover:bg-gray-50
+                  absolute left-0 top-1/2 -translate-y-1/2"
            aria-label="지난주">←</a>
 
         <a id="weekNextBtn"
            th:href="'/tasks/week?move=next&date=' + ${currentDate}"
            class="w-10 h-10 flex items-center justify-center rounded-2xl bg-white border border-gray-200
-              shadow-[0_10px_24px_rgba(17,24,39,0.06)]
-              font-black text-gray-900 select-none transition active:scale-[0.98] hover:bg-gray-50
-              absolute right-0 top-1/2 -translate-y-1/2"
+                  shadow-[0_10px_24px_rgba(17,24,39,0.06)]
+                  font-black text-gray-900 select-none transition active:scale-[0.98] hover:bg-gray-50
+                  absolute right-0 top-1/2 -translate-y-1/2"
            aria-label="다음주">→</a>
 
         <div class="flex flex-col items-center text-center px-14">
@@ -33,7 +33,6 @@
 
     <!-- 요일/날짜 -->
     <div class="mt-6">
-        <!-- ✅ 요일도 클릭 가능(일~토) -->
         <div id="weekDow"
              class="grid grid-cols-7 text-center text-[11px] font-semibold text-gray-500">
             <button type="button" class="text-red-500 select-none py-1" data-idx="0">일</button>
@@ -49,14 +48,13 @@
              class="mt-1.5 grid grid-cols-7 text-center"
              th:with="today=${T(java.time.LocalDate).now()}">
 
-            <!-- ✅ 백엔드 weeklyTasks가 "일~토" 순서로 내려온다고 가정 -->
             <a th:each="day : ${weeklyTasks}"
                href="#"
                th:attr="data-date=${day.date},
                         data-has=${#lists.isEmpty(day.tasks) ? '0' : '1'}"
                class="group flex flex-col items-center justify-center py-[2px] rounded-lg select-none cursor-pointer
-                transition hover:bg-black/[0.03] active:scale-[0.99] active:bg-black/[0.045]
-                focus:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/20">
+                      transition hover:bg-black/[0.03] active:scale-[0.99] active:bg-black/[0.045]
+                      focus:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/20">
 
                 <div class="relative w-9 h-9 rounded-full flex items-center justify-center transition"
                      th:classappend="${day.date.equals(selectedDate)} ? ' bg-indigo-500 shadow-[0_10px_18px_rgba(99,102,241,0.20)] -translate-y-[1px]' : ''">
@@ -70,7 +68,6 @@
                           th:text="${day.date.dayOfMonth}">30</span>
                 </div>
 
-                <!-- dot -->
                 <div class="mt-1 w-1.5 h-1.5 rounded-full bg-indigo-500/70 transition"
                      th:classappend="${#lists.isEmpty(day.tasks)} ? ' opacity-0' : ' opacity-100'"></div>
             </a>
@@ -85,7 +82,7 @@
              th:attr="data-date=${day.date}"
              th:classappend="${day.date.equals(selectedDate)} ? '' : ' hidden'">
 
-            <!-- ✅ 일정 없음(크기 줄임) -->
+            <!-- 일정 없음 -->
             <div th:if="${#lists.isEmpty(day.tasks)}" class="flex justify-center mt-8">
                 <div class="w-full border border-dashed border-gray-300 rounded-[22px] p-10 text-center bg-white/35">
                     <div class="text-2xl">📭</div>
@@ -94,32 +91,32 @@
                 </div>
             </div>
 
-            <!-- ✅ 일정 리스트 -->
+            <!-- 일정 리스트 (✅ day/unscheduled와 같은 카드 스타일) -->
             <div th:unless="${#lists.isEmpty(day.tasks)}" class="space-y-3">
                 <div th:each="t : ${day.tasks}"
-                     class="bg-white border border-gray-200 rounded-2xl
-                    shadow-[0_10px_24px_rgba(17,24,39,0.06)]
-                    cursor-pointer hover:bg-gray-50 active:scale-[0.995]"
+                     class="task-card task-card-clickable"
                      th:attr="data-task-id=${t.id}">
 
-                    <div class="flex items-center gap-3 px-4 py-4">
-                        <div class="w-1.5 h-11 rounded-full flex-none bg-indigo-500/85 opacity-65"></div>
-                        <div class="w-7 h-7 rounded-xl bg-gray-100 text-gray-500 flex items-center justify-center font-black select-none flex-none">✓</div>
+                    <div class="task-row">
+                        <div class="task-left-bar" style="background: rgba(99, 102, 241, 0.55);"></div>
+                        <div class="check-box">✓</div>
 
                         <div class="min-w-0 flex-1">
-                            <div class="flex items-center gap-2">
-                                <div class="text-[16px] font-black text-gray-900 truncate" th:text="${t.title}">제목</div>
+                            <div class="flex items-center gap-2 min-w-0">
+                                <div class="task-title truncate"
+                                     th:text="${t.title}">제목</div>
+
                                 <span th:if="${t.category != null and !#strings.isEmpty(t.category)}"
-                                      class="text-[11px] px-2 py-1 rounded-full bg-gray-100 text-gray-700"
+                                      class="task-badge"
                                       th:text="${t.category}"></span>
                             </div>
 
                             <div th:if="${t.description != null and !#strings.isEmpty(t.description)}"
-                                 class="mt-1 text-[13px] text-gray-500 font-semibold line-clamp-2"
+                                 class="task-desc mt-1 line-clamp-2"
                                  th:text="${t.description}">설명</div>
                         </div>
 
-                        <div class="text-[12px] text-gray-500 font-extrabold whitespace-nowrap ml-2 flex-none"
+                        <div class="task-right"
                              th:text="${t.allDay} ? '종일' : (${t.time} != null ? ${#temporals.format(t.time,'HH:mm')} : '')">
                             종일
                         </div>
@@ -128,290 +125,5 @@
             </div>
         </div>
     </div>
-
-    <!-- ✅ 중요: script를 fragment 내부에 둬야 th:replace로 포함될 때도 실행됨 -->
-    <script>
-        (() => {
-          const root = document.getElementById("week-page");
-          if (!root) return;
-
-          // ✅ 중복 바인딩 방지
-          if (root.dataset.bound === "1") return;
-          root.dataset.bound = "1";
-
-          const rangeEl = document.getElementById("weekRangeText");
-          const stripEl = document.getElementById("weekStrip");
-          const daysEl  = document.getElementById("weekDays");
-          const prevBtn = document.getElementById("weekPrevBtn");
-          const nextBtn = document.getElementById("weekNextBtn");
-          const dowEl   = document.getElementById("weekDow");
-
-          // ✅ strip/dow가 없으면 바인딩 자체가 안 되므로 방어 (콘솔 에러 방지)
-          if (!stripEl || !daysEl) return;
-
-          // ===== date util (YYYY-MM-DD) =====
-          const pad2 = (n) => String(n).padStart(2, "0");
-          const parseISO = (iso) => {
-            const [y,m,d] = iso.split("-").map(Number);
-            return new Date(y, m-1, d);
-          };
-          const toISO = (d) => `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
-          const addDays = (iso, n) => {
-            const d = parseISO(iso);
-            d.setDate(d.getDate() + n);
-            return toISO(d);
-          };
-
-          const weekStartISO = (anyISO) => {
-            const d = parseISO(anyISO);
-            const dow = d.getDay(); // 0=일..6=토
-            d.setDate(d.getDate() - dow);
-            return toISO(d);
-          };
-          const weekRangeText = (anyISO) => {
-            const start = weekStartISO(anyISO);
-            const end = addDays(start, 6);
-            return `${start} ~ ${end}`;
-          };
-
-          // ===== state =====
-          let selectedISO = root.getAttribute("data-selected-date");
-          let currentISO  = root.getAttribute("data-current-date");
-          const todayISO = toISO(new Date());
-
-          function setSelected(iso) {
-            if (!iso) return;
-
-            selectedISO = iso;
-            root.setAttribute("data-selected-date", iso);
-
-            // 1) 아래 일정 토글
-            daysEl.querySelectorAll(".week-day[data-date]").forEach(box => {
-              box.classList.toggle("hidden", box.getAttribute("data-date") !== iso);
-            });
-
-            // 2) strip 원/텍스트/오늘링 토글
-            stripEl.querySelectorAll("a[data-date]").forEach(a => {
-              const d = a.getAttribute("data-date");
-              const isSel = (d === iso);
-
-              const circle = a.querySelector("div.relative");
-              if (!circle) return;
-
-              const ring = circle.querySelector("span.absolute");
-              const num  = circle.querySelector("span:not(.absolute)");
-
-              circle.classList.toggle("bg-indigo-500", isSel);
-              circle.classList.toggle("shadow-[0_10px_18px_rgba(99,102,241,0.20)]", isSel);
-              circle.classList.toggle("-translate-y-[1px]", isSel);
-
-              if (num) {
-                if (isSel) {
-                  num.classList.add("text-white");
-                  num.classList.remove("text-gray-900");
-                } else {
-                  num.classList.remove("text-white");
-                  num.classList.add("text-gray-900");
-                }
-              }
-
-              if (ring) {
-                if (isSel) {
-                  ring.classList.add("border-white/85");
-                  ring.classList.remove("border-indigo-500/55");
-                } else {
-                  ring.classList.remove("border-white/85");
-                  ring.classList.add("border-indigo-500/55");
-                }
-              }
-            });
-          }
-
-          function updateNavHrefs(cur){
-            if (!prevBtn || !nextBtn) return;
-
-            const prev = new URL(prevBtn.getAttribute("href"), location.origin);
-            const next = new URL(nextBtn.getAttribute("href"), location.origin);
-
-            prev.searchParams.set("date", cur);
-            next.searchParams.set("date", cur);
-
-            prevBtn.setAttribute("href", prev.pathname + "?" + prev.searchParams.toString());
-            nextBtn.setAttribute("href", next.pathname + "?" + next.searchParams.toString());
-          }
-
-          function renderLoadingState() {
-            daysEl.innerHTML = `
-              <div class="flex justify-center mt-8">
-                <div class="w-full border border-dashed border-gray-300 rounded-[22px] p-10 text-center bg-white/35">
-                  <div class="text-2xl">⏳</div>
-                  <div class="mt-3 text-xl font-extrabold text-gray-800">불러오는 중...</div>
-                  <div class="mt-1 text-sm text-gray-500 font-semibold">잠시만 기다려주세요</div>
-                </div>
-              </div>
-            `;
-          }
-
-          function renderOptimisticWeek(curISO, selISO) {
-            currentISO = curISO;
-            selectedISO = selISO;
-
-            root.setAttribute("data-current-date", curISO);
-            root.setAttribute("data-selected-date", selISO);
-
-            if (rangeEl) rangeEl.textContent = weekRangeText(curISO);
-
-            const start = weekStartISO(curISO);
-
-            stripEl.innerHTML = "";
-            for (let i=0; i<7; i++) {
-              const iso = addDays(start, i);
-              const dayNum = parseISO(iso).getDate();
-              const isSel = (iso === selISO);
-              const isToday = (iso === todayISO);
-
-              const a = document.createElement("a");
-              a.href = "#";
-              a.setAttribute("data-date", iso);
-              a.setAttribute("data-has", "0");
-
-              a.className =
-                "group flex flex-col items-center justify-center py-[2px] rounded-lg select-none cursor-pointer " +
-                "transition hover:bg-black/[0.03] active:scale-[0.99] active:bg-black/[0.045] " +
-                "focus:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/20";
-
-              a.innerHTML = `
-                <div class="relative w-9 h-9 rounded-full flex items-center justify-center transition
-                            ${isSel ? "bg-indigo-500 shadow-[0_10px_18px_rgba(99,102,241,0.20)] -translate-y-[1px]" : ""}">
-                  ${
-                    isToday
-                      ? `<span class="absolute -inset-[2px] rounded-full border-2 ${isSel ? "border-white/85" : "border-indigo-500/55"} pointer-events-none"></span>`
-                      : ""
-                  }
-                  <span class="text-[14px] font-black leading-none ${isSel ? "text-white" : "text-gray-900"}">${dayNum}</span>
-                </div>
-                <div class="mt-1 w-1.5 h-1.5 rounded-full bg-indigo-500/70 opacity-0"></div>
-              `;
-
-              stripEl.appendChild(a);
-            }
-
-            updateNavHrefs(curISO);
-            renderLoadingState();
-            setSelected(selISO);
-          }
-
-          let reqSeq = 0;
-
-          async function fetchAndCommit(href) {
-            const mySeq = ++reqSeq;
-
-            try {
-              const res = await fetch(href, { headers: { "X-Requested-With": "fetch" } });
-              if (!res.ok) throw new Error("HTTP " + res.status);
-              const html = await res.text();
-              if (mySeq !== reqSeq) return;
-
-              const doc = new DOMParser().parseFromString(html, "text/html");
-              const newRoot = doc.getElementById("week-page");
-              if (!newRoot) return;
-
-              const newRange = newRoot.querySelector("#weekRangeText");
-              const newStrip = newRoot.querySelector("#weekStrip");
-              const newDays  = newRoot.querySelector("#weekDays");
-
-              if (newRange && rangeEl) rangeEl.textContent = newRange.textContent || "";
-              if (newStrip) stripEl.innerHTML = newStrip.innerHTML;
-              if (newDays)  daysEl.innerHTML  = newDays.innerHTML;
-
-              const cd = newRoot.getAttribute("data-current-date");
-              if (cd) {
-                currentISO = cd;
-                root.setAttribute("data-current-date", cd);
-              }
-
-              updateNavHrefs(currentISO);
-
-              const exists = !!stripEl.querySelector(`a[data-date="${CSS.escape(selectedISO)}"]`);
-              if (!exists) {
-                const first = stripEl.querySelector("a[data-date]");
-                selectedISO = first ? first.getAttribute("data-date") : selectedISO;
-              }
-              setSelected(selectedISO);
-
-            } catch (e) {
-              if (mySeq !== reqSeq) return;
-              daysEl.innerHTML = `
-                <div class="flex justify-center mt-8">
-                  <div class="w-full border border-dashed border-gray-300 rounded-[22px] p-10 text-center bg-white/35">
-                    <div class="text-2xl">⚠️</div>
-                    <div class="mt-3 text-xl font-extrabold text-gray-800">불러오지 못했어요</div>
-                    <div class="mt-1 text-sm text-gray-500 font-semibold">다시 시도해보세요</div>
-                  </div>
-                </div>
-              `;
-              console.warn("[week] fetch failed:", e);
-            }
-          }
-
-          // ✅ 날짜(원) 클릭
-          stripEl.addEventListener("click", (e) => {
-            const a = e.target.closest("a[data-date]");
-            if (!a) return;
-            e.preventDefault();
-            setSelected(a.getAttribute("data-date"));
-          });
-
-          // ✅ 요일 클릭
-          if (dowEl) {
-            dowEl.addEventListener("click", (e) => {
-              const btn = e.target.closest("button[data-idx]");
-              if (!btn) return;
-
-              const idx = Number(btn.getAttribute("data-idx"));
-              const items = Array.from(stripEl.querySelectorAll("a[data-date]"));
-              const target = items[idx];
-              if (!target) return;
-
-              setSelected(target.getAttribute("data-date"));
-            });
-          }
-
-          function bindNav(btn, deltaDays){
-            if (!btn) return;
-
-            btn.onclick = (e) => {
-              e.preventDefault();
-
-              const cur = root.getAttribute("data-current-date") || currentISO;
-              const nextCur = addDays(cur, deltaDays);
-              const nextSel = addDays(selectedISO, deltaDays);
-
-              renderOptimisticWeek(nextCur, nextSel);
-
-              const href = btn.getAttribute("href");
-              if (href) history.pushState({ href }, "", href);
-              if (href) fetchAndCommit(href);
-            };
-          }
-
-          updateNavHrefs(currentISO);
-
-          if (!selectedISO) {
-            const first = stripEl.querySelector("a[data-date]");
-            selectedISO = first ? first.getAttribute("data-date") : selectedISO;
-          }
-          setSelected(selectedISO);
-
-          bindNav(prevBtn, -7);
-          bindNav(nextBtn, +7);
-
-          window.addEventListener("popstate", () => {
-            const href = location.pathname + location.search;
-            renderLoadingState();
-            fetchAndCommit(href);
-          });
-        })();
-    </script>
 
 </div>

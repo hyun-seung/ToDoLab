@@ -1,0 +1,34 @@
+<!-- fragments/task-card.html -->
+<th:block xmlns:th="http://www.thymeleaf.org">
+
+    <!-- t: TaskResponse, timeText: 화면에 표시할 시간 문자열(예: '종일', '09:00', '09:00 ~ 10:00', '계속') -->
+    <div th:fragment="card(t, timeText)"
+         class="task-card cursor-pointer hover:bg-gray-50 active:scale-[0.995]"
+         th:attr="data-task-id=${t.id}">
+
+        <div class="task-row">
+            <div class="task-left-bar" style="background: rgba(99, 102, 241, 0.55);"></div>
+            <div class="check-box">✓</div>
+
+            <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-2">
+                    <div class="text-[16px] font-black text-gray-900 truncate"
+                         th:text="${t.title}">제목</div>
+
+                    <span th:if="${t.category != null and !#strings.isEmpty(t.category)}"
+                          class="text-[11px] px-2 py-1 rounded-full bg-gray-100 text-gray-700"
+                          th:text="${t.category}"></span>
+                </div>
+
+                <div th:if="${t.description != null and !#strings.isEmpty(t.description)}"
+                     class="mt-1 text-[13px] text-gray-500 font-semibold line-clamp-2"
+                     th:text="${t.description}">설명</div>
+            </div>
+
+            <div th:if="${timeText != null and !#strings.isEmpty(timeText)}"
+                 class="text-[12px] text-gray-500 font-extrabold whitespace-nowrap ml-2 flex-none"
+                 th:text="${timeText}">종일</div>
+        </div>
+    </div>
+
+</th:block>

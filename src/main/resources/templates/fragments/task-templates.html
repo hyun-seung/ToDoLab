@@ -1,0 +1,59 @@
+<!-- src/main/resources/templates/fragments/task-templates.html -->
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<div th:fragment="templates">
+
+    <!-- ✅ Day/Week에서 쓰는 "카드 1개" 템플릿 -->
+    <template id="taskCardTpl">
+        <div class="task-card cursor-pointer hover:bg-gray-50 active:scale-[0.995]" data-task-id="">
+            <div class="task-row">
+                <div class="task-left-bar" data-field="leftBar"></div>
+                <div class="check-box">✓</div>
+
+                <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-2">
+                        <div class="text-[16px] font-black text-gray-900 truncate" data-field="title"></div>
+                        <span class="text-[11px] px-2 py-1 rounded-full bg-gray-100 text-gray-700 hidden"
+                              data-field="category"></span>
+                    </div>
+
+                    <div class="mt-1 text-[13px] text-gray-500 font-semibold line-clamp-2 hidden"
+                         data-field="description"></div>
+
+                    <!-- (옵션) 미정에서 등록일 같은 메타를 넣고 싶을 때 사용 -->
+                    <div class="task-time mt-2 hidden" data-field="meta"></div>
+                </div>
+
+                <div class="text-[12px] text-gray-500 font-extrabold whitespace-nowrap ml-2 flex-none"
+                     data-field="right"></div>
+            </div>
+        </div>
+    </template>
+
+    <!-- ✅ Unscheduled에서 쓰는 "row(구분선 리스트용)" 템플릿 -->
+    <template id="taskRowTpl">
+        <div class="task-row cursor-pointer hover:bg-gray-50" data-task-id="">
+            <div class="task-left-bar" data-field="leftBar"></div>
+            <div class="check-box">✓</div>
+
+            <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-2">
+                    <div class="task-title truncate" data-field="title"></div>
+                    <span class="text-[11px] px-2 py-1 rounded-full bg-gray-100 text-gray-700 hidden"
+                          data-field="category"></span>
+                </div>
+
+                <div class="task-desc mt-1 line-clamp-2 hidden" data-field="description"></div>
+                <div class="task-time mt-2 hidden" data-field="meta"></div>
+            </div>
+
+            <div class="task-date" data-field="right"></div>
+        </div>
+    </template>
+
+</div>
+
+</body>
+</html>

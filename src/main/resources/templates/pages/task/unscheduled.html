@@ -7,7 +7,7 @@
     <div id="unscheduled-loading" class="mt-6 text-gray-500 text-sm">불러오는 중...</div>
     <div id="unscheduled-error" class="mt-6 text-red-600 text-sm hidden"></div>
 
-    <!-- Empty State (중앙 정렬) -->
+    <!-- Empty State -->
     <div id="unscheduled-empty"
          class="hidden mt-16 flex flex-col items-center justify-center text-center select-none">
         <div class="w-14 h-14 rounded-2xl bg-white/60 border border-gray-200
@@ -24,15 +24,17 @@
         </div>
     </div>
 
-    <!-- 리스트 카드 -->
-    <div id="unscheduled-card" class="mt-6 task-card hidden">
-        <div class="flex items-center justify-between px-4 pt-4 pb-2">
-            <div class="text-sm font-extrabold text-gray-400">미정 일정</div>
-            <div id="unscheduled-count"
-                 class="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded-full hidden"></div>
-        </div>
+    <!-- 리스트 -->
+    <div id="unscheduled-list-wrap" class="mt-6 hidden">
+        <div class="task-card">
+            <div class="flex items-center justify-between px-4 pt-4 pb-2">
+                <div class="text-sm font-extrabold text-gray-400">미정 일정</div>
+                <div id="unscheduled-count"
+                     class="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded-full hidden"></div>
+            </div>
 
-        <div id="unscheduled-list" class="divide-y"></div>
+            <div id="unscheduled-list" class="space-y-0"></div>
+        </div>
     </div>
 
     <script>
@@ -40,10 +42,13 @@
           const root = document.getElementById('unscheduled-page');
           if (!root) return;
 
+          if (root.dataset.bound === "1") return;
+          root.dataset.bound = "1";
+
           const $loading = document.getElementById('unscheduled-loading');
           const $error = document.getElementById('unscheduled-error');
           const $empty = document.getElementById('unscheduled-empty');
-          const $card = document.getElementById('unscheduled-card');
+          const $wrap = document.getElementById('unscheduled-list-wrap');
           const $list = document.getElementById('unscheduled-list');
           const $count = document.getElementById('unscheduled-count');
 
@@ -51,7 +56,7 @@
             $loading.classList.add('hidden');
             $error.classList.add('hidden');
             $empty.classList.add('hidden');
-            $card.classList.add('hidden');
+            $wrap.classList.add('hidden');
           }
 
           function showError(msg) {
@@ -67,26 +72,10 @@
 
           function showList() {
             hideAll();
-            $card.classList.remove('hidden');
-          }
-
-          function escapeHtml(s) {
-            return String(s ?? '')
-              .replaceAll('&', '&amp;')
-              .replaceAll('<', '&lt;')
-              .replaceAll('>', '&gt;')
-              .replaceAll('"', '&quot;')
-              .replaceAll("'", '&#039;');
-          }
-
-          function badgeCategory(cat) {
-            if (!cat) return '';
-            const safe = escapeHtml(cat);
-            return `<span class="text-[11px] px-2 py-1 rounded-full bg-gray-100 text-gray-700">${safe}</span>`;
+            $wrap.classList.remove('hidden');
           }
 
           function sortTasks(tasks) {
-            // 최신 생성일 우선 → title
             return [...tasks].sort((a, b) => {
               const ca = a.createdAt ?? '';
               const cb = b.createdAt ?? '';
@@ -94,8 +83,7 @@
 
               const at = (a.title ?? '').toLowerCase();
               const bt = (b.title ?? '').toLowerCase();
-              if (at === bt) return 0;
-              return at < bt ? -1 : 1;
+              return at.localeCompare(bt);
             });
           }
 
@@ -107,41 +95,22 @@
 
             showList();
 
-            if ($count) {
-              $count.textContent = `${tasks.length}개`;
-              $count.classList.remove('hidden');
-            }
+            $count.textContent = `${tasks.length}개`;
+            $count.classList.remove('hidden');
 
             $list.innerHTML = tasks.map(t => {
-              const title = escapeHtml(t.title);
-              const desc = escapeHtml(t.description);
-              const categoryHtml = badgeCategory(t.category);
-
               const created = (t.createdAt && typeof t.createdAt === 'string')
-                ? escapeHtml(t.createdAt.split('T')[0])
+                ? (t.createdAt.split('T')[0])
                 : '';
 
-              const leftBarStyle = `style="background: rgba(99, 102, 241, 0.55);"`;
-
-              return `
-                <div class="task-row cursor-pointer hover:bg-gray-50"
-                     data-task-id="${t.id}">
-                  <div class="task-left-bar" ${leftBarStyle}></div>
-
-                  <div class="check-box">✓</div>
-
-                  <div class="min-w-0 flex-1">
-                    <div class="flex items-center gap-2">
-                      <div class="task-title truncate">${title}</div>
-                      ${categoryHtml}
-                    </div>
-                    ${desc ? `<div class="task-desc mt-1 line-clamp-2">${desc}</div>` : ``}
-                    ${created ? `<div class="task-time mt-2">등록일 · ${created}</div>` : ``}
-                  </div>
-
-                  <div class="task-date">미정</div>
-                </div>
-              `;
+              return TaskUI.renderTaskCard({
+                id: t.id,
+                title: t.title,
+                description: (t.description || '').trim() || null,
+                category: (t.category || '').trim() || null,
+                rightText: '미정',
+                metaText: created ? `등록일 · ${created}` : null
+              });
             }).join('');
           }
 
@@ -150,19 +119,16 @@
               $loading.classList.remove('hidden');
               $error.classList.add('hidden');
 
-              const url = `/api/tasks/unscheduled`;
-              const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+              const res = await fetch('/api/tasks/unscheduled', { headers: { 'Accept': 'application/json' } });
               if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-              const body = await res.json(); // ApiResponse<List<TaskResponse>>
+              const body = await res.json();
               if (!body) throw new Error('응답이 비어있음');
               if (body.success === false) throw new Error(body.message || 'API 실패');
 
               const raw = body.data ?? [];
-              const onlyUnscheduled = raw.filter(t => t && t.unscheduled === true);
-              const sorted = sortTasks(onlyUnscheduled);
-
-              render(sorted);
+              const only = raw.filter(t => t && t.unscheduled === true);
+              render(sortTasks(only));
             } catch (e) {
               showError(`미정 일정 로딩 실패: ${e.message}`);
             } finally {

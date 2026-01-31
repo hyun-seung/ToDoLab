@@ -1,0 +1,119 @@
+/* src/main/resources/static/css/app.css */
+
+/* 카드 */
+.task-card{
+  background:#fff;
+  border:1px solid rgba(229,231,235,1);
+  border-radius:22px;
+  box-shadow:0 10px 24px rgba(17,24,39,0.06);
+  overflow:hidden;
+}
+
+.task-card-clickable{ cursor:pointer; }
+
+/* ✅ hover/active: "row" 기준으로 통일 (구조 바뀌어도 안전) */
+.task-card-clickable:hover{ background: transparent; }
+.task-card-clickable:hover .task-row{ background: rgba(17,24,39,0.02); }
+.task-card-clickable:active{ transform: scale(0.995); }
+
+/* 행 */
+.task-row{
+  display:flex;
+  gap:12px;
+  padding:14px 16px;
+
+  /* ✅ 제목 첫 줄 기준으로 정렬 (desc 유무에 따른 어색함 제거) */
+  align-items:flex-start;
+}
+
+/* 좌측 포인트 바 */
+.task-left-bar{
+  width:6px;
+  height:auto;              /* ✅ 고정 제거 */
+  align-self:stretch;       /* ✅ row 높이에 맞춰 늘어남 */
+  border-radius:9999px;
+  flex:0 0 auto;
+  opacity:.65;
+  min-height:44px;          /* ✅ 짧은 row에서도 기본 두께 유지(선택) */
+  margin-top:2px;           /* ✅ 첫 줄 기준 살짝 위로 */
+}
+
+/* 체크박스 */
+.check-box{
+  width:26px;
+  height:26px;
+  border-radius:10px;
+  background:rgba(243,244,246,1);
+  color:rgba(107,114,128,1);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:900;
+  flex:0 0 auto;
+  user-select:none;
+
+  /* ✅ 첫 줄 기준 살짝 위로 */
+  margin-top:2px;
+}
+
+/* ✅ 타이포 통일 포인트 */
+.task-title{
+  font-size:16px;
+  font-weight:900;
+  color:#111827;
+
+  /* ✅ 기기/폰트별 줄간격 차이 제거 */
+  line-height:1.25;
+
+  /* ✅ 뱃지/우측 텍스트와 섞일 때 레이아웃 안정화 */
+  min-width:0;
+}
+
+.task-desc{
+  font-size:13px;
+  color:#6b7280;
+  font-weight:600;
+  line-height:1.35;
+}
+
+.task-meta{
+  font-size:12px;
+  color:#9ca3af;
+  font-weight:700;
+  line-height:1.25;
+}
+
+/* 오른쪽 텍스트(시간/미정/종일) */
+.task-right{
+  font-size:12px;
+  color:#6b7280;
+  font-weight:900;
+  white-space:nowrap;
+  margin-left:10px;
+  flex:0 0 auto;
+
+  /* ✅ 첫 줄 기준 살짝 위로 */
+  margin-top:2px;
+}
+
+/* 카테고리 뱃지 */
+.task-badge{
+  font-size:11px;
+  padding:4px 8px;
+  border-radius:9999px;
+  background:#f3f4f6;
+  color:#374151;
+  font-weight:800;
+  flex:0 0 auto;
+
+  /* ✅ 뱃지 줄바꿈 방지 */
+  white-space:nowrap;
+}
+
+/* clamp */
+.line-clamp-2{
+  display:-webkit-box;
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
+  overflow:hidden;
+}
