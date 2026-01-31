@@ -24,119 +24,19 @@
         </div>
     </div>
 
-    <!-- 리스트 -->
-    <div id="unscheduled-list-wrap" class="mt-6 hidden">
+    <!-- 리스트 (✅ unscheduled.js가 제어) -->
+    <div id="unscheduled-card" class="mt-6 hidden">
         <div class="task-card">
             <div class="flex items-center justify-between px-4 pt-4 pb-2">
                 <div class="text-sm font-extrabold text-gray-400">미정 일정</div>
+
                 <div id="unscheduled-count"
                      class="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded-full hidden"></div>
             </div>
 
+            <!-- ✅ row/card 렌더링 대상 -->
             <div id="unscheduled-list" class="space-y-0"></div>
         </div>
     </div>
 
-    <script>
-        (() => {
-          const root = document.getElementById('unscheduled-page');
-          if (!root) return;
-
-          if (root.dataset.bound === "1") return;
-          root.dataset.bound = "1";
-
-          const $loading = document.getElementById('unscheduled-loading');
-          const $error = document.getElementById('unscheduled-error');
-          const $empty = document.getElementById('unscheduled-empty');
-          const $wrap = document.getElementById('unscheduled-list-wrap');
-          const $list = document.getElementById('unscheduled-list');
-          const $count = document.getElementById('unscheduled-count');
-
-          function hideAll() {
-            $loading.classList.add('hidden');
-            $error.classList.add('hidden');
-            $empty.classList.add('hidden');
-            $wrap.classList.add('hidden');
-          }
-
-          function showError(msg) {
-            hideAll();
-            $error.textContent = msg;
-            $error.classList.remove('hidden');
-          }
-
-          function showEmpty() {
-            hideAll();
-            $empty.classList.remove('hidden');
-          }
-
-          function showList() {
-            hideAll();
-            $wrap.classList.remove('hidden');
-          }
-
-          function sortTasks(tasks) {
-            return [...tasks].sort((a, b) => {
-              const ca = a.createdAt ?? '';
-              const cb = b.createdAt ?? '';
-              if (ca !== cb) return ca < cb ? 1 : -1;
-
-              const at = (a.title ?? '').toLowerCase();
-              const bt = (b.title ?? '').toLowerCase();
-              return at.localeCompare(bt);
-            });
-          }
-
-          function render(tasks) {
-            if (!tasks || tasks.length === 0) {
-              showEmpty();
-              return;
-            }
-
-            showList();
-
-            $count.textContent = `${tasks.length}개`;
-            $count.classList.remove('hidden');
-
-            $list.innerHTML = tasks.map(t => {
-              const created = (t.createdAt && typeof t.createdAt === 'string')
-                ? (t.createdAt.split('T')[0])
-                : '';
-
-              return TaskUI.renderTaskCard({
-                id: t.id,
-                title: t.title,
-                description: (t.description || '').trim() || null,
-                category: (t.category || '').trim() || null,
-                rightText: '미정',
-                metaText: created ? `등록일 · ${created}` : null
-              });
-            }).join('');
-          }
-
-          async function load() {
-            try {
-              $loading.classList.remove('hidden');
-              $error.classList.add('hidden');
-
-              const res = await fetch('/api/tasks/unscheduled', { headers: { 'Accept': 'application/json' } });
-              if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-              const body = await res.json();
-              if (!body) throw new Error('응답이 비어있음');
-              if (body.success === false) throw new Error(body.message || 'API 실패');
-
-              const raw = body.data ?? [];
-              const only = raw.filter(t => t && t.unscheduled === true);
-              render(sortTasks(only));
-            } catch (e) {
-              showError(`미정 일정 로딩 실패: ${e.message}`);
-            } finally {
-              $loading.classList.add('hidden');
-            }
-          }
-
-          load();
-        })();
-    </script>
 </div>
