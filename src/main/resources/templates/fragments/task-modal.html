@@ -1,0 +1,102 @@
+<!-- src/main/resources/templates/fragments/task-modal.html -->
+<th:block xmlns:th="http://www.thymeleaf.org" th:fragment="taskModal">
+
+    <div id="taskModal" class="fixed inset-0 hidden bg-black/40 z-50">
+        <div id="taskModalBackdrop" class="w-full h-full flex items-center justify-center p-4">
+            <div id="taskModalPanel"
+                 class="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col overflow-hidden">
+
+                <!-- header -->
+                <div class="flex items-center justify-between px-5 py-4 border-b shrink-0">
+                    <div id="taskModalTitle" class="font-bold text-gray-800">일정</div>
+
+                    <!-- X 닫기 -->
+                    <button type="button" data-action="close"
+                            class="text-gray-400 hover:text-gray-700 text-2xl leading-none">×</button>
+                </div>
+
+                <!-- body -->
+                <div id="taskModalBody" class="px-5 pb-5 pt-4 overflow-y-auto max-h-[65vh] space-y-4">
+
+                    <div>
+                        <div class="text-[14px] font-extrabold text-gray-900 mb-2">
+                            제목<span class="text-red-500">*</span>
+                        </div>
+                        <input id="tmTitle" type="text"
+                               class="w-full border rounded-lg px-3 py-3 text-[16px] font-semibold"
+                               placeholder="할 일/일정 제목" />
+                    </div>
+
+                    <div>
+                        <div class="text-[14px] font-extrabold text-gray-900 mb-2">설명</div>
+                        <textarea id="tmDescription"
+                                  class="w-full border rounded-lg px-3 py-3 min-h-[140px] text-[15px]"
+                                  placeholder="설명(선택)"></textarea>
+                    </div>
+
+                    <div>
+                        <div class="text-[14px] font-extrabold text-gray-900 mb-2">카테고리</div>
+                        <input id="tmCategory" type="text"
+                               class="w-full border rounded-lg px-3 py-3 text-[15px]"
+                               placeholder="예) 일, 개인, 운동 (최대 10자)" />
+                    </div>
+
+                    <div class="flex items-center gap-6 pt-1">
+                        <label class="flex items-center gap-2 text-[15px] font-bold text-gray-900">
+                            <input id="tmUnscheduled" type="checkbox" class="w-5 h-5" />
+                            미정
+                        </label>
+
+                        <label class="flex items-center gap-2 text-[15px] font-bold text-gray-900">
+                            <input id="tmAllDay" type="checkbox" class="w-5 h-5" />
+                            종일
+                        </label>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3 pt-1">
+                        <div>
+                            <div class="text-[13px] font-extrabold text-gray-900 mb-2">시작</div>
+                            <input id="tmStartAt" type="datetime-local"
+                                   class="w-full border rounded-lg px-3 py-3 text-[15px]" />
+                        </div>
+                        <div>
+                            <div class="text-[13px] font-extrabold text-gray-900 mb-2">종료</div>
+                            <input id="tmEndAt" type="datetime-local"
+                                   class="w-full border rounded-lg px-3 py-3 text-[15px]" />
+                        </div>
+                    </div>
+
+                    <!-- 메타 -->
+                    <div id="tmMeta" class="hidden mt-3 pt-4 border-t">
+                        <div class="flex items-center justify-between text-[13px] text-gray-500">
+                            <div class="font-extrabold">생성</div>
+                            <div id="tmCreatedAt" class="font-semibold">-</div>
+                        </div>
+                        <div class="flex items-center justify-between text-[13px] text-gray-500 mt-2">
+                            <div class="font-extrabold">수정</div>
+                            <div id="tmUpdatedAt" class="font-semibold">-</div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- footer (닫기 버튼 제거) -->
+                <div class="shrink-0 border-t bg-white">
+                    <div class="p-4 flex items-center gap-2">
+                        <button id="tmPrimaryBtn" type="button"
+                                class="flex-1 py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700">
+                            저장
+                        </button>
+
+                        <button id="tmDeleteBtn" type="button"
+                                class="hidden px-4 py-3 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700">
+                            삭제
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+</th:block>

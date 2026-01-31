@@ -1,14 +1,17 @@
 <!-- src/main/resources/templates/fragments/ui-footer.html -->
 <th:block th:fragment="footer(activeTab)">
 
-    <!-- Floating + -->
-    <a href="/tasks/create"
-       class="fixed right-6 bottom-[5.5rem] z-50
-            w-14 h-14 rounded-full bg-blue-600 text-white
-            flex items-center justify-center text-3xl
-            shadow-xl active:scale-95 transition">
+    <!-- Floating + (모달 오픈) -->
+    <button type="button"
+            id="floatingCreateBtn"
+            data-action="open-create"
+            class="fixed right-6 bottom-[5.5rem] z-50
+               w-14 h-14 rounded-full bg-blue-600 text-white
+               flex items-center justify-center text-3xl
+               shadow-xl active:scale-95 transition">
         +
-    </a>
+    </button>
+
 
     <!-- Bottom Nav -->
     <footer

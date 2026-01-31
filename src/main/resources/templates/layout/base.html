@@ -1,7 +1,7 @@
 <!-- src/main/resources/templates/layout/base.html -->
 <!DOCTYPE html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="fragments/head :: head(${title})"></head>
+<head th:replace="~{fragments/head :: head(${title})}"></head>
 
 <body class="bg-[#F7F6F2] h-screen flex flex-col">
 
@@ -19,27 +19,31 @@
 </main>
 
 <!-- 하단탭 + 플로팅버튼 -->
-<div th:replace="fragments/ui-footer :: footer(${activeTab})"></div>
+<div th:replace="~{fragments/ui-footer :: footer(${activeTab})}"></div>
 
-<!-- 모달들(등록/상세/성공) -->
-<div th:replace="fragments/modals :: modals"></div>
+<!-- 공용 모달(성공/토스트만) -->
+<div th:replace="~{fragments/modals :: modals}"></div>
 
-<!-- 외부 라이브러리 -->
+<!-- ✅ 단일 모달(create/detail/edit) -->
+<div th:replace="~{fragments/task-modal :: taskModal}"></div>
+
+<!-- 외부 라이브러리 (쓰고 있으면 유지) -->
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ko.js"></script>
 
-<!-- 공통 JS (순서 중요) -->
+<!-- 공통 JS -->
 <script src="/js/app-core.js"></script>
 
-<!-- ✅ 카드/뱃지/escapeHtml 등 공통 렌더 유틸 -->
+<!-- ✅ TaskUI (unscheduled/week/today 호환 API + 카드 클릭 위임) -->
 <script src="/js/task-ui.js"></script>
 
-<!-- 모달 -->
-<script src="/js/modal-create.js"></script>
-<script src="/js/modal-detail.js"></script>
+<!-- ✅ 단일 모달 컨트롤러 -->
+<script src="/js/task-modal.js"></script>
 
-<!-- ✅ week 전용 (week.html 내부 inline script 제거 전제) -->
+<!-- 페이지 전용 -->
 <script src="/js/week.js"></script>
+<script src="/js/unscheduled.js"></script>
+<script src="/js/today.js"></script>
 
 </body>
 </html>
