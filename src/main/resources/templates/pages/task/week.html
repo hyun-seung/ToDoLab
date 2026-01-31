@@ -18,13 +18,23 @@
 
                 <div id="weekRangeText"
                      class="mt-1 text-[12px] font-semibold text-gray-500"
-                     th:text="${weekRange}">2026-02-01 ~ 2026-02-07</div>
+                     th:text="${weekRange}">2026-02-01 ~ 2026-02-07
+                </div>
             </div>
 
-            <div id="week-count"
-                 class="self-center text-[12px] font-extrabold text-gray-900
-                  bg-gray-900/5 border border-gray-200
-                  px-3 py-1.5 rounded-full hidden">
+            <!-- ✅ 오른쪽: 토글만 -->
+            <div class="inline-flex items-center rounded-full border border-gray-200 bg-white/70 p-1 shadow-sm">
+                <!-- 주간(현재) -->
+                <span class="px-3 py-1.5 rounded-full text-[12px] font-extrabold
+                     bg-indigo-500 text-white shadow-[0_8px_16px_rgba(99,102,241,0.14)]">
+                    <span class="mr-1">📆</span>주간
+                </span>
+
+                <!-- 월간 -->
+                <a th:href="'/tasks/month?date=' + ${selectedDate}"
+                   class="px-3 py-1.5 rounded-full text-[12px] font-extrabold text-gray-700 hover:bg-white active:scale-[0.98]">
+                    <span class="mr-1">🗓️</span>월간
+                </a>
             </div>
         </div>
 
@@ -83,13 +93,11 @@
                         <div th:each="ds, stat : ${weeklyTasks}"
                              class="flex flex-col items-center">
 
-                            <!-- ✅ 요일 : 13-->
                             <div class="text-[13px] font-extrabold tracking-tight"
                                  th:classappend="${stat.index == 0} ? ' text-red-400' : (${stat.index == 6} ? ' text-blue-400' : ' text-gray-400')"
-                                 th:text="${ds.dayLabel}">일</div>
+                                 th:text="${ds.dayLabel}">일
+                            </div>
 
-                            <!-- ✅ 원: 44
-                                 ✅ 숫자: 16 -->
                             <a th:href="'/tasks/week?date=' + ${ds.date}"
                                th:attr="data-date=${ds.date}"
                                class="mt-2 w-[40px] h-[40px] rounded-full flex items-center justify-center
@@ -103,7 +111,6 @@
                                 25
                             </a>
 
-                            <!-- dot -->
                             <div class="mt-1 h-2 flex items-center justify-center">
                 <span th:if="${ds.tasks != null and !ds.tasks.isEmpty()}"
                       class="inline-block w-1.5 h-1.5 rounded-full bg-indigo-400/70"></span>
@@ -117,7 +124,7 @@
         </div>
 
         <!-- 아래 스크롤 -->
-        <div class="flex-1 min-h-0 overflow-y-auto">
+        <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y">
             <div id="week-error" class="mt-6 text-red-600 text-sm hidden"></div>
 
             <div id="week-empty"
@@ -150,4 +157,6 @@
         </div>
 
     </div>
+
+    <script defer src="/js/week.js"></script>
 </div>

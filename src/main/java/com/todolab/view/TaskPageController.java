@@ -98,10 +98,8 @@ public class TaskPageController {
         model.addAttribute("activeTab", "unscheduled");
 
         model.addAttribute("contentView", "pages/task/unscheduled");
-
         return "layout/base";
     }
-
 
     // ===========================
     //  일간 일정 페이지
@@ -147,7 +145,8 @@ public class TaskPageController {
                         .queryParam("date", finalTargetDate.toString())
                         .build())
                 .retrieve()
-                .body(new ParameterizedTypeReference<>() {});
+                .body(new ParameterizedTypeReference<>() {
+                });
 
         List<TaskResponse> taskList = (resp != null && resp.data() != null) ? resp.data() : List.of();
 
@@ -198,10 +197,124 @@ public class TaskPageController {
     }
 
     // ===========================
+    //  월간 일정 페이지 ✅ (MONTH API: date=yyyy-MM)
+    // ===========================
+    @GetMapping("/tasks/month")
+    public String month(
+            @RequestParam(name = "move", required = false) String move,
+            @RequestParam(name = "date", required = false) String date,
+            Model model
+    ) {
+        // date 파싱: "yyyy-MM" 또는 "yyyy-MM-dd" 모두 허용
+        LocalDate targetDate = parseMonthTargetDate(date);
+
+        if ("prev".equals(move)) targetDate = targetDate.minusMonths(1);
+        if ("next".equals(move)) targetDate = targetDate.plusMonths(1);
+
+        // ✅ month() 내부에서 gridStart/42칸 로직을 아래로 교체
+
+        YearMonth ym = YearMonth.from(targetDate);
+        String ymKey = ym.toString(); // "2026-02"
+
+        LocalDate monthStart = ym.atDay(1);
+        LocalDate monthEnd = ym.atEndOfMonth();
+
+        // ✅ 그 달을 포함하는 “최소 주수” 계산
+        LocalDate gridStart = monthStart.with(TemporalAdjusters.previousOrSame(DayOfWeek.SUNDAY));
+        LocalDate gridEnd = monthEnd.with(TemporalAdjusters.nextOrSame(DayOfWeek.SATURDAY));
+
+        int totalCells = (int) Duration.between(gridStart.atStartOfDay(), gridEnd.plusDays(1).atStartOfDay()).toDays();              // inclusive 계산을 위에서 +1 처리했으므로 days가 칸 수
+        int weeks = totalCells / 7;         // 4~6
+
+        // ✅ 백엔드 호출: type=MONTH, date=yyyy-MM
+        ApiResponse<List<TaskResponse>> resp = restClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/api/tasks")
+                        .queryParam("type", "MONTH")
+                        .queryParam("date", ymKey)
+                        .build())
+                .retrieve()
+                .body(new ParameterizedTypeReference<>() {
+                });
+
+        List<TaskResponse> taskList = (resp != null && resp.data() != null) ? resp.data() : List.of();
+
+        LocalDate selectedDate = (date != null && date.length() == 10)
+                ? LocalDate.parse(date)
+                : targetDate;
+
+        // ✅ “필요한 주수만큼”만 생성
+        List<CalendarCell> monthDays = new ArrayList<>(weeks * 7);
+        for (int i = 0; i < weeks * 7; i++) {
+            LocalDate day = gridStart.plusDays(i);
+
+            // ✅ 이번 달에 속한 날만 보이게 하려면 inMonth가 false인 셀은 만들지 않는 방식도 가능하지만,
+            // 요청은 “이번 달에 속한 날만큼만” = 최소 주수, 즉 앞/뒤 padding(회색)은 남겨도 되지만
+            // 화면은 4주/5주/6주만 보이게 하는 게 핵심이므로 여기서는 “주 단위 패딩”은 유지하고,
+            // 스타일에서 inMonth=false를 연하게 처리.
+            boolean inMonth = !day.isBefore(monthStart) && !day.isAfter(monthEnd);
+
+            List<TaskUi> uiTasks = taskList.stream()
+                    .filter(t -> occursOn(t, day))
+                    .map(this::toUi)
+                    .toList();
+
+            monthDays.add(new CalendarCell(day, inMonth, uiTasks));
+        }
+
+        int monthTotalCount = monthDays.stream()
+                .mapToInt(c -> c.tasks() == null ? 0 : c.tasks().size())
+                .sum();
+
+        model.addAttribute("title", "ToDoLab");
+        model.addAttribute("showBaseHeader", false);
+        model.addAttribute("headerTitle", targetDate.getYear() + "년 " + targetDate.getMonthValue() + "월");
+        model.addAttribute("activeTab", "month");
+
+        model.addAttribute("currentDate", targetDate);
+        model.addAttribute("selectedDate", selectedDate);
+
+        model.addAttribute("monthStart", monthStart);
+        model.addAttribute("monthEnd", monthEnd);
+
+        // ✅ dataset/month.js에서 그대로 쓰게 "yyyy-MM" 내려줌
+        model.addAttribute("monthLabel", ymKey);
+        model.addAttribute("monthRange", ymKey);
+
+        model.addAttribute("monthDays", monthDays);
+        model.addAttribute("monthTotalCount", monthTotalCount);
+
+        model.addAttribute("contentView", "pages/task/month");
+        return "layout/base";
+    }
+
+    /**
+     * date 입력:
+     * - null/blank -> 오늘
+     * - "yyyy-MM"  -> 해당 월 1일로 변환
+     * - "yyyy-MM-dd" -> 해당 날짜
+     */
+    private LocalDate parseMonthTargetDate(String date) {
+        if (date == null || date.isBlank()) return LocalDate.now();
+
+        String s = date.trim();
+        try {
+            if (s.length() == 7) { // yyyy-MM
+                YearMonth ym = YearMonth.parse(s);
+                return ym.atDay(1);
+            }
+            if (s.length() == 10) { // yyyy-MM-dd
+                return LocalDate.parse(s);
+            }
+            // fallback
+            return LocalDate.now();
+        } catch (Exception e) {
+            return LocalDate.now();
+        }
+    }
+
+    // ===========================
     // 일정이 특정 날짜(day)에 "발생/겹침"하는지 판단
-    // - 미정(startAt null)은 제외
-    // - 단일: startAt이 그 날짜에 포함되면 true
-    // - 기간: [startAt, endAt) 과 [dayStart, dayEnd) 가 겹치면 true
     // ===========================
     private boolean occursOn(TaskResponse t, LocalDate day) {
         if (t == null) return false;
@@ -214,19 +327,14 @@ public class TaskPageController {
         LocalDateTime start = t.startAt();
         LocalDateTime end = t.endAt();
 
-        // endAt == null : 단일 시점/단일 일정 → startAt이 그 날에 들어오면 포함
         if (end == null) {
             return !start.isBefore(dayStart) && start.isBefore(dayEnd);
         }
-
-        // endAt != null : 기간 일정 → overlap 판단 (DB 쿼리와 동일)
         return start.isBefore(dayEnd) && end.isAfter(dayStart);
     }
 
     // ===========================
     // TaskResponse -> TaskUi 변환
-    // - 템플릿 호환을 위해 date/time 파생 제공
-    // - allDay면 time은 null로 내려서 "종일" 표시 유도
     // ===========================
     private TaskUi toUi(TaskResponse t) {
         LocalDateTime startAt = t.startAt();
@@ -284,9 +392,6 @@ public class TaskPageController {
     ) {
     }
 
-    // ===========================
-    // 월 캘린더 셀 DTO
-    // ===========================
     public record CalendarCell(
             LocalDate date,
             boolean inMonth,

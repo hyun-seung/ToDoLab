@@ -1,22 +1,24 @@
-// src/main/resources/static/js/week.js
+// src/main/resources/static/js/month.js
 (() => {
-  const root = document.getElementById('week-page');
+  const root = document.getElementById('month-page');
   if (!root) return;
 
   if (root.dataset.bound === '1') return;
   root.dataset.bound = '1';
 
-  const strip = document.getElementById('weekStrip');
-  const prevBtn = document.getElementById('weekPrevHint');
-  const nextBtn = document.getElementById('weekNextHint');
+  const grid = document.getElementById('monthGrid');
+  const prevBtn = document.getElementById('monthPrevHint');
+  const nextBtn = document.getElementById('monthNextHint');
 
-  const $error = document.getElementById('week-error');
-  const $empty = document.getElementById('week-empty');
-  const $card  = document.getElementById('week-card');
-  const $list  = document.getElementById('week-list');
+  const $error = document.getElementById('month-error');
+  const $empty = document.getElementById('month-empty');
+  const $card  = document.getElementById('month-card');
+  const $list  = document.getElementById('month-list');
 
   const selectedDate = (root.dataset.selectedDate || '').trim(); // yyyy-MM-dd
-  const weekStart = (root.dataset.weekStart || '').trim();       // yyyy-MM-dd
+  const monthLabel   = (root.dataset.monthLabel || '').trim();   // yyyy-MM
+  const monthStart   = (root.dataset.monthStart || '').trim();   // yyyy-MM-dd
+  const currentDate  = (root.dataset.currentDate || '').trim();
 
   let navLocked = false;
   const NAV_LOCK_MS = 650;
@@ -45,25 +47,22 @@
     $empty?.classList.remove('hidden');
   }
 
-  function showList() {
+  function showList(n) {
     hideAll();
     $card?.classList.remove('hidden');
   }
 
-  function gotoWeek(deltaWeeks) {
+  function gotoMonth(move) {
     if (navLocked) return;
     lockNav();
 
-    const base = weekStart || selectedDate;
-    const url = `/tasks/week?move=${deltaWeeks < 0 ? 'prev' : 'next'}&date=${encodeURIComponent(base)}`;
+    const base = monthStart || selectedDate || currentDate;
+    const url = `/tasks/month?move=${move}&date=${encodeURIComponent(base)}`;
     window.location.href = url;
   }
 
-  function gotoPrevWeek() { gotoWeek(-1); }
-  function gotoNextWeek() { gotoWeek(1); }
-
-  prevBtn?.addEventListener('click', (e) => { e.preventDefault(); gotoPrevWeek(); });
-  nextBtn?.addEventListener('click', (e) => { e.preventDefault(); gotoNextWeek(); });
+  prevBtn?.addEventListener('click', (e) => { e.preventDefault(); gotoMonth('prev'); });
+  nextBtn?.addEventListener('click', (e) => { e.preventDefault(); gotoMonth('next'); });
 
   function todayYmd() {
     const d = new Date();
@@ -75,8 +74,7 @@
 
   function applyTodayRing() {
     const today = todayYmd();
-
-    const nodes = document.querySelectorAll('#weekStrip a[data-date]');
+    const nodes = document.querySelectorAll('#monthGrid a[data-date]');
     nodes.forEach(a => {
       a.classList.remove('ring-2', 'ring-gray-300/70', 'bg-white/40');
 
@@ -96,8 +94,9 @@
       $error?.classList.add('hidden');
       applyTodayRing();
 
-      const date = selectedDate || weekStart;
-      const url = `/api/tasks?type=WEEK&date=${encodeURIComponent(date)}`;
+      const ym = monthLabel || (monthStart ? monthStart.slice(0, 7) : '');
+      const url = `/api/tasks?type=MONTH&date=${encodeURIComponent(ym)}`;
+
       const res = await fetch(url, { headers: { 'Accept': 'application/json' }});
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
@@ -107,6 +106,7 @@
 
       const tasks = body.data ?? [];
 
+      // 하단 리스트는 selectedDate 기준
       const filtered = Array.isArray(tasks)
         ? tasks.filter(t => {
             if (!selectedDate) return true;
@@ -129,16 +129,17 @@
         return;
       }
 
-      showList();
+      showList(filtered.length);
       $list.innerHTML = filtered.map(TaskUI.renderWeekCard).join('');
     } catch (e) {
-      showError(`Week 로딩 실패: ${e.message}`);
+      showError(`Month 로딩 실패: ${e.message}`);
       showEmpty();
     }
   }
 
-  if (strip) {
-    strip.addEventListener('wheel', (e) => {
+  // (선택) 가로 휠로 월 이동 유지
+  if (grid) {
+    grid.addEventListener('wheel', (e) => {
       const dx = e.deltaX;
       const dy = e.deltaY;
 
@@ -148,46 +149,9 @@
       if (absX < 20 || absX < absY) return;
 
       e.preventDefault();
-      if (dx > 0) gotoNextWeek();
-      else gotoPrevWeek();
+      if (dx > 0) gotoMonth('next');
+      else gotoMonth('prev');
     }, { passive: false });
-  }
-
-  // drag gesture (가로 드래그로 주 이동)
-  let startX = 0;
-  let dragging = false;
-
-  function onDragStart(clientX) {
-    dragging = true;
-    startX = clientX;
-  }
-
-  function onDragEnd(clientX) {
-    if (!dragging) return;
-    dragging = false;
-
-    const dx = clientX - startX;
-    const TH = 40;
-    if (Math.abs(dx) < TH) return;
-
-    if (dx < 0) gotoNextWeek();
-    else gotoPrevWeek();
-  }
-
-  if (strip) {
-    strip.addEventListener('mousedown', (e) => onDragStart(e.clientX));
-    window.addEventListener('mouseup', (e) => onDragEnd(e.clientX));
-
-    strip.addEventListener('touchstart', (e) => {
-      if (!e.touches || e.touches.length === 0) return;
-      onDragStart(e.touches[0].clientX);
-    }, { passive: true });
-
-    strip.addEventListener('touchend', (e) => {
-      const t = e.changedTouches && e.changedTouches[0];
-      if (!t) return;
-      onDragEnd(t.clientX);
-    }, { passive: true });
   }
 
   load();

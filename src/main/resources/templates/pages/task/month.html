@@ -1,141 +1,171 @@
 <!-- src/main/resources/templates/pages/task/month.html -->
-<html lang="ko" xmlns:th="http://www.thymeleaf.org" th:inline="html">
+<div th:fragment="content">
 
-<div class="px-5 py-6">
+    <div id="month-page"
+         class="px-4 pb-24 max-w-3xl mx-auto h-full flex flex-col"
+         th:attr="data-current-date=${currentDate},
+                data-selected-date=${selectedDate},
+                data-month-label=${monthLabel},
+                data-month-start=${monthStart}">
 
-    <!-- ✅ 미니멀 상단 헤더: 타이틀 정중앙 + 우측 끝에 (월→주) 버튼 -->
-    <div class="relative flex items-center justify-between mb-4">
-
-        <!-- 이전 달 -->
-        <a class="nav-btn"
-           th:href="'/tasks/month?move=prev&month=' + ${yearMonth}
-                    + '&from=' + ${from}
-                    + (${date} != null ? '&date=' + ${date} : '')"
-           aria-label="이전 달">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
-                 viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M15 19l-7-7 7-7" />
-            </svg>
-        </a>
-
-        <!-- ✅ 정중앙 타이틀 (버튼 개수와 무관하게 항상 가운데) -->
-        <div class="absolute left-1/2 -translate-x-1/2 text-lg font-bold text-gray-900 whitespace-nowrap">
-            <span th:text="${yearMonth.year}">2026</span>년
-            <span th:text="${yearMonth.monthValue}">1</span>월
-        </div>
-
-        <!-- ✅ 우측 버튼 그룹: (월→주/일) + 다음 달 -->
-        <div class="flex items-center gap-3">
-
-            <!-- 월 → 주/일 전환 (date null-safe) -->
-            <a th:href="${from == 'day'}
-                         ? (${date} != null ? ('/tasks/day?date=' + ${date}) : '/tasks/day')
-                         : (${date} != null ? ('/tasks/week?date=' + ${date}) : '/tasks/week')"
-               class="nav-btn"
-               aria-label="주간 보기"
-               title="주간 보기">
-                <!-- up arrow icon (월간 -> 주간) -->
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
-                     viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M12 5l-5 5m5-5l5 5m-5-5v14" />
-                </svg>
-            </a>
-
-            <!-- 다음 달 -->
-            <a class="nav-btn"
-               th:href="'/tasks/month?move=next&month=' + ${yearMonth}
-                        + '&from=' + ${from}
-                        + (${date} != null ? '&date=' + ${date} : '')"
-               aria-label="다음 달">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
-                     viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M9 5l7 7-7 7" />
-                </svg>
-            </a>
-
-        </div>
-    </div>
-
-    <!-- 요일 헤더 -->
-    <div class="grid grid-cols-7 gap-2 text-xs text-gray-500 mb-2 px-1">
-        <div class="text-center text-red-600">일</div>
-        <div class="text-center">월</div>
-        <div class="text-center">화</div>
-        <div class="text-center">수</div>
-        <div class="text-center">목</div>
-        <div class="text-center">금</div>
-        <div class="text-center text-blue-600">토</div>
-    </div>
-
-    <!-- 캘린더 그리드 (6 x 7) -->
-    <div class="grid grid-cols-7 gap-2">
-
-        <!-- 날짜 셀 -->
-        <a th:each="cell : ${cells}"
-           th:href="'/tasks/day?date=' + ${cell.date()}"
-           class="block bg-white rounded-xl shadow-sm p-2 min-h-[110px] border
-                  hover:shadow-md hover:-translate-y-[1px] transition month-cell"
-           th:classappend="${!cell.inMonth()} ? ' opacity-50' : ''">
-
-            <!-- 날짜 / 오늘 -->
-            <div class="flex items-center justify-between mb-1">
-                <div class="text-sm font-semibold"
-                     th:text="${cell.date().dayOfMonth}">
-                    1
+        <!-- 상단 헤더 -->
+        <div class="mt-6 flex items-center justify-between px-1 shrink-0">
+            <div>
+                <div class="inline-flex items-center gap-2 text-[16px] font-black text-gray-900 tracking-tight">
+                    <span class="text-[16px] leading-none">🗓️</span>
+                    <span>월간 일정</span>
                 </div>
 
-                <div th:if="${cell.date().equals(today)}"
-                     class="text-[10px] px-2 py-[2px] rounded-full bg-blue-600 text-white">
-                    오늘
+                <div id="monthRangeText"
+                     class="mt-1 text-[12px] font-semibold text-gray-500"
+                     th:text="${monthRange}">2026-02</div>
+            </div>
+
+            <!-- ✅ 오른쪽: 카운트 + 정식 토글 -->
+            <div class="flex items-center gap-2">
+                <!-- ✅ View Toggle (주간/월간) -->
+                <div class="inline-flex items-center rounded-full border border-gray-200 bg-white/70 p-1 shadow-sm">
+                    <!-- 주간 -->
+                    <a th:href="'/tasks/week?date=' + ${selectedDate}"
+                       class="px-3 py-1.5 rounded-full text-[12px] font-extrabold text-gray-700 hover:bg-white active:scale-[0.98]">
+                        <span class="mr-1">📆</span>주간
+                    </a>
+
+                    <!-- 월간(현재) -->
+                    <span class="px-3 py-1.5 rounded-full text-[12px] font-extrabold
+                       bg-indigo-500 text-white shadow-[0_8px_16px_rgba(99,102,241,0.14)]">
+            <span class="mr-1">🗓️</span>월간
+          </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-4 border-t border-gray-200 shrink-0"></div>
+
+        <!-- 월 캘린더 -->
+        <div class="mt-4 shrink-0">
+            <div class="relative">
+
+                <!-- 좌/우 버튼 -->
+                <button type="button"
+                        id="monthPrevHint"
+                        class="absolute left-2 top-1/2 -translate-y-1/2 z-10
+                       w-9 h-9 p-0 rounded-2xl
+                       bg-white/80 border border-gray-200
+                       shadow-[0_10px_24px_rgba(17,24,39,0.06)]
+                       flex items-center justify-center
+                       text-gray-400 hover:text-gray-700 hover:bg-white
+                       active:scale-[0.98]"
+                        aria-label="지난달">
+                    <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path fill-rule="evenodd"
+                              d="M12.78 15.53a.75.75 0 0 1-1.06 0l-5-5a.75.75 0 0 1 0-1.06l5-5a.75.75 0 1 1 1.06 1.06L8.31 10l4.47 4.47a.75.75 0 0 1 0 1.06z"
+                              clip-rule="evenodd"/>
+                    </svg>
+                </button>
+
+                <button type="button"
+                        id="monthNextHint"
+                        class="absolute right-2 top-1/2 -translate-y-1/2 z-10
+                       w-9 h-9 p-0 rounded-2xl
+                       bg-white/80 border border-gray-200
+                       shadow-[0_10px_24px_rgba(17,24,39,0.06)]
+                       flex items-center justify-center
+                       text-gray-400 hover:text-gray-700 hover:bg-white
+                       active:scale-[0.98]"
+                        aria-label="다음달">
+                    <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path fill-rule="evenodd"
+                              d="M7.22 4.47a.75.75 0 0 1 1.06 0l5 5a.75.75 0 0 1 0 1.06l-5 5a.75.75 0 1 1-1.06-1.06L11.69 10 7.22 5.53a.75.75 0 0 1 0-1.06z"
+                              clip-rule="evenodd"/>
+                    </svg>
+                </button>
+
+                <!-- 가장자리 페이드 -->
+                <div class="pointer-events-none absolute left-0 top-0 h-full w-12
+                    bg-gradient-to-r from-[#F7F6F2] to-transparent z-[5]"></div>
+                <div class="pointer-events-none absolute right-0 top-0 h-full w-12
+                    bg-gradient-to-l from-[#F7F6F2] to-transparent z-[5]"></div>
+
+                <!-- 컨텐츠 -->
+                <div class="px-12">
+
+                    <!-- 요일 헤더 -->
+                    <div class="grid grid-cols-7 w-full justify-items-center">
+                        <div class="text-[12px] font-extrabold text-red-400">일</div>
+                        <div class="text-[12px] font-extrabold text-gray-400">월</div>
+                        <div class="text-[12px] font-extrabold text-gray-400">화</div>
+                        <div class="text-[12px] font-extrabold text-gray-400">수</div>
+                        <div class="text-[12px] font-extrabold text-gray-400">목</div>
+                        <div class="text-[12px] font-extrabold text-gray-400">금</div>
+                        <div class="text-[12px] font-extrabold text-blue-400">토</div>
+                    </div>
+
+                    <!-- ✅ 날짜 그리드: monthDays 길이(weeks*7)만큼만 렌더 -->
+                    <div id="monthGrid"
+                         class="mt-3 grid grid-cols-7 gap-y-2 w-full select-none"
+                         style="touch-action: pan-x;">
+                        <div th:each="c : ${monthDays}" class="flex flex-col items-center">
+
+                            <a th:href="'/tasks/month?date=' + ${c.date}"
+                               th:attr="data-date=${c.date}"
+                               class="w-[40px] h-[40px] rounded-full flex items-center justify-center
+                        font-black text-[15px] transition
+                        hover:bg-gray-900/5 active:scale-[0.98]"
+                               th:classappend="${
+                    (c.date.equals(selectedDate)) ?
+                      ' bg-indigo-500 text-white shadow-[0_8px_16px_rgba(99,102,241,0.14)] ring-2 ring-indigo-200/30'
+                      : (c.inMonth ? ' text-gray-900' : ' text-gray-300')
+                 }"
+                               th:text="${c.date.dayOfMonth}">
+                                1
+                            </a>
+
+                            <div class="mt-1 h-2 flex items-center justify-center">
+                <span th:if="${c.tasks != null and !c.tasks.isEmpty()}"
+                      class="inline-block w-1.5 h-1.5 rounded-full bg-indigo-400/70"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- 아래 스크롤 -->
+        <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y">
+            <div id="month-error" class="mt-6 text-red-600 text-sm hidden"></div>
+
+            <div id="month-empty"
+                 class="hidden mt-14 flex flex-col items-center justify-center text-center select-none">
+                <div class="w-14 h-14 rounded-2xl bg-white/60 border border-gray-200
+                    flex items-center justify-center shadow-sm">
+                    <span class="text-2xl">🗓️</span>
+                </div>
+
+                <div class="mt-5 text-2xl font-extrabold text-gray-800">
+                    등록된 일정이 없어요
+                </div>
+
+                <div class="mt-3 text-base text-gray-500 font-semibold">
+                    선택한 날짜에 일정을 추가해보세요
+                </div>
+
+                <div class="mt-4 text-sm font-semibold text-gray-500">
+                    오른쪽 아래 <span class="font-extrabold text-gray-700">+</span> 버튼으로 바로 추가할 수 있어요
                 </div>
             </div>
 
-            <!-- 일정 (최대 3개) -->
-            <div class="space-y-1">
-                <div th:each="task, stat : ${cell.tasks()}"
-                     th:if="${stat.index < 3}"
-                     class="text-[11px] rounded-md px-2 py-1 truncate cursor-pointer
-                            hover:brightness-95 active:scale-[0.99] transition task-chip"
-                     th:attr="data-task-id=${task.id()}"
-                     th:style="'background:' + ${task.color()}"
-                     onclick="return openTaskDetailFromMonth(event, this);">
-                    <span th:text="${task.title()}">일정 제목</span>
-                </div>
-
-                <div th:if="${cell.tasks().size() > 3}"
-                     class="text-[11px] text-gray-500 px-1">
-                    <span th:text="'+' + (${cell.tasks().size()} - 3) + ' more'">
-                        +2 more
-                    </span>
+            <div id="month-card" class="mt-4 hidden">
+                <div class="task-card">
+                    <div id="month-list" class="space-y-0"></div>
                 </div>
             </div>
 
-        </a>
+            <div class="h-10"></div>
+        </div>
+
     </div>
 
+    <script defer src="/js/month.js"></script>
 </div>
-
-<style>
-    .month-cell { overflow: hidden; }
-    .task-chip  { box-shadow: 0 6px 14px rgba(0,0,0,0.10); }
-</style>
-
-<script>
-    function openTaskDetailFromMonth(event, el) {
-        event.preventDefault();
-        event.stopPropagation();
-
-        const taskId = el?.getAttribute?.("data-task-id");
-        if (!taskId) return false;
-
-        if (typeof DetailModal !== "undefined" && DetailModal?.loadDetail) {
-            DetailModal.loadDetail(taskId);
-        }
-        return false;
-    }
-</script>
-
-</html>
