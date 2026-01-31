@@ -13,7 +13,7 @@ public record TaskRequest(
         @Size(max = 30, message = "제목은 30자 이하여야 합니다")
         String title,
 
-        @Size(max = 100, message = "설명은 100자 이하여야 합니다")
+        @Size(max = 300, message = "설명은 300자 이하여야 합니다")
         String description,
 
         LocalDateTime startAt,

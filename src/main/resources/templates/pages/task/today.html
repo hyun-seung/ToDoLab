@@ -2,33 +2,80 @@
 <div th:fragment="content">
 
     <div id="today-page"
-         class="px-4 pb-24 max-w-3xl mx-auto"
+         class="px-4 pb-24 max-w-3xl mx-auto h-full flex flex-col"
          th:attr="data-date=${date}">
 
-        <!-- ✅ Today 헤더 (주간 일정 톤과 유사하게 중앙 정렬) -->
-        <div class="mt-6 mb-10 flex flex-col items-center">
-            <div class="text-2xl font-extrabold text-gray-900">Today</div>
+        <!-- ✅ 상단 타이틀(항상 유지 / 중앙 정렬 기준) -->
+        <div class="mt-6 flex items-center justify-between px-1 shrink-0">
+            <div>
+                <div class="inline-flex items-center gap-2 text-[16px] font-black text-gray-900 tracking-tight">
+                    <span class="text-[16px] leading-none">✨</span>
+                    <span>Today</span>
+                </div>
 
-            <div id="todayDateText"
-                 class="mt-2 text-sm font-semibold text-gray-500"
-                 th:text="${date}">2026-01-31</div>
-        </div>
-
-        <div id="today-error" class="mt-6 text-red-600 text-sm hidden"></div>
-
-        <div id="today-empty"
-             class="hidden mt-16 flex flex-col items-center justify-center text-center select-none">
-            <div class="w-14 h-14 rounded-2xl bg-white/60 border border-gray-200
-                  flex items-center justify-center shadow-sm">
-                <span class="text-2xl">🗓️</span>
+                <!-- 날짜: JS가 요일 포함으로 덮어씀 -->
+                <div id="todayDateText"
+                     class="mt-1 text-[12px] font-semibold text-gray-500"
+                     th:text="${date}">2026-01-31</div>
             </div>
-            <div class="mt-5 text-2xl font-extrabold text-gray-800">등록된 일정이 없어요</div>
-            <div class="mt-3 text-base text-gray-500 font-semibold">오늘 해야 할 일부터 차분히 추가해보세요</div>
+
+            <!-- 우측 개수 pill -->
+            <div id="today-count"
+                 class="self-center text-[12px] font-extrabold text-gray-900
+                        bg-gray-900/5 border border-gray-200
+                        px-3 py-1.5 rounded-full hidden">
+            </div>
         </div>
 
-        <div id="today-list" class="mt-8 space-y-3"></div>
+        <!-- ✅ 헤더 아래 구분선 -->
+        <div class="mt-4 border-t border-gray-200 shrink-0"></div>
+
+        <!-- ✅ 아래 내용만 스크롤 -->
+        <div class="flex-1 min-h-0 overflow-y-auto">
+
+            <!-- 로딩 / 에러 -->
+            <div id="today-loading"
+                 class="mt-6 text-gray-500 text-sm">
+                불러오는 중...
+            </div>
+
+            <div id="today-error"
+                 class="mt-6 text-red-600 text-sm hidden"></div>
+
+            <!-- Empty State -->
+            <div id="today-empty"
+                 class="hidden mt-16 flex flex-col items-center justify-center text-center select-none">
+                <div class="w-14 h-14 rounded-2xl bg-white/60 border border-gray-200
+                      flex items-center justify-center shadow-sm">
+                    <span class="text-2xl">🗓️</span>
+                </div>
+
+                <div class="mt-5 text-2xl font-extrabold text-gray-800">
+                    등록된 일정이 없어요
+                </div>
+
+                <div class="mt-3 text-base text-gray-500 font-semibold">
+                    오늘 해야 할 일부터 차분히 추가해보세요
+                </div>
+
+                <!-- ✅ CTA -->
+                <div class="mt-4 text-sm font-semibold text-gray-500">
+                    오른쪽 아래 <span class="font-extrabold text-gray-700">+</span> 버튼으로 바로 추가할 수 있어요
+                </div>
+            </div>
+
+            <!-- ✅ 리스트 카드 (today.js가 제어) -->
+            <div id="today-card" class="mt-6 hidden">
+                <div class="task-card">
+                    <div id="today-list" class="space-y-0"></div>
+                </div>
+            </div>
+
+            <!-- 하단 여유 -->
+            <div class="h-10"></div>
+        </div>
+
     </div>
 
-    <!-- ✅ JS는 파일로 분리 -->
-    <script src="/js/today.js"></script>
+    <!-- ✅ today.js는 base.html에서 로드되므로 여기서는 로드하지 않음 -->
 </div>

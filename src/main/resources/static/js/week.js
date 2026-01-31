@@ -1,247 +1,217 @@
 // src/main/resources/static/js/week.js
 (() => {
-  function pad2(n){ return String(n).padStart(2, '0'); }
-  function parseISO(iso){
-    const [y,m,d] = iso.split('-').map(Number);
-    return new Date(y, m-1, d);
+  const root = document.getElementById('week-page');
+  if (!root) return;
+
+  if (root.dataset.bound === '1') return;
+  root.dataset.bound = '1';
+
+  const strip = document.getElementById('weekStrip');
+  const prevBtn = document.getElementById('weekPrevHint');
+  const nextBtn = document.getElementById('weekNextHint');
+
+  const $error = document.getElementById('week-error');
+  const $empty = document.getElementById('week-empty');
+  const $card  = document.getElementById('week-card');
+  const $list  = document.getElementById('week-list');
+  const $count = document.getElementById('week-count');
+
+  const selectedDate = root.dataset.selectedDate; // yyyy-MM-dd
+  const weekStart = root.dataset.weekStart;       // yyyy-MM-dd
+
+  let navLocked = false;
+  const NAV_LOCK_MS = 650;
+
+  function lockNav() {
+    navLocked = true;
+    setTimeout(() => (navLocked = false), NAV_LOCK_MS);
   }
-  function toISO(d){
-    return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
-  }
-  function addDays(iso, n){
-    const d = parseISO(iso);
-    d.setDate(d.getDate() + n);
-    return toISO(d);
+
+  function hideAll() {
+    $error?.classList.add('hidden');
+    $empty?.classList.add('hidden');
+    $card?.classList.add('hidden');
   }
 
-  function initWeek() {
-    const root = document.getElementById('week-page');
-    if (!root) return;
-
-    // ✅ 중복 바인딩 방지
-    if (root.dataset.bound === '1') return;
-    root.dataset.bound = '1';
-
-    const rangeEl = document.getElementById('weekRangeText');
-    const stripEl = document.getElementById('weekStrip');
-    const daysEl  = document.getElementById('weekDays');
-    const prevBtn = document.getElementById('weekPrevBtn');
-    const nextBtn = document.getElementById('weekNextBtn');
-    const dowEl   = document.getElementById('weekDow');
-
-    if (!stripEl || !daysEl) return;
-
-    const todayISO = toISO(new Date());
-
-    const weekStartISO = (anyISO) => {
-      const d = parseISO(anyISO);
-      const dow = d.getDay(); // 0=일..6=토
-      d.setDate(d.getDate() - dow);
-      return toISO(d);
-    };
-
-    const weekRangeText = (anyISO) => {
-      const start = weekStartISO(anyISO);
-      const end = addDays(start, 6);
-      return `${start} ~ ${end}`;
-    };
-
-    let selectedISO = root.getAttribute('data-selected-date');
-    let currentISO  = root.getAttribute('data-current-date');
-
-    function setSelected(iso){
-      if (!iso) return;
-
-      selectedISO = iso;
-      root.setAttribute('data-selected-date', iso);
-
-      // 아래 일정 토글
-      daysEl.querySelectorAll('.week-day[data-date]').forEach(box => {
-        box.classList.toggle('hidden', box.getAttribute('data-date') !== iso);
-      });
-
-      // strip UI 토글
-      stripEl.querySelectorAll('a[data-date]').forEach(a => {
-        const d = a.getAttribute('data-date');
-        const isSel = (d === iso);
-
-        const circle = a.querySelector('div.relative');
-        if (!circle) return;
-
-        const ring = circle.querySelector('span.absolute');
-        const num  = circle.querySelector('span:not(.absolute)');
-
-        circle.classList.toggle('bg-indigo-500', isSel);
-        circle.classList.toggle('shadow-[0_10px_18px_rgba(99,102,241,0.20)]', isSel);
-        circle.classList.toggle('-translate-y-[1px]', isSel);
-
-        if (num) {
-          if (isSel) { num.classList.add('text-white'); num.classList.remove('text-gray-900'); }
-          else { num.classList.remove('text-white'); num.classList.add('text-gray-900'); }
-        }
-
-        if (ring) {
-          if (isSel) { ring.classList.add('border-white/85'); ring.classList.remove('border-indigo-500/55'); }
-          else { ring.classList.remove('border-white/85'); ring.classList.add('border-indigo-500/55'); }
-        }
-      });
+  function showError(msg) {
+    hideAll();
+    if ($error) {
+      $error.textContent = msg;
+      $error.classList.remove('hidden');
     }
+  }
 
-    /**
-     * ✅ href 재작성 로직은 "서버가 준 currentISO 기준"으로만 한다.
-     * (여기서 curISO를 계산하지 않는다)
-     */
-    function updateNavHrefs(curISO){
-      if (!prevBtn || !nextBtn) return;
-      if (!curISO) return;
-
-      const prev = new URL(prevBtn.getAttribute('href'), location.origin);
-      const next = new URL(nextBtn.getAttribute('href'), location.origin);
-
-      prev.searchParams.set('date', curISO);
-      next.searchParams.set('date', curISO);
-
-      prevBtn.setAttribute('href', prev.pathname + '?' + prev.searchParams.toString());
-      nextBtn.setAttribute('href', next.pathname + '?' + next.searchParams.toString());
+  function setCount(n) {
+    if (!$count) return;
+    if (n <= 0) {
+      $count.classList.add('hidden');
+      $count.textContent = '';
+      return;
     }
+    $count.textContent = `총 ${n}개`;
+    $count.classList.remove('hidden');
+  }
 
-    function renderLoadingState(){
-      daysEl.innerHTML = `
-        <div class="flex justify-center mt-8">
-          <div class="w-full border border-dashed border-gray-300 rounded-[22px] p-10 text-center bg-white/35">
-            <div class="text-2xl">⏳</div>
-            <div class="mt-3 text-xl font-extrabold text-gray-800">불러오는 중...</div>
-            <div class="mt-1 text-sm text-gray-500 font-semibold">잠시만 기다려주세요</div>
-          </div>
-        </div>
-      `;
-    }
+  function showEmpty() {
+    hideAll();
+    $empty?.classList.remove('hidden');
+    setCount(0);
+  }
 
-    // 최신 응답만 반영
-    let reqSeq = 0;
+  function showList(n) {
+    hideAll();
+    $card?.classList.remove('hidden');
+    setCount(n);
+  }
 
-    async function fetchAndCommit(href){
-      const mySeq = ++reqSeq;
+  function gotoWeek(deltaWeeks) {
+    if (navLocked) return;
+    lockNav();
 
-      try{
-        const res = await fetch(href, { headers: { 'X-Requested-With': 'fetch' }});
-        if (!res.ok) throw new Error('HTTP ' + res.status);
+    const base = weekStart || selectedDate;
+    const url = `/tasks/week?move=${deltaWeeks < 0 ? 'prev' : 'next'}&date=${encodeURIComponent(base)}`;
+    window.location.href = url;
+  }
 
-        const html = await res.text();
-        if (mySeq !== reqSeq) return;
+  function gotoPrevWeek() { gotoWeek(-1); }
+  function gotoNextWeek() { gotoWeek(1); }
 
-        const doc = new DOMParser().parseFromString(html, 'text/html');
-        const newRoot = doc.getElementById('week-page');
-        if (!newRoot) return;
+  prevBtn?.addEventListener('click', (e) => { e.preventDefault(); gotoPrevWeek(); });
+  nextBtn?.addEventListener('click', (e) => { e.preventDefault(); gotoNextWeek(); });
 
-        const newRange = newRoot.querySelector('#weekRangeText');
-        const newStrip = newRoot.querySelector('#weekStrip');
-        const newDays  = newRoot.querySelector('#weekDays');
+  // ✅ 오늘 날짜 yyyy-MM-dd (로컬 기준)
+  function todayYmd() {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
 
-        if (newRange && rangeEl) rangeEl.textContent = newRange.textContent || '';
-        if (newStrip) stripEl.innerHTML = newStrip.innerHTML;
-        if (newDays)  daysEl.innerHTML  = newDays.innerHTML;
+  // ✅ “오늘” 링 표시 (선택일이 다른 날일 때만)
+  function applyTodayRing() {
+    const today = todayYmd();
 
-        // ✅ 서버가 내려준 값으로 current/selected를 "확정"
-        const cd = newRoot.getAttribute('data-current-date');
-        const sd = newRoot.getAttribute('data-selected-date');
+    // 모든 date anchor
+    const nodes = document.querySelectorAll('#weekStrip a[data-date]');
+    nodes.forEach(a => {
+      // 먼저 today ring 제거 (idempotent)
+      a.classList.remove('ring-2', 'ring-gray-300/70', 'bg-white/40');
 
-        if (cd) {
-          currentISO = cd;
-          root.setAttribute('data-current-date', cd);
-          updateNavHrefs(cd);
-          if (rangeEl) rangeEl.textContent = weekRangeText(cd); // 안전하게 보정
-        }
+      const date = a.getAttribute('data-date');
+      if (!date) return;
 
-        if (sd) {
-          selectedISO = sd;
-          root.setAttribute('data-selected-date', sd);
-        }
+      // 선택일이면(파란 원) 오늘 링은 안 붙임
+      if (date === selectedDate) return;
 
-        // ✅ 선택일이 strip에 없으면 첫날로 보정
-        const exists = !!stripEl.querySelector(`a[data-date="${CSS.escape(selectedISO)}"]`);
-        if (!exists) {
-          const first = stripEl.querySelector('a[data-date]');
-          selectedISO = first ? first.getAttribute('data-date') : selectedISO;
-        }
-        setSelected(selectedISO);
-
-      } catch(e){
-        if (mySeq !== reqSeq) return;
-        daysEl.innerHTML = `
-          <div class="flex justify-center mt-8">
-            <div class="w-full border border-dashed border-gray-300 rounded-[22px] p-10 text-center bg-white/35">
-              <div class="text-2xl">⚠️</div>
-              <div class="mt-3 text-xl font-extrabold text-gray-800">불러오지 못했어요</div>
-              <div class="mt-1 text-sm text-gray-500 font-semibold">다시 시도해보세요</div>
-            </div>
-          </div>
-        `;
-        console.warn('[week] fetch failed:', e);
+      // 오늘이면 연한 띠만 있는 원
+      if (date === today) {
+        a.classList.add('ring-2', 'ring-gray-300/70', 'bg-white/40');
       }
-    }
-
-    // 날짜 클릭 (delegation)
-    stripEl.addEventListener('click', (e) => {
-      const a = e.target.closest('a[data-date]');
-      if (!a) return;
-      e.preventDefault();
-      setSelected(a.getAttribute('data-date'));
-    });
-
-    // 요일 클릭
-    if (dowEl) {
-      dowEl.addEventListener('click', (e) => {
-        const btn = e.target.closest('button[data-idx]');
-        if (!btn) return;
-        const idx = Number(btn.getAttribute('data-idx'));
-        const items = Array.from(stripEl.querySelectorAll('a[data-date]'));
-        const target = items[idx];
-        if (!target) return;
-        setSelected(target.getAttribute('data-date'));
-      });
-    }
-
-    /**
-     * ✅ 핵심 수정:
-     * - deltaDays 기반 날짜 계산 제거
-     * - href 그대로 push + fetch
-     * - UI는 로딩만 표시
-     */
-    function bindNav(btn){
-      if (!btn) return;
-
-      btn.onclick = (e) => {
-        e.preventDefault();
-
-        const href = btn.getAttribute('href');
-        if (!href) return;
-
-        renderLoadingState();
-        history.pushState({ href }, '', href);
-        fetchAndCommit(href);
-      };
-    }
-
-    // init
-    updateNavHrefs(currentISO);
-
-    if (!selectedISO) {
-      const first = stripEl.querySelector('a[data-date]');
-      selectedISO = first ? first.getAttribute('data-date') : selectedISO;
-    }
-    setSelected(selectedISO);
-
-    // ✅ 여기 변경: 인자 제거
-    bindNav(prevBtn);
-    bindNav(nextBtn);
-
-    window.addEventListener('popstate', () => {
-      const href = location.pathname + location.search;
-      renderLoadingState();
-      fetchAndCommit(href);
     });
   }
 
-  document.addEventListener('DOMContentLoaded', initWeek);
+  async function load() {
+    try {
+      $error?.classList.add('hidden');
+
+      // ✅ 오늘 링 적용 (API 로딩과 무관)
+      applyTodayRing();
+
+      const date = selectedDate || weekStart;
+      const url = `/api/tasks?type=WEEK&date=${encodeURIComponent(date)}`;
+      const res = await fetch(url, { headers: { 'Accept': 'application/json' }});
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      const body = await res.json();
+      if (!body) throw new Error('응답이 비어있음');
+      if (body.success === false) throw new Error(body.message || 'API 실패');
+
+      const tasks = body.data ?? [];
+
+      const filtered = Array.isArray(tasks)
+        ? tasks.filter(t => {
+            if (!selectedDate) return true;
+            const s = (t.startAt || '').split('T')[0];
+            const e = (t.endAt || '').split('T')[0];
+            if (!s) return false;
+            if (!e) return s === selectedDate;
+            return (s <= selectedDate && selectedDate <= e);
+          })
+        : [];
+
+      if (!filtered.length) {
+        showEmpty();
+        return;
+      }
+
+      if (!window.TaskUI || typeof window.TaskUI.renderWeekCard !== 'function') {
+        showError('렌더 실패: TaskUI.renderWeekCard를 찾을 수 없습니다. (task-ui.js 로드 순서 확인)');
+        showEmpty();
+        return;
+      }
+
+      showList(filtered.length);
+      $list.innerHTML = filtered.map(TaskUI.renderWeekCard).join('');
+    } catch (e) {
+      showError(`Week 로딩 실패: ${e.message}`);
+      showEmpty();
+    }
+  }
+
+  // wheel gesture
+  if (strip) {
+    strip.addEventListener('wheel', (e) => {
+      const dx = e.deltaX;
+      const dy = e.deltaY;
+
+      const absX = Math.abs(dx);
+      const absY = Math.abs(dy);
+
+      if (absX < 20 || absX < absY) return;
+
+      e.preventDefault();
+      if (dx > 0) gotoNextWeek();
+      else gotoPrevWeek();
+    }, { passive: false });
+  }
+
+  // drag gesture
+  let startX = 0;
+  let dragging = false;
+
+  function onDragStart(clientX) {
+    dragging = true;
+    startX = clientX;
+  }
+
+  function onDragEnd(clientX) {
+    if (!dragging) return;
+    dragging = false;
+
+    const dx = clientX - startX;
+    const TH = 40;
+    if (Math.abs(dx) < TH) return;
+
+    if (dx < 0) gotoNextWeek();
+    else gotoPrevWeek();
+  }
+
+  if (strip) {
+    strip.addEventListener('mousedown', (e) => onDragStart(e.clientX));
+    window.addEventListener('mouseup', (e) => onDragEnd(e.clientX));
+
+    strip.addEventListener('touchstart', (e) => {
+      if (!e.touches || e.touches.length === 0) return;
+      onDragStart(e.touches[0].clientX);
+    }, { passive: true });
+
+    strip.addEventListener('touchend', (e) => {
+      const t = e.changedTouches && e.changedTouches[0];
+      if (!t) return;
+      onDragEnd(t.clientX);
+    }, { passive: true });
+  }
+
+  load();
 })();

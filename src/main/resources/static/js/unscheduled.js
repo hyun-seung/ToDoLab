@@ -3,7 +3,6 @@
   const root = document.getElementById('unscheduled-page');
   if (!root) return;
 
-  // 중복 바인딩 방지
   if (root.dataset.bound === '1') return;
   root.dataset.bound = '1';
 
@@ -13,16 +12,6 @@
   const $card    = document.getElementById('unscheduled-card');
   const $list    = document.getElementById('unscheduled-list');
   const $count   = document.getElementById('unscheduled-count');
-
-  // TaskUI가 없으면 렌더 불가
-  if (!window.TaskUI || typeof window.TaskUI.renderTaskCard !== 'function') {
-    if ($error) {
-      $error.textContent = '렌더 실패: TaskUI.renderTaskCard를 찾을 수 없습니다. (task-ui.js 로드 확인)';
-      $error.classList.remove('hidden');
-    }
-    if ($loading) $loading.classList.add('hidden');
-    return;
-  }
 
   function hideAll() {
     $loading?.classList.add('hidden');
@@ -37,16 +26,23 @@
       $error.textContent = msg;
       $error.classList.remove('hidden');
     }
+    if ($count) $count.classList.add('hidden');
   }
 
   function showEmpty() {
     hideAll();
     $empty?.classList.remove('hidden');
+    if ($count) $count.classList.add('hidden');
   }
 
-  function showList() {
+  function showList(n) {
     hideAll();
     $card?.classList.remove('hidden');
+
+    if ($count) {
+      $count.textContent = `${n}개`;
+      $count.classList.remove('hidden');
+    }
   }
 
   function sortTasks(tasks) {
@@ -61,39 +57,19 @@
     });
   }
 
-  function toDateOnly(iso) {
-    return (iso && typeof iso === 'string') ? iso.split('T')[0] : '';
-  }
-
   function render(tasks) {
     if (!Array.isArray(tasks) || tasks.length === 0) {
       showEmpty();
       return;
     }
 
-    showList();
-
-    if ($count) {
-      $count.textContent = `${tasks.length}개`;
-      $count.classList.remove('hidden');
+    if (!window.TaskUI || typeof window.TaskUI.renderSeedCard !== 'function') {
+      showError('렌더 실패: TaskUI.renderSeedCard를 찾을 수 없습니다. (task-ui.js 로드 순서 확인)');
+      return;
     }
 
-    // ✅ 템플릿 clone 제거 → TaskUI로 문자열 렌더링
-    $list.innerHTML = tasks.map(t => {
-      const created = toDateOnly(t.createdAt);
-
-      return TaskUI.renderTaskCard({
-        id: t.id,
-        title: t.title ?? '',
-        description: (t.description || '').trim() || null,
-        category: (t.category || '').trim() || null,
-
-        // 여기서 '미정' → 나중에 '씨앗'으로 바꾸면 UI 용어 변경 끝
-        rightText: '미정',
-
-        metaText: created ? `등록일 · ${created}` : null
-      });
-    }).join('');
+    showList(tasks.length);
+    $list.innerHTML = tasks.map(TaskUI.renderSeedCard).join('');
   }
 
   async function load() {
@@ -114,7 +90,7 @@
       const only = raw.filter(t => t && t.unscheduled === true);
       render(sortTasks(only));
     } catch (e) {
-      showError(`미정 일정 로딩 실패: ${e.message}`);
+      showError(`씨앗 로딩 실패: ${e.message}`);
     } finally {
       $loading?.classList.add('hidden');
     }

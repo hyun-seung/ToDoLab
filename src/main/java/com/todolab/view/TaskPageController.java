@@ -30,6 +30,8 @@ public class TaskPageController {
     private final SpringTemplateEngine templateEngine;
     private final RestClient restClient;
 
+    private final String[] dayLabels = {"일", "월", "화", "수", "목", "금", "토"};
+
     // ===========================
     //  일정 등록 모달
     // ===========================
@@ -138,7 +140,6 @@ public class TaskPageController {
         LocalDate weekEnd = weekStart.plusDays(6);
 
         final LocalDate finalTargetDate = targetDate;
-
         ApiResponse<List<TaskResponse>> resp = restClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/api/tasks")
@@ -150,45 +151,51 @@ public class TaskPageController {
 
         List<TaskResponse> taskList = (resp != null && resp.data() != null) ? resp.data() : List.of();
 
-        // ✅ week.html이 바로 쓸 수 있게 “요일별로 묶어서” 내려줌
         List<DaySchedule> weeklyTasks = new ArrayList<>(7);
         for (int i = 0; i < 7; i++) {
             LocalDate day = weekStart.plusDays(i);
 
             List<TaskUi> uiTasks = taskList.stream()
-                    .filter(t -> occursOn(t, day))  // 기간 일정 포함
+                    .filter(t -> occursOn(t, day))
                     .map(this::toUi)
                     .toList();
 
-            weeklyTasks.add(new DaySchedule(day, uiTasks));
+            weeklyTasks.add(new DaySchedule(day, dayLabels[i], uiTasks));
         }
-        log.info("## weeklyTasks = {}", weeklyTasks);
 
         LocalDate selectedDate = targetDate;
         if (selectedDate.isBefore(weekStart) || selectedDate.isAfter(weekEnd)) {
             selectedDate = weekStart;
         }
 
+        final LocalDate finalSelectedDate = selectedDate;
+        DaySchedule selectedSchedule = weeklyTasks.stream()
+                .filter(ds -> ds.date().equals(finalSelectedDate))
+                .findFirst()
+                .orElse(null);
+
+        int weekTotalCount = weeklyTasks.stream()
+                .mapToInt(ds -> ds.tasks() == null ? 0 : ds.tasks().size())
+                .sum();
+
         model.addAttribute("title", "ToDoLab");
         model.addAttribute("showBaseHeader", false);
         model.addAttribute("headerTitle", targetDate.getYear() + "년 " + targetDate.getMonthValue() + "월");
-
-        // - 기존: activeTab=week
-        // - 변경: “달력” 탭이면 calendar로 두는 게 맞음
         model.addAttribute("activeTab", "week");
 
         model.addAttribute("currentDate", targetDate);
-        model.addAttribute("monday", weekStart);
-        model.addAttribute("sunday", weekEnd);
+        model.addAttribute("weekStart", weekStart);
+        model.addAttribute("weekEnd", weekEnd);
         model.addAttribute("weekRange", weekStart + " ~ " + weekEnd);
 
         model.addAttribute("selectedDate", selectedDate);
         model.addAttribute("weeklyTasks", weeklyTasks);
+        model.addAttribute("selectedSchedule", selectedSchedule);
+        model.addAttribute("weekTotalCount", weekTotalCount);
 
         model.addAttribute("contentView", "pages/task/week");
         return "layout/base";
     }
-
 
     // ===========================
     // 일정이 특정 날짜(day)에 "발생/겹침"하는지 판단
@@ -272,6 +279,7 @@ public class TaskPageController {
 
     public record DaySchedule(
             LocalDate date,
+            String dayLabel,
             List<TaskUi> tasks
     ) {
     }

@@ -1,42 +1,70 @@
 <!-- src/main/resources/templates/pages/task/unscheduled.html -->
 <div id="unscheduled-page"
      th:fragment="content"
-     class="px-4 pb-24 max-w-3xl mx-auto">
+     class="px-4 pb-24 max-w-3xl mx-auto h-full flex flex-col">
 
-    <!-- 로딩/에러 -->
-    <div id="unscheduled-loading" class="mt-6 text-gray-500 text-sm">불러오는 중...</div>
-    <div id="unscheduled-error" class="mt-6 text-red-600 text-sm hidden"></div>
-
-    <!-- Empty State -->
-    <div id="unscheduled-empty"
-         class="hidden mt-16 flex flex-col items-center justify-center text-center select-none">
-        <div class="w-14 h-14 rounded-2xl bg-white/60 border border-gray-200
-                    flex items-center justify-center shadow-sm">
-            <span class="text-2xl">🗂️</span>
+    <!-- ✅ 상단 타이틀 (항상 유지 / 중앙 정렬 기준) -->
+    <div class="mt-6 flex items-center justify-between px-1 shrink-0">
+        <div class="inline-flex items-center gap-2 text-[16px] font-black text-gray-900 tracking-tight">
+            <span class="text-[16px] leading-none">🌱</span>
+            <span>씨앗</span>
         </div>
 
-        <div class="mt-5 text-2xl font-extrabold text-gray-800">
-            아직 “미정 일정”이 없어요
-        </div>
-
-        <div class="mt-3 text-base text-gray-500 font-semibold">
-            언제 할 지 정해지지 않은 일정들을 모아봐요
+        <!-- 우측 개수 pill -->
+        <div id="unscheduled-count"
+             class="self-center text-[12px] font-extrabold text-gray-900
+                    bg-gray-900/5 border border-gray-200
+                    px-3 py-1.5 rounded-full hidden">
         </div>
     </div>
 
-    <!-- 리스트 (✅ unscheduled.js가 제어) -->
-    <div id="unscheduled-card" class="mt-6 hidden">
-        <div class="task-card">
-            <div class="flex items-center justify-between px-4 pt-4 pb-2">
-                <div class="text-sm font-extrabold text-gray-400">미정 일정</div>
+    <!-- ✅ 헤더 아래 구분선 -->
+    <div class="mt-4 border-t border-gray-200 shrink-0"></div>
 
-                <div id="unscheduled-count"
-                     class="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded-full hidden"></div>
+    <!-- ✅ 아래 영역만 스크롤 -->
+    <div class="flex-1 min-h-0 overflow-y-auto">
+
+        <!-- 로딩 / 에러 -->
+        <div id="unscheduled-loading"
+             class="mt-6 text-gray-500 text-sm">
+            불러오는 중...
+        </div>
+
+        <div id="unscheduled-error"
+             class="mt-6 text-red-600 text-sm hidden">
+        </div>
+
+        <!-- ✅ Empty State (0개여도 헤더는 유지됨) -->
+        <div id="unscheduled-empty"
+             class="hidden mt-16 flex flex-col items-center justify-center text-center select-none">
+            <div class="w-14 h-14 rounded-2xl bg-white/60 border border-gray-200
+                        flex items-center justify-center shadow-sm">
+                <span class="text-2xl">🌱</span>
             </div>
 
-            <!-- ✅ row/card 렌더링 대상 -->
-            <div id="unscheduled-list" class="space-y-0"></div>
+            <div class="mt-5 text-2xl font-extrabold text-gray-800">
+                아직 “씨앗”이 없어요
+            </div>
+
+            <div class="mt-3 text-base text-gray-500 font-semibold">
+                날짜가 정해지지 않은 일정들을 씨앗으로 모아봐요
+            </div>
+
+            <!-- CTA -->
+            <div class="mt-4 text-sm font-semibold text-gray-500">
+                오른쪽 아래 <span class="font-extrabold text-gray-700">+</span> 버튼으로 바로 추가할 수 있어요
+            </div>
         </div>
+
+        <!-- ✅ 리스트 카드 (unscheduled.js가 제어) -->
+        <div id="unscheduled-card" class="mt-6 hidden">
+            <div class="task-card">
+                <div id="unscheduled-list" class="space-y-0"></div>
+            </div>
+        </div>
+
+        <!-- 하단 여유 (탭바와 간격) -->
+        <div class="h-10"></div>
     </div>
 
 </div>

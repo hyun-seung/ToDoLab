@@ -3,7 +3,7 @@
   const TaskUI = {};
 
   /* -----------------------------
-   * utils (기존 페이지들이 기대할 수 있는 API)
+   * utils
    * ----------------------------- */
   TaskUI.escapeHtml = (v) => {
     if (v === null || v === undefined) return '';
@@ -20,69 +20,114 @@
   TaskUI.toTimeHM = (iso) => {
     if (!iso) return null;
     const t = String(iso).split('T')[1] || '';
-    return t.substring(0, 5) || null;
+    return (t.substring(0, 5) || null);
   };
 
-  TaskUI.formatDateTime = (task) => {
+  /**
+   * 카드 우측에 보여줄 "시간 텍스트" 생성
+   * - 종일이면 "종일"
+   * - start~end 둘다 있으면 "HH:mm ~ HH:mm"
+   * - start만 있으면 "HH:mm"
+   */
+  TaskUI.formatRightTime = (task) => {
     if (!task) return '';
-    if (task.unscheduled) return '미정';
+    if (task.allDay) return '종일';
 
-    if (task.allDay) {
-      const d = TaskUI.toDate(task.startAt) || TaskUI.toDate(task.endAt);
-      return d ? `${d} · 종일` : '종일';
-    }
-
-    const sd = TaskUI.toDate(task.startAt);
-    const ed = TaskUI.toDate(task.endAt);
     const st = TaskUI.toTimeHM(task.startAt);
     const et = TaskUI.toTimeHM(task.endAt);
 
-    if (sd && ed && sd === ed) {
-      if (st && et) return `${sd} · ${st} ~ ${et}`;
-      if (st) return `${sd} · ${st}`;
-      return `${sd}`;
-    }
-
-    if (sd && ed) return `${sd} ~ ${ed}`;
-    if (sd) return `${sd}`;
-    if (ed) return `${ed}`;
+    if (st && et) return `${st} ~ ${et}`;
+    if (st) return `${st}`;
     return '';
   };
 
   /* -----------------------------
-   * renderTaskCard (unscheduled.js가 요구)
-   * - 반환: HTML string
-   * - data-task-id 필수 (클릭 상세 연결)
+   * renderTaskCard (모든 페이지가 이걸로 통일)
+   *
+   * options:
+   * - showRightTime: boolean (default false)
+   * - rightText: string | null (우측 표시를 강제로 지정, showRightTime보다 우선)
+   * - metaText: string | null (예: "등록일 · 2026-01-31")
+   * - barColor: string | null (default indigo)
+   * - showDesc: boolean (default true)
    * ----------------------------- */
   TaskUI.renderTaskCard = (task, options = {}) => {
     if (!task) return '';
 
     const title = TaskUI.escapeHtml(task.title || '(제목 없음)');
-    const desc = TaskUI.escapeHtml((task.description || '').trim());
-    const cat = TaskUI.escapeHtml((task.category || '').trim());
-    const timeText = TaskUI.escapeHtml(TaskUI.formatDateTime(task) || '');
+    const desc  = TaskUI.escapeHtml((task.description || '').trim());
+    const cat   = TaskUI.escapeHtml((task.category || '').trim());
 
-    const barColor = options.barColor || 'rgba(99, 102, 241, 0.55)';
+    const metaText = TaskUI.escapeHtml((options.metaText || '').trim());
+    const showDesc = (options.showDesc !== false);
+
+    // ✅ 우측 시간/텍스트는 옵션으로만 노출
+    let right = '';
+    if (
+      options.rightText !== undefined &&
+      options.rightText !== null &&
+      String(options.rightText).trim() !== ''
+    ) {
+      right = TaskUI.escapeHtml(options.rightText);
+    } else if (options.showRightTime) {
+      right = TaskUI.escapeHtml(TaskUI.formatRightTime(task) || '');
+    }
+
+    // ✅ 좌측 바 컬러 (task.color가 있으면 우선)
+    const barColor = TaskUI.escapeHtml(task.color || options.barColor || 'rgba(99, 102, 241, 0.55)');
 
     return `
-<div class="task-card cursor-pointer hover:bg-gray-50 active:scale-[0.995]"
+<div class="task-card task-card-clickable cursor-pointer hover:bg-gray-50 active:scale-[0.995]"
      data-task-id="${TaskUI.escapeHtml(task.id)}">
   <div class="task-row">
     <div class="task-left-bar" style="background:${barColor};"></div>
     <div class="check-box">✓</div>
 
     <div class="min-w-0 flex-1">
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-2 min-w-0">
         <div class="text-[16px] font-black text-gray-900 truncate">${title}</div>
-        ${cat ? `<span class="text-[11px] px-2 py-[2px] rounded-full bg-gray-100 text-gray-700 font-bold">${cat}</span>` : ``}
+        ${cat ? `<span class="task-badge">${cat}</span>` : ``}
       </div>
 
-      ${timeText ? `<div class="mt-1 text-[12px] text-gray-500 font-semibold">${timeText}</div>` : ``}
+      ${metaText ? `<div class="mt-1 text-[12px] text-gray-500 font-semibold">${metaText}</div>` : ``}
 
-      ${desc ? `<div class="mt-2 text-[13px] text-gray-600 leading-snug whitespace-pre-wrap break-words">${desc}</div>` : ``}
+      ${showDesc && desc ? `<div class="mt-2 text-[13px] text-gray-600 leading-snug whitespace-pre-wrap break-words line-clamp-3">${desc}</div>` : ``}
     </div>
+
+    ${right ? `<div class="task-right">${right}</div>` : ``}
   </div>
 </div>`.trim();
+  };
+
+  /* -----------------------------
+   * presets (페이지별 옵션 통일)
+   * ----------------------------- */
+
+  // ✅ Seeds(unscheduled): 우측 시간 X, 등록일 meta O
+  TaskUI.renderSeedCard = (t) => {
+    const created = TaskUI.toDate(t?.createdAt);
+    const meta = created ? `등록일 · ${created}` : null;
+
+    return TaskUI.renderTaskCard(t, {
+      showRightTime: false,
+      metaText: meta
+    });
+  };
+
+  // ✅ Today: 우측 시간 O, meta X
+  TaskUI.renderTodayCard = (t) => {
+    return TaskUI.renderTaskCard(t, {
+      showRightTime: true,
+      metaText: null
+    });
+  };
+
+  // ✅ Week: 우측 시간 O, meta X
+  TaskUI.renderWeekCard = (t) => {
+    return TaskUI.renderTaskCard(t, {
+      showRightTime: true,
+      metaText: null
+    });
   };
 
   /* -----------------------------
@@ -108,13 +153,13 @@
   };
 
   /* -----------------------------
-   * 클릭 위임: 카드 클릭 → 상세
+   * 카드 클릭 위임 → 상세
    * ----------------------------- */
   document.addEventListener('click', (e) => {
     const card = e.target.closest('[data-task-id]');
     if (!card) return;
 
-    // 내부 버튼/링크/폼 요소 클릭은 제외
+    // 내부 버튼/링크/폼 클릭 제외
     if (e.target.closest('button,a,input,textarea,select,label')) return;
 
     const id = card.getAttribute('data-task-id');
@@ -124,10 +169,7 @@
   });
 
   /* -----------------------------
-   * 생성 버튼 트리거(플로팅 버튼/헤더 버튼 등)
-   * - 아래 중 아무거나 붙이면 작동:
-   *   data-action="open-create"
-   *   id="openCreateBtn"
+   * 생성 버튼 트리거
    * ----------------------------- */
   document.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-action="open-create"], #openCreateBtn');
