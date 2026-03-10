@@ -17,12 +17,16 @@ public class TaskQueryRequest {
 
     @Builder
     public TaskQueryRequest(String rawType, String rawDate) {
-        type = parseType(rawType);
-        validateDateFormat(type, rawDate);
-        date = rawDate;
+        this(parseType(rawType), rawDate);
     }
 
-    private TaskQueryType parseType(String rawType) {
+    public TaskQueryRequest(TaskQueryType type, String rawDate) {
+        validateDateFormat(type, rawDate);
+        this.type = type;
+        this.date = rawDate;
+    }
+
+    private static TaskQueryType parseType(String rawType) {
         try {
             return TaskQueryType.from(rawType);
         } catch (Exception e) {
@@ -30,7 +34,7 @@ public class TaskQueryRequest {
         }
     }
 
-    private void validateDateFormat(TaskQueryType type, String rawDate) {
+    private static void validateDateFormat(TaskQueryType type, String rawDate) {
         try {
             if (TaskQueryType.MONTH.equals(type)) {
                 YearMonth.parse(rawDate);
