@@ -7,8 +7,8 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 @Slf4j
-@Profile("local")
-@Component
+//@Profile("local")
+//@Component
 @RequiredArgsConstructor
 public class MailSendTestRunner implements CommandLineRunner {
 

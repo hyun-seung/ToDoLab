@@ -1,60 +1,81 @@
 package com.todolab.batch.writer;
 
 import com.todolab.batch.domain.ScheduleMailSectionContent;
-import com.todolab.batch.domain.ScheduleSectionType;
 import com.todolab.mail.MailService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.infrastructure.item.Chunk;
 import org.springframework.batch.infrastructure.item.ItemWriter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.Comparator;
 import java.util.List;
 
+@Slf4j
 @Component
+@StepScope
 @RequiredArgsConstructor
 public class DailyScheduleMailWriter implements ItemWriter<ScheduleMailSectionContent> {
-
-    private static final ZoneId ZONE_ID = ZoneId.of("Asia/Seoul");
 
     private final MailService mailService;
 
     @Value("${app.mail.daily-summary.to}")
     private String toEmail;
 
+    @Value("#{jobParameters['baseDate']}")
+    private String baseDateParam;
+
     @Override
-    public void write(Chunk<? extends ScheduleMailSectionContent> chunk) throws Exception {
+    public void write(Chunk<? extends ScheduleMailSectionContent> chunk) {
         List<? extends ScheduleMailSectionContent> items = chunk.getItems();
 
-        if (items == null || items.isEmpty()) {
+        if (items.isEmpty()) {
+            log.info("[BATCH] mail writer skipped. items empty");
             return;
         }
 
-        LocalDate today = LocalDate.now(ZONE_ID);
-        String subject = "[ToDoLab] " + today + " 일정 요약";
+        LocalDate baseDate = getBaseDate();
+        String recipient = getRecipientEmail();
+        String subject = "[ToDoLab] " + baseDate + " 일정 요약";
+        String body = buildMailBody(baseDate, items);
 
+        log.info("[BATCH] try send mail. to={}, subject={}, sectionCount={}, bodyLength={}",
+                recipient, subject, items.size(), body.length());
+
+        mailService.sendText(recipient, subject, body);
+
+        log.info("[BATCH] mail send completed. to={}", recipient);
+    }
+
+    private LocalDate getBaseDate() {
+        if (baseDateParam == null || baseDateParam.isBlank()) {
+            throw new IllegalStateException("JobParameter 'baseDate' is missing in writer.");
+        }
+        return LocalDate.parse(baseDateParam);
+    }
+
+    private String getRecipientEmail() {
+        if (toEmail == null || toEmail.isBlank()) {
+            throw new IllegalStateException("Property 'app.mail.daily-summary.to' is missing.");
+        }
+        return toEmail;
+    }
+
+    private String buildMailBody(LocalDate baseDate, List<? extends ScheduleMailSectionContent> items) {
         StringBuilder body = new StringBuilder();
         body.append("안녕하세요. ToDoLab 일정 요약입니다.\n\n");
-        body.append("기준일: ").append(today).append("\n\n");
+        body.append("기준일: ").append(baseDate).append("\n\n");
 
         items.stream()
-                .sorted(Comparator.comparingInt(item -> order(item.type())))
+                .sorted(Comparator.comparingInt(item -> item.type().getOrder()))
                 .forEach(item -> {
-                    body.append("[").append(item.title()).append("]\n");
+                    body.append("[").append(item.type().getTitle()).append("]\n");
                     body.append(item.content()).append("\n");
                 });
 
-        mailService.sendText(toEmail, subject, body.toString());
-    }
-
-    private int order(ScheduleSectionType type) {
-        return switch (type) {
-            case SEED -> 1;
-            case TODAY -> 2;
-            case WEEK -> 3;
-        };
+        return body.toString();
     }
 }

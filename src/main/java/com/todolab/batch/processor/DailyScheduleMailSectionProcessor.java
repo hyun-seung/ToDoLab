@@ -2,42 +2,41 @@ package com.todolab.batch.processor;
 
 import com.todolab.batch.domain.ScheduleMailSection;
 import com.todolab.batch.domain.ScheduleMailSectionContent;
-import com.todolab.batch.domain.ScheduleSectionType;
-import com.todolab.task.dto.TaskResponse;
-import org.jspecify.annotations.Nullable;
+import com.todolab.batch.domain.TaskMailRow;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.infrastructure.item.ItemProcessor;
 import org.springframework.stereotype.Component;
 
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+@Slf4j
 @Component
 public class DailyScheduleMailSectionProcessor implements ItemProcessor<ScheduleMailSection, ScheduleMailSectionContent> {
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
     @Override
-    public @Nullable ScheduleMailSectionContent process(ScheduleMailSection item) {
-        String title = getTitle(item.type());
+    public ScheduleMailSectionContent process(ScheduleMailSection item) {
+        int taskCount = item.tasks() == null ? 0 : item.tasks().size();
+        log.info("[BATCH] process section start. type={}, baseDate={}, taskCount={}",
+                item.type(), item.baseDate(), taskCount);
+
         String content = buildSectionContent(item.tasks());
-        return new ScheduleMailSectionContent(item.type(), title, content);
+
+        log.info("[BATCH] process section end. type={}, contentLength={}",
+                item.type(), content.length());
+        return new ScheduleMailSectionContent(item.type(), content);
     }
 
-    private String getTitle(ScheduleSectionType type) {
-        return switch (type) {
-            case SEED -> "씨드 일정";
-            case TODAY -> "오늘 일정";
-            case WEEK -> "이번 주 일정";
-        };
-    }
-
-    private String buildSectionContent(List<TaskResponse> taskResponses) {
-        if (taskResponses == null || taskResponses.isEmpty()) {
+    private String buildSectionContent(List<TaskMailRow> tasks) {
+        if (tasks == null || tasks.isEmpty()) {
+            log.debug("[BATCH] section has no tasks");
             return "- 없음\n";
         }
 
         StringBuilder sb = new StringBuilder();
-        for (TaskResponse task : taskResponses) {
+        for (TaskMailRow task : tasks) {
             sb.append("- ").append(task.title());
 
             if (task.startAt() != null) {
@@ -48,7 +47,7 @@ public class DailyScheduleMailSectionProcessor implements ItemProcessor<Schedule
         return sb.toString();
     }
 
-    private String formatSchedule(TaskResponse taskResponse) {
+    private String formatSchedule(TaskMailRow taskResponse) {
         if (taskResponse.startAt() == null) {
             return "미정";
         }

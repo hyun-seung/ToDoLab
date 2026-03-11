@@ -1,5 +1,6 @@
 package com.todolab.batch.scheduler;
 
+import com.todolab.batch.config.Constant;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.job.Job;
@@ -20,14 +21,17 @@ public class BatchScheduler {
     private final JobOperator jobOperator;
     private final Job dailyScheduleMailJob;
 
-    @Scheduled(cron = "0 0 9 * * *", zone = "Asia/Seoul")
+//    @Scheduled(cron = "0 0 9 * * *", zone = Constant.ZONE_ID)
+    @Scheduled(initialDelay = 1_000, fixedDelay = 86_400_000)
     public void runDailyScheduleMailJob() {
         try {
+            String baseDate = LocalDate.now(ZoneId.of(Constant.ZONE_ID)).toString();
             JobParameters jobParameters = new JobParametersBuilder()
-                    .addString("baseDate", LocalDate.now(ZoneId.of("Asia/Seoul")).toString())
+                    .addString("baseDate", baseDate)
                     .addLong("timestamp", System.currentTimeMillis())
                     .toJobParameters();
 
+            log.info("[BATCH] dailyScheduleMailJob start. baseDate={}", baseDate);
             jobOperator.start(dailyScheduleMailJob, jobParameters);
         } catch (Exception e) {
             log.error("[BATCH] dailyScheduleMailJob 실행 실패", e);

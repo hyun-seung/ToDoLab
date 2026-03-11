@@ -2,53 +2,91 @@ package com.todolab.batch.reader;
 
 import com.todolab.batch.domain.ScheduleMailSection;
 import com.todolab.batch.domain.ScheduleSectionType;
+import com.todolab.batch.domain.TaskMailRow;
 import com.todolab.task.domain.query.TaskQueryType;
 import com.todolab.task.dto.TaskQueryRequest;
 import com.todolab.task.service.TaskService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.infrastructure.item.ItemReader;
+import org.springframework.batch.infrastructure.item.support.ListItemReader;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
-import java.time.ZoneId;
+import java.util.List;
 
+@Slf4j
 @Component
+@StepScope
 @RequiredArgsConstructor
 public class DailyScheduleMailSectionReader implements ItemReader<ScheduleMailSection> {
 
-    private static final ZoneId ZONE_ID = ZoneId.of("Asia/Seoul");
+    private final TaskService taskService;
 
-    private final TaskService taskservice;
+    @Value("#{jobParameters['baseDate']}")
+    private String baseDateParam;
 
-    private int index = 0;
-    private LocalDate baseDate;
+    private ListItemReader<ScheduleMailSection> delegate;
 
     @Override
     public ScheduleMailSection read() {
-        if (baseDate == null) {
-            baseDate = LocalDate.now(ZONE_ID);
+        if (delegate == null) {
+            LocalDate baseDate = getBaseDate();
+            log.info("[BATCH] create delegate. baseDate={}", baseDate);
+            delegate = new ListItemReader<>(createSections(baseDate));
         }
 
-        index += 1;
-
-        return switch (index) {
-            case 1 -> new ScheduleMailSection(
-                    ScheduleSectionType.SEED,
-                    baseDate,
-                    taskservice.getUnscheduledTasks()
-            );
-            case 2 -> new ScheduleMailSection(
-                    ScheduleSectionType.TODAY,
-                    baseDate,
-                    taskservice.getTasks(new TaskQueryRequest(TaskQueryType.DAY, baseDate.toString()))
-            );
-            case 3 -> new ScheduleMailSection(
-                    ScheduleSectionType.WEEK,
-                    baseDate,
-                    taskservice.getTasks(new TaskQueryRequest(TaskQueryType.WEEK, baseDate.toString()))
-            );
-            default -> null;
-        };
+        ScheduleMailSection item = delegate.read();
+        log.info("[BATCH] read result. type={}", item == null ? null : item.type());
+        return item;
     }
 
+    private LocalDate getBaseDate() {
+        if (baseDateParam == null || baseDateParam.isBlank()) {
+            throw new IllegalStateException("JobParameter 'baseDate' is missing in reader.");
+        }
+        return LocalDate.parse(baseDateParam);
+    }
+
+    private List<ScheduleMailSection> createSections(LocalDate baseDate) {
+        return List.of(
+                createSeedSection(baseDate),
+                createTodaySection(baseDate),
+                createWeekSection(baseDate)
+        );
+    }
+
+    private ScheduleMailSection createSeedSection(LocalDate baseDate) {
+        return new ScheduleMailSection(
+                ScheduleSectionType.SEED,
+                baseDate,
+                TaskMailRow.from(taskService.getUnscheduledTasks())
+        );
+    }
+
+    private ScheduleMailSection createTodaySection(LocalDate baseDate) {
+        return new ScheduleMailSection(
+                ScheduleSectionType.TODAY,
+                baseDate,
+                TaskMailRow.from(
+                        taskService.getTasks(
+                                new TaskQueryRequest(TaskQueryType.DAY, baseDate.toString())
+                        )
+                )
+        );
+    }
+
+    private ScheduleMailSection createWeekSection(LocalDate baseDate) {
+        return new ScheduleMailSection(
+                ScheduleSectionType.WEEK,
+                baseDate,
+                TaskMailRow.from(
+                        taskService.getTasks(
+                                new TaskQueryRequest(TaskQueryType.WEEK, baseDate.toString())
+                        )
+                )
+        );
+    }
 }
