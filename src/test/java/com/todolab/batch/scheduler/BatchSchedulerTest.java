@@ -1,6 +1,6 @@
 package com.todolab.batch.scheduler;
 
-import com.todolab.batch.config.Constant;
+import com.todolab.Constant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
