@@ -1,5 +1,6 @@
 package com.todolab.batch.domain;
 
+import com.todolab.task.dto.TaskCategoryGroupResponse;
 import com.todolab.task.dto.TaskResponse;
 
 import java.time.LocalDateTime;

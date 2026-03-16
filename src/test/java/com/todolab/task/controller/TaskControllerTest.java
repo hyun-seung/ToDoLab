@@ -2,6 +2,7 @@ package com.todolab.task.controller;
 
 import com.todolab.common.api.ApiExceptionHandler;
 import com.todolab.common.api.ErrorCode;
+import com.todolab.task.dto.TaskCategoryGroupResponse;
 import com.todolab.task.dto.TaskRequest;
 import com.todolab.task.dto.TaskResponse;
 import com.todolab.task.exception.TaskNotFoundException;
@@ -71,7 +72,7 @@ class TaskControllerTest {
         given(taskService.create(any(TaskRequest.class))).willReturn(mockRes);
 
         // when & then
-        mockMvc.perform(post("/tasks")
+        mockMvc.perform(post("/api/tasks")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk())
@@ -103,7 +104,7 @@ class TaskControllerTest {
         );
 
         // when & then
-        mockMvc.perform(post("/tasks")
+        mockMvc.perform(post("/api/tasks")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isBadRequest())
@@ -137,7 +138,7 @@ class TaskControllerTest {
         given(taskService.getTask(id)).willReturn(resp);
 
         // when & then
-        mockMvc.perform(get("/tasks/{id}", id))
+        mockMvc.perform(get("/api/tasks/{id}", id))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"))
                 .andExpect(jsonPath("$.data.id").value(11))
@@ -161,7 +162,7 @@ class TaskControllerTest {
         given(taskService.getTask(id)).willThrow(new TaskNotFoundException(id));
 
         // when & then
-        mockMvc.perform(get("/tasks/{id}", id))
+        mockMvc.perform(get("/api/tasks/{id}", id))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value("fail"))
                 .andExpect(jsonPath("$.error.code").value(ErrorCode.TASK_NOT_FOUND.getCode()));
@@ -173,7 +174,7 @@ class TaskControllerTest {
     @Test
     @DisplayName("일정 단건 조회 실패 - PathVariable 타입이 잘못되면 400 에러를 반환한다")
     void getTask_invalidPathVariable() throws Exception {
-        mockMvc.perform(get("/tasks/{id}", "abc"))
+        mockMvc.perform(get("/api/tasks/{id}", "abc"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value("fail"))
                 .andExpect(jsonPath("$.error.code").value(ErrorCode.INVALID_INPUT.getCode()));
@@ -188,32 +189,36 @@ class TaskControllerTest {
     @DisplayName("일정 조회 성공 - DAY 타입으로 정상 조회된다")
     void getTasks_DAY_success() throws Exception {
         // given
-        List<TaskResponse> dummy = List.of(
-                TaskResponse.builder()
-                        .id(999L)
-                        .title("일정 조회 DAY")
-                        .description("일정 조회")
-                        .startAt(LocalDateTime.of(2025, 11, 25, 10, 30))
-                        .endAt(null)
-                        .allDay(false)
-                        .unscheduled(false)
-                        .category("일")
-                        .createdAt(null)
-                        .build()
+        List<TaskCategoryGroupResponse> dummy = List.of(
+                new TaskCategoryGroupResponse("일", List.of(
+                        TaskResponse.builder()
+                                .id(999L)
+                                .title("일정 조회 DAY")
+                                .description("일정 조회")
+                                .startAt(LocalDateTime.of(2025, 11, 25, 10, 30))
+                                .endAt(null)
+                                .allDay(false)
+                                .unscheduled(false)
+                                .category("일")
+                                .createdAt(null)
+                                .build()
+                ))
         );
 
         given(taskService.getTasks(any())).willReturn(dummy);
 
         // when & then
-        mockMvc.perform(get("/tasks")
+        mockMvc.perform(get("/api/tasks")
                         .param("type", "DAY")
                         .param("date", "2025-11-25"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"))
                 .andExpect(jsonPath("$.data.length()").value(1))
-                .andExpect(jsonPath("$.data[0].id").value(999))
-                .andExpect(jsonPath("$.data[0].title").value("일정 조회 DAY"))
-                .andExpect(jsonPath("$.data[0].startAt").value("2025-11-25T10:30:00"));
+                .andExpect(jsonPath("$.data[0].category").value("일"))
+                .andExpect(jsonPath("$.data[0].tasks.length()").value(1))
+                .andExpect(jsonPath("$.data[0].tasks[0].id").value(999))
+                .andExpect(jsonPath("$.data[0].tasks[0].title").value("일정 조회 DAY"))
+                .andExpect(jsonPath("$.data[0].tasks[0].startAt").value("2025-11-25T10:30:00"));
 
         then(taskService).should().getTasks(any());
         then(taskService).shouldHaveNoMoreInteractions();
@@ -223,42 +228,46 @@ class TaskControllerTest {
     @DisplayName("일정 조회 성공 - WEEK 타입으로 정상 조회된다")
     void getTasks_WEEK_success() throws Exception {
         // given
-        List<TaskResponse> dummy = List.of(
-                TaskResponse.builder()
-                        .id(11L)
-                        .title("WEEK 일정 1")
-                        .description("설명1")
-                        .startAt(LocalDateTime.of(2025, 11, 24, 1, 0))
-                        .endAt(null)
-                        .allDay(false)
-                        .unscheduled(false)
-                        .category("일")
-                        .createdAt(null)
-                        .build(),
-                TaskResponse.builder()
-                        .id(21L)
-                        .title("WEEK 일정 2")
-                        .description("설명2")
-                        .startAt(LocalDateTime.of(2025, 11, 30, 23, 0))
-                        .endAt(null)
-                        .allDay(false)
-                        .unscheduled(false)
-                        .category("일")
-                        .createdAt(null)
-                        .build()
+        List<TaskCategoryGroupResponse> dummy = List.of(
+                new TaskCategoryGroupResponse("일", List.of(
+                        TaskResponse.builder()
+                                .id(11L)
+                                .title("WEEK 일정 1")
+                                .description("설명1")
+                                .startAt(LocalDateTime.of(2025, 11, 24, 1, 0))
+                                .endAt(null)
+                                .allDay(false)
+                                .unscheduled(false)
+                                .category("일")
+                                .createdAt(null)
+                                .build(),
+                        TaskResponse.builder()
+                                .id(21L)
+                                .title("WEEK 일정 2")
+                                .description("설명2")
+                                .startAt(LocalDateTime.of(2025, 11, 30, 23, 0))
+                                .endAt(null)
+                                .allDay(false)
+                                .unscheduled(false)
+                                .category("일")
+                                .createdAt(null)
+                                .build()
+                ))
         );
 
         given(taskService.getTasks(any())).willReturn(dummy);
 
         // when & then
-        mockMvc.perform(get("/tasks")
+        mockMvc.perform(get("/api/tasks")
                         .param("type", "WEEK")
                         .param("date", "2025-11-25"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"))
-                .andExpect(jsonPath("$.data.length()").value(2))
-                .andExpect(jsonPath("$.data[0].id").value(11))
-                .andExpect(jsonPath("$.data[1].id").value(21));
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].category").value("일"))
+                .andExpect(jsonPath("$.data[0].tasks.length()").value(2))
+                .andExpect(jsonPath("$.data[0].tasks[0].id").value(11))
+                .andExpect(jsonPath("$.data[0].tasks[1].id").value(21));
 
         then(taskService).should().getTasks(any());
         then(taskService).shouldHaveNoMoreInteractions();
@@ -268,70 +277,74 @@ class TaskControllerTest {
     @DisplayName("일정 조회 성공 - MONTH 타입으로 정상 조회된다")
     void getTasks_MONTH_success() throws Exception {
         // given
-        List<TaskResponse> dummy = List.of(
-                TaskResponse.builder()
-                        .id(111L)
-                        .title("MONTH 일정 1")
-                        .description("설명1")
-                        .startAt(LocalDateTime.of(2025, 11, 3, 8, 0))
-                        .endAt(null)
-                        .allDay(false)
-                        .unscheduled(false)
-                        .category("일")
-                        .createdAt(null)
-                        .build(),
-                TaskResponse.builder()
-                        .id(112L)
-                        .title("MONTH 일정 2")
-                        .description("설명2")
-                        .startAt(LocalDateTime.of(2025, 11, 10, 9, 30))
-                        .endAt(null)
-                        .allDay(false)
-                        .unscheduled(false)
-                        .category("일")
-                        .createdAt(null)
-                        .build(),
-                TaskResponse.builder()
-                        .id(113L)
-                        .title("MONTH 일정 3")
-                        .description("설명3")
-                        .startAt(LocalDateTime.of(2025, 11, 18, 14, 0))
-                        .endAt(null)
-                        .allDay(false)
-                        .unscheduled(false)
-                        .category("일")
-                        .createdAt(null)
-                        .build(),
-                TaskResponse.builder()
-                        .id(114L)
-                        .title("MONTH 일정 4")
-                        .description("설명4")
-                        .startAt(LocalDateTime.of(2025, 11, 28, 19, 45))
-                        .endAt(null)
-                        .allDay(false)
-                        .unscheduled(false)
-                        .category("일")
-                        .createdAt(null)
-                        .build()
+        List<TaskCategoryGroupResponse> dummy = List.of(
+                new TaskCategoryGroupResponse("일", List.of(
+                        TaskResponse.builder()
+                                .id(111L)
+                                .title("MONTH 일정 1")
+                                .description("설명1")
+                                .startAt(LocalDateTime.of(2025, 11, 3, 8, 0))
+                                .endAt(null)
+                                .allDay(false)
+                                .unscheduled(false)
+                                .category("일")
+                                .createdAt(null)
+                                .build(),
+                        TaskResponse.builder()
+                                .id(112L)
+                                .title("MONTH 일정 2")
+                                .description("설명2")
+                                .startAt(LocalDateTime.of(2025, 11, 10, 9, 30))
+                                .endAt(null)
+                                .allDay(false)
+                                .unscheduled(false)
+                                .category("일")
+                                .createdAt(null)
+                                .build(),
+                        TaskResponse.builder()
+                                .id(113L)
+                                .title("MONTH 일정 3")
+                                .description("설명3")
+                                .startAt(LocalDateTime.of(2025, 11, 18, 14, 0))
+                                .endAt(null)
+                                .allDay(false)
+                                .unscheduled(false)
+                                .category("일")
+                                .createdAt(null)
+                                .build(),
+                        TaskResponse.builder()
+                                .id(114L)
+                                .title("MONTH 일정 4")
+                                .description("설명4")
+                                .startAt(LocalDateTime.of(2025, 11, 28, 19, 45))
+                                .endAt(null)
+                                .allDay(false)
+                                .unscheduled(false)
+                                .category("일")
+                                .createdAt(null)
+                                .build()
+                ))
         );
 
         given(taskService.getTasks(any())).willReturn(dummy);
 
         // when & then
-        mockMvc.perform(get("/tasks")
+        mockMvc.perform(get("/api/tasks")
                         .param("type", "MONTH")
                         .param("date", "2025-11"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"))
-                .andExpect(jsonPath("$.data.length()").value(4))
-                .andExpect(jsonPath("$.data[0].id").value(111))
-                .andExpect(jsonPath("$.data[0].title").value("MONTH 일정 1"))
-                .andExpect(jsonPath("$.data[1].id").value(112))
-                .andExpect(jsonPath("$.data[1].title").value("MONTH 일정 2"))
-                .andExpect(jsonPath("$.data[2].id").value(113))
-                .andExpect(jsonPath("$.data[2].title").value("MONTH 일정 3"))
-                .andExpect(jsonPath("$.data[3].id").value(114))
-                .andExpect(jsonPath("$.data[3].title").value("MONTH 일정 4"));
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].category").value("일"))
+                .andExpect(jsonPath("$.data[0].tasks.length()").value(4))
+                .andExpect(jsonPath("$.data[0].tasks[0].id").value(111))
+                .andExpect(jsonPath("$.data[0].tasks[0].title").value("MONTH 일정 1"))
+                .andExpect(jsonPath("$.data[0].tasks[1].id").value(112))
+                .andExpect(jsonPath("$.data[0].tasks[1].title").value("MONTH 일정 2"))
+                .andExpect(jsonPath("$.data[0].tasks[2].id").value(113))
+                .andExpect(jsonPath("$.data[0].tasks[2].title").value("MONTH 일정 3"))
+                .andExpect(jsonPath("$.data[0].tasks[3].id").value(114))
+                .andExpect(jsonPath("$.data[0].tasks[3].title").value("MONTH 일정 4"));
 
         then(taskService).should().getTasks(any());
         then(taskService).shouldHaveNoMoreInteractions();
@@ -340,7 +353,7 @@ class TaskControllerTest {
     @Test
     @DisplayName("일정 조회 실패 - 잘못된 type이면 400, 10001 에러를 반환한다")
     void getTasks_fail_invalidType() throws Exception {
-        mockMvc.perform(get("/tasks")
+        mockMvc.perform(get("/api/tasks")
                         .param("type", "INVALID")
                         .param("date", "2025-11-24"))
                 .andExpect(status().isBadRequest())
@@ -353,7 +366,7 @@ class TaskControllerTest {
     @Test
     @DisplayName("일정 조회 실패 - type이 누락되면 400, 10001 에러를 반환한다")
     void getTasks_fail_missingType() throws Exception {
-        mockMvc.perform(get("/tasks")
+        mockMvc.perform(get("/api/tasks")
                         .param("date", "2025-11-24"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value("fail"))
@@ -365,7 +378,7 @@ class TaskControllerTest {
     @Test
     @DisplayName("일정 조회 실패 - date가 누락되면 400, 10001 에러를 반환한다")
     void getTasks_fail_missingDate() throws Exception {
-        mockMvc.perform(get("/tasks")
+        mockMvc.perform(get("/api/tasks")
                         .param("type", "DAY"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value("fail"))
@@ -378,7 +391,7 @@ class TaskControllerTest {
     @ValueSource(strings = {"2025-11", "20251127", "25-11-27"})
     @DisplayName("일정 조회 실패 - DAY는 yyyy-MM-dd 형식을 요구한다")
     void getTasks_DAY_fail_invalidDateFormat(String invalidDate) throws Exception {
-        mockMvc.perform(get("/tasks")
+        mockMvc.perform(get("/api/tasks")
                         .param("type", "DAY")
                         .param("date", invalidDate))
                 .andExpect(status().isBadRequest())
@@ -392,7 +405,7 @@ class TaskControllerTest {
     @ValueSource(strings = {"2025-11", "20251127", "25-11-27"})
     @DisplayName("일정 조회 실패 - WEEK는 yyyy-MM-dd 형식을 요구한다")
     void getTasks_WEEK_fail_invalidDateFormat(String invalidDate) throws Exception {
-        mockMvc.perform(get("/tasks")
+        mockMvc.perform(get("/api/tasks")
                         .param("type", "WEEK")
                         .param("date", invalidDate))
                 .andExpect(status().isBadRequest())
@@ -406,7 +419,7 @@ class TaskControllerTest {
     @ValueSource(strings = {"2025-11-27", "202511", "25-11"})
     @DisplayName("일정 조회 실패 - MONTH는 yyyy-MM 형식을 요구한다")
     void getTasks_MONTH_fail_invalidDateFormat(String invalidDate) throws Exception {
-        mockMvc.perform(get("/tasks")
+        mockMvc.perform(get("/api/tasks")
                         .param("type", "MONTH")
                         .param("date", invalidDate))
                 .andExpect(status().isBadRequest())
@@ -439,22 +452,29 @@ class TaskControllerTest {
                 .category("WORK")
                 .build();
 
-        given(taskService.getUnscheduledTasks()).willReturn(List.of(t1, t2));
+        List<TaskCategoryGroupResponse> groups = List.of(
+                new TaskCategoryGroupResponse("미분류", List.of(t1)),
+                new TaskCategoryGroupResponse("WORK", List.of(t2))
+        );
 
-        mockMvc.perform(get("/tasks/unscheduled"))
+        given(taskService.getUnscheduledTasks()).willReturn(groups);
+
+        mockMvc.perform(get("/api/tasks/unscheduled"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.data.length()").value(2))
-                .andExpect(jsonPath("$.data[0].id").value(1))
-                .andExpect(jsonPath("$.data[0].title").value("u1"))
-                .andExpect(jsonPath("$.data[0].startAt").isEmpty())
-                .andExpect(jsonPath("$.data[0].endAt").isEmpty())
-                .andExpect(jsonPath("$.data[0].unscheduled").value(true))
-                .andExpect(jsonPath("$.data[1].id").value(2))
-                .andExpect(jsonPath("$.data[1].title").value("u2"))
-                .andExpect(jsonPath("$.data[1].startAt").isEmpty())
-                .andExpect(jsonPath("$.data[1].endAt").isEmpty())
-                .andExpect(jsonPath("$.data[1].unscheduled").value(true));
+                .andExpect(jsonPath("$.data[0].category").value("미분류"))
+                .andExpect(jsonPath("$.data[0].tasks[0].id").value(1))
+                .andExpect(jsonPath("$.data[0].tasks[0].title").value("u1"))
+                .andExpect(jsonPath("$.data[0].tasks[0].startAt").isEmpty())
+                .andExpect(jsonPath("$.data[0].tasks[0].endAt").isEmpty())
+                .andExpect(jsonPath("$.data[0].tasks[0].unscheduled").value(true))
+                .andExpect(jsonPath("$.data[1].category").value("WORK"))
+                .andExpect(jsonPath("$.data[1].tasks[0].id").value(2))
+                .andExpect(jsonPath("$.data[1].tasks[0].title").value("u2"))
+                .andExpect(jsonPath("$.data[1].tasks[0].startAt").isEmpty())
+                .andExpect(jsonPath("$.data[1].tasks[0].endAt").isEmpty())
+                .andExpect(jsonPath("$.data[1].tasks[0].unscheduled").value(true));
     }
 
     /*******************
@@ -483,7 +503,7 @@ class TaskControllerTest {
         given(taskService.update(eq(id), any(TaskRequest.class))).willReturn(serviceRes);
 
         // when & then
-        mockMvc.perform(put("/tasks/{id}", id)
+        mockMvc.perform(put("/api/tasks/{id}", id)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk())
@@ -514,7 +534,7 @@ class TaskControllerTest {
                 .willThrow(new TaskNotFoundException(id));
 
         // when & then
-        mockMvc.perform(put("/tasks/{id}", id)
+        mockMvc.perform(put("/api/tasks/{id}", id)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isNotFound())
@@ -536,7 +556,7 @@ class TaskControllerTest {
         willDoNothing().given(taskService).delete(id);
 
         // when & then
-        mockMvc.perform(delete("/tasks/{id}", id))
+        mockMvc.perform(delete("/api/tasks/{id}", id))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.status").value("success"))
@@ -554,7 +574,7 @@ class TaskControllerTest {
         willThrow(new TaskNotFoundException(id)).given(taskService).delete(id);
 
         // when & then
-        mockMvc.perform(delete("/tasks/{id}", id))
+        mockMvc.perform(delete("/api/tasks/{id}", id))
                 .andExpect(status().isNotFound())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.status").value("fail"))

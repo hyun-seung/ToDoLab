@@ -2,6 +2,7 @@ package com.todolab.batch.config;
 
 import com.todolab.mail.MailService;
 import com.todolab.task.domain.query.TaskQueryType;
+import com.todolab.task.dto.TaskCategoryGroupResponse;
 import com.todolab.task.dto.TaskQueryRequest;
 import com.todolab.task.dto.TaskResponse;
 import com.todolab.task.service.TaskService;
@@ -75,15 +76,21 @@ class DailyScheduleMailJobIntegrationTest {
     void dailyScheduleMailJob_completes_and_sendsMail() throws Exception {
         // given
         given(taskService.getUnscheduledTasks()).willReturn(List.of(
-                taskResponse(1L, "미정 일정", null, null, true)
+                new TaskCategoryGroupResponse("미분류", List.of(
+                        taskResponse(1L, "미정 일정", null, null, true)
+                ))
         ));
         given(taskService.getTasks(refEq(new TaskQueryRequest(TaskQueryType.DAY, "2026-03-12"))))
                 .willReturn(List.of(
-                        taskResponse(2L, "회의", LocalDateTime.of(2025, 3, 11, 10, 0), null, false)
+                        new TaskCategoryGroupResponse("업무", List.of(
+                                taskResponse(2L, "회의", LocalDateTime.of(2026, 3, 12, 10, 0), null, false)
+                        ))
                 ));
         given(taskService.getTasks(refEq(new TaskQueryRequest(TaskQueryType.WEEK, "2026-03-12"))))
                 .willReturn(List.of(
-                        taskResponse(3L, "개발", LocalDateTime.of(2026, 3, 12, 14, 0), LocalDateTime.of(2026, 3, 12, 16, 0), false)
+                        new TaskCategoryGroupResponse("업무", List.of(
+                                taskResponse(3L, "개발", LocalDateTime.of(2026, 3, 12, 14, 0), LocalDateTime.of(2026, 3, 12, 16, 0), false)
+                        ))
                 ));
 
         JobParameters jobParameters = new JobParametersBuilder()

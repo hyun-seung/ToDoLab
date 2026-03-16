@@ -76,11 +76,11 @@ class DateRangeTest {
     @Test
     @DisplayName("WEEK 경계 - 연도/월이 바뀌는 주도 올바르게 계산된다")
     void calculate_WEEK_crossMonth() {
-        // 2025-12-31(수) 기준: 월요일은 2025-12-29, 다음주 월요일은 2026-01-05
+        // 2025-12-31(수) 기준: 일요일은 2025-12-28, 다음주 일요일은 2026-01-04
         DateRange range = DateRange.ofWeek("2025-12-31");
 
-        assertThat(range.getStart()).isEqualTo(LocalDateTime.of(2025, 12, 29, 0, 0));
-        assertThat(range.getEnd()).isEqualTo(LocalDateTime.of(2026, 1, 5, 0, 0));
+        assertThat(range.getStart()).isEqualTo(LocalDateTime.of(2025, 12, 28, 0, 0));
+        assertThat(range.getEnd()).isEqualTo(LocalDateTime.of(2026, 1, 4, 0, 0));
     }
 
     @Test
