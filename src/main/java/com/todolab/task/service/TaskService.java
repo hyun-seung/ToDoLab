@@ -45,11 +45,19 @@ public class TaskService {
         return TaskResponse.from(task);
     }
 
-    public List<TaskCategoryGroupResponse> getTasks(TaskQueryRequest request) {
+    public List<TaskResponse> getTasks(TaskQueryRequest request) {
+        return findTasks(request);
+    }
+
+    public List<TaskCategoryGroupResponse> getGroupedTasks(TaskQueryRequest request) {
         return groupByCategory(findTasks(request));
     }
 
-    public List<TaskCategoryGroupResponse> getUnscheduledTasks() {
+    public List<TaskResponse> getUnscheduledTasks() {
+        return findUnscheduledTasks();
+    }
+
+    public List<TaskCategoryGroupResponse> getGroupedUnscheduledTasks() {
         return groupByCategory(findUnscheduledTasks());
     }
 

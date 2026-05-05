@@ -4,9 +4,7 @@ import com.todolab.batch.domain.ScheduleMailSection;
 import com.todolab.batch.domain.ScheduleSectionType;
 import com.todolab.batch.domain.TaskMailRow;
 import com.todolab.task.domain.query.TaskQueryType;
-import com.todolab.task.dto.TaskCategoryGroupResponse;
 import com.todolab.task.dto.TaskQueryRequest;
-import com.todolab.task.dto.TaskResponse;
 import com.todolab.task.service.TaskService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -64,7 +62,7 @@ public class DailyScheduleMailSectionReader implements ItemReader<ScheduleMailSe
         return new ScheduleMailSection(
                 ScheduleSectionType.SEED,
                 baseDate,
-                TaskMailRow.from(flatten(taskService.getUnscheduledTasks()))
+                TaskMailRow.from(taskService.getUnscheduledTasks())
         );
     }
 
@@ -73,10 +71,8 @@ public class DailyScheduleMailSectionReader implements ItemReader<ScheduleMailSe
                 ScheduleSectionType.TODAY,
                 baseDate,
                 TaskMailRow.from(
-                        flatten(
-                            taskService.getTasks(
-                                    new TaskQueryRequest(TaskQueryType.DAY, baseDate.toString())
-                            )
+                        taskService.getTasks(
+                                new TaskQueryRequest(TaskQueryType.DAY, baseDate.toString())
                         )
                 )
         );
@@ -87,18 +83,10 @@ public class DailyScheduleMailSectionReader implements ItemReader<ScheduleMailSe
                 ScheduleSectionType.WEEK,
                 baseDate,
                 TaskMailRow.from(
-                        flatten(
-                            taskService.getTasks(
-                                    new TaskQueryRequest(TaskQueryType.WEEK, baseDate.toString())
-                            )
+                        taskService.getTasks(
+                                new TaskQueryRequest(TaskQueryType.WEEK, baseDate.toString())
                         )
                 )
         );
-    }
-
-    private List<TaskResponse> flatten(List<TaskCategoryGroupResponse> groups) {
-        return groups.stream()
-                .flatMap(group -> group.tasks().stream())
-                .toList();
     }
 }

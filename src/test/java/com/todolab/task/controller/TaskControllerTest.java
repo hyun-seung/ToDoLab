@@ -189,20 +189,18 @@ class TaskControllerTest {
     @DisplayName("일정 조회 성공 - DAY 타입으로 정상 조회된다")
     void getTasks_DAY_success() throws Exception {
         // given
-        List<TaskCategoryGroupResponse> dummy = List.of(
-                new TaskCategoryGroupResponse("일", List.of(
-                        TaskResponse.builder()
-                                .id(999L)
-                                .title("일정 조회 DAY")
-                                .description("일정 조회")
-                                .startAt(LocalDateTime.of(2025, 11, 25, 10, 30))
-                                .endAt(null)
-                                .allDay(false)
-                                .unscheduled(false)
-                                .category("일")
-                                .createdAt(null)
-                                .build()
-                ))
+        List<TaskResponse> dummy = List.of(
+                TaskResponse.builder()
+                        .id(999L)
+                        .title("일정 조회 DAY")
+                        .description("일정 조회")
+                        .startAt(LocalDateTime.of(2025, 11, 25, 10, 30))
+                        .endAt(null)
+                        .allDay(false)
+                        .unscheduled(false)
+                        .category("일")
+                        .createdAt(null)
+                        .build()
         );
 
         given(taskService.getTasks(any())).willReturn(dummy);
@@ -215,10 +213,9 @@ class TaskControllerTest {
                 .andExpect(jsonPath("$.status").value("success"))
                 .andExpect(jsonPath("$.data.length()").value(1))
                 .andExpect(jsonPath("$.data[0].category").value("일"))
-                .andExpect(jsonPath("$.data[0].tasks.length()").value(1))
-                .andExpect(jsonPath("$.data[0].tasks[0].id").value(999))
-                .andExpect(jsonPath("$.data[0].tasks[0].title").value("일정 조회 DAY"))
-                .andExpect(jsonPath("$.data[0].tasks[0].startAt").value("2025-11-25T10:30:00"));
+                .andExpect(jsonPath("$.data[0].id").value(999))
+                .andExpect(jsonPath("$.data[0].title").value("일정 조회 DAY"))
+                .andExpect(jsonPath("$.data[0].startAt").value("2025-11-25T10:30:00"));
 
         then(taskService).should().getTasks(any());
         then(taskService).shouldHaveNoMoreInteractions();
@@ -228,31 +225,29 @@ class TaskControllerTest {
     @DisplayName("일정 조회 성공 - WEEK 타입으로 정상 조회된다")
     void getTasks_WEEK_success() throws Exception {
         // given
-        List<TaskCategoryGroupResponse> dummy = List.of(
-                new TaskCategoryGroupResponse("일", List.of(
-                        TaskResponse.builder()
-                                .id(11L)
-                                .title("WEEK 일정 1")
-                                .description("설명1")
-                                .startAt(LocalDateTime.of(2025, 11, 24, 1, 0))
-                                .endAt(null)
-                                .allDay(false)
-                                .unscheduled(false)
-                                .category("일")
-                                .createdAt(null)
-                                .build(),
-                        TaskResponse.builder()
-                                .id(21L)
-                                .title("WEEK 일정 2")
-                                .description("설명2")
-                                .startAt(LocalDateTime.of(2025, 11, 30, 23, 0))
-                                .endAt(null)
-                                .allDay(false)
-                                .unscheduled(false)
-                                .category("일")
-                                .createdAt(null)
-                                .build()
-                ))
+        List<TaskResponse> dummy = List.of(
+                TaskResponse.builder()
+                        .id(11L)
+                        .title("WEEK 일정 1")
+                        .description("설명1")
+                        .startAt(LocalDateTime.of(2025, 11, 24, 1, 0))
+                        .endAt(null)
+                        .allDay(false)
+                        .unscheduled(false)
+                        .category("일")
+                        .createdAt(null)
+                        .build(),
+                TaskResponse.builder()
+                        .id(21L)
+                        .title("WEEK 일정 2")
+                        .description("설명2")
+                        .startAt(LocalDateTime.of(2025, 11, 30, 23, 0))
+                        .endAt(null)
+                        .allDay(false)
+                        .unscheduled(false)
+                        .category("일")
+                        .createdAt(null)
+                        .build()
         );
 
         given(taskService.getTasks(any())).willReturn(dummy);
@@ -263,11 +258,10 @@ class TaskControllerTest {
                         .param("date", "2025-11-25"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"))
-                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data.length()").value(2))
                 .andExpect(jsonPath("$.data[0].category").value("일"))
-                .andExpect(jsonPath("$.data[0].tasks.length()").value(2))
-                .andExpect(jsonPath("$.data[0].tasks[0].id").value(11))
-                .andExpect(jsonPath("$.data[0].tasks[1].id").value(21));
+                .andExpect(jsonPath("$.data[0].id").value(11))
+                .andExpect(jsonPath("$.data[1].id").value(21));
 
         then(taskService).should().getTasks(any());
         then(taskService).shouldHaveNoMoreInteractions();
@@ -277,53 +271,51 @@ class TaskControllerTest {
     @DisplayName("일정 조회 성공 - MONTH 타입으로 정상 조회된다")
     void getTasks_MONTH_success() throws Exception {
         // given
-        List<TaskCategoryGroupResponse> dummy = List.of(
-                new TaskCategoryGroupResponse("일", List.of(
-                        TaskResponse.builder()
-                                .id(111L)
-                                .title("MONTH 일정 1")
-                                .description("설명1")
-                                .startAt(LocalDateTime.of(2025, 11, 3, 8, 0))
-                                .endAt(null)
-                                .allDay(false)
-                                .unscheduled(false)
-                                .category("일")
-                                .createdAt(null)
-                                .build(),
-                        TaskResponse.builder()
-                                .id(112L)
-                                .title("MONTH 일정 2")
-                                .description("설명2")
-                                .startAt(LocalDateTime.of(2025, 11, 10, 9, 30))
-                                .endAt(null)
-                                .allDay(false)
-                                .unscheduled(false)
-                                .category("일")
-                                .createdAt(null)
-                                .build(),
-                        TaskResponse.builder()
-                                .id(113L)
-                                .title("MONTH 일정 3")
-                                .description("설명3")
-                                .startAt(LocalDateTime.of(2025, 11, 18, 14, 0))
-                                .endAt(null)
-                                .allDay(false)
-                                .unscheduled(false)
-                                .category("일")
-                                .createdAt(null)
-                                .build(),
-                        TaskResponse.builder()
-                                .id(114L)
-                                .title("MONTH 일정 4")
-                                .description("설명4")
-                                .startAt(LocalDateTime.of(2025, 11, 28, 19, 45))
-                                .endAt(null)
-                                .allDay(false)
-                                .unscheduled(false)
-                                .category("일")
-                                .createdAt(null)
-                                .build()
-                ))
+        List<TaskResponse> dummy = List.of(
+                TaskResponse.builder()
+                        .id(111L)
+                        .title("MONTH 일정 1")
+                        .description("설명1")
+                        .startAt(LocalDateTime.of(2025, 11, 3, 8, 0))
+                        .endAt(null)
+                        .allDay(false)
+                        .unscheduled(false)
+                        .category("일")
+                        .createdAt(null)
+                        .build(),
+                TaskResponse.builder()
+                        .id(112L)
+                        .title("MONTH 일정 2")
+                        .description("설명2")
+                        .startAt(LocalDateTime.of(2025, 11, 10, 9, 30))
+                        .endAt(null)
+                        .allDay(false)
+                        .unscheduled(false)
+                        .category("일")
+                        .createdAt(null)
+                        .build(),
+                TaskResponse.builder()
+                        .id(113L)
+                        .title("MONTH 일정 3")
+                        .description("설명3")
+                        .startAt(LocalDateTime.of(2025, 11, 18, 14, 0))
+                        .endAt(null)
+                        .allDay(false)
+                        .unscheduled(false)
+                        .category("일")
+                        .createdAt(null)
+                        .build(),
+                TaskResponse.builder()
+                        .id(114L)
+                        .title("MONTH 일정 4")
+                        .description("설명4")
+                        .startAt(LocalDateTime.of(2025, 11, 28, 19, 45))
+                        .endAt(null)
+                        .allDay(false)
+                        .unscheduled(false)
+                        .category("일")
+                        .createdAt(null)
+                        .build()
         );
 
         given(taskService.getTasks(any())).willReturn(dummy);
@@ -334,19 +326,45 @@ class TaskControllerTest {
                         .param("date", "2025-11"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"))
-                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data.length()").value(4))
                 .andExpect(jsonPath("$.data[0].category").value("일"))
-                .andExpect(jsonPath("$.data[0].tasks.length()").value(4))
-                .andExpect(jsonPath("$.data[0].tasks[0].id").value(111))
-                .andExpect(jsonPath("$.data[0].tasks[0].title").value("MONTH 일정 1"))
-                .andExpect(jsonPath("$.data[0].tasks[1].id").value(112))
-                .andExpect(jsonPath("$.data[0].tasks[1].title").value("MONTH 일정 2"))
-                .andExpect(jsonPath("$.data[0].tasks[2].id").value(113))
-                .andExpect(jsonPath("$.data[0].tasks[2].title").value("MONTH 일정 3"))
-                .andExpect(jsonPath("$.data[0].tasks[3].id").value(114))
-                .andExpect(jsonPath("$.data[0].tasks[3].title").value("MONTH 일정 4"));
+                .andExpect(jsonPath("$.data[0].id").value(111))
+                .andExpect(jsonPath("$.data[0].title").value("MONTH 일정 1"))
+                .andExpect(jsonPath("$.data[1].id").value(112))
+                .andExpect(jsonPath("$.data[1].title").value("MONTH 일정 2"))
+                .andExpect(jsonPath("$.data[2].id").value(113))
+                .andExpect(jsonPath("$.data[2].title").value("MONTH 일정 3"))
+                .andExpect(jsonPath("$.data[3].id").value(114))
+                .andExpect(jsonPath("$.data[3].title").value("MONTH 일정 4"));
 
         then(taskService).should().getTasks(any());
+        then(taskService).shouldHaveNoMoreInteractions();
+    }
+
+    @Test
+    @DisplayName("카테고리 그룹 일정 조회 성공")
+    void getGroupedTasks_success() throws Exception {
+        TaskResponse task = TaskResponse.builder()
+                .id(1L)
+                .title("grouped")
+                .category("일")
+                .startAt(LocalDateTime.of(2025, 11, 25, 10, 0))
+                .build();
+
+        given(taskService.getGroupedTasks(any()))
+                .willReturn(List.of(new TaskCategoryGroupResponse("일", List.of(task))));
+
+        mockMvc.perform(get("/api/tasks/grouped")
+                        .param("type", "DAY")
+                        .param("date", "2025-11-25"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].category").value("일"))
+                .andExpect(jsonPath("$.data[0].tasks[0].id").value(1))
+                .andExpect(jsonPath("$.data[0].tasks[0].title").value("grouped"));
+
+        then(taskService).should().getGroupedTasks(any());
         then(taskService).shouldHaveNoMoreInteractions();
     }
 
@@ -452,29 +470,25 @@ class TaskControllerTest {
                 .category("WORK")
                 .build();
 
-        List<TaskCategoryGroupResponse> groups = List.of(
-                new TaskCategoryGroupResponse("미분류", List.of(t1)),
-                new TaskCategoryGroupResponse("WORK", List.of(t2))
-        );
+        List<TaskResponse> tasks = List.of(t1, t2);
 
-        given(taskService.getUnscheduledTasks()).willReturn(groups);
+        given(taskService.getUnscheduledTasks()).willReturn(tasks);
 
         mockMvc.perform(get("/api/tasks/unscheduled"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.data.length()").value(2))
-                .andExpect(jsonPath("$.data[0].category").value("미분류"))
-                .andExpect(jsonPath("$.data[0].tasks[0].id").value(1))
-                .andExpect(jsonPath("$.data[0].tasks[0].title").value("u1"))
-                .andExpect(jsonPath("$.data[0].tasks[0].startAt").isEmpty())
-                .andExpect(jsonPath("$.data[0].tasks[0].endAt").isEmpty())
-                .andExpect(jsonPath("$.data[0].tasks[0].unscheduled").value(true))
+                .andExpect(jsonPath("$.data[0].id").value(1))
+                .andExpect(jsonPath("$.data[0].title").value("u1"))
+                .andExpect(jsonPath("$.data[0].startAt").isEmpty())
+                .andExpect(jsonPath("$.data[0].endAt").isEmpty())
+                .andExpect(jsonPath("$.data[0].unscheduled").value(true))
                 .andExpect(jsonPath("$.data[1].category").value("WORK"))
-                .andExpect(jsonPath("$.data[1].tasks[0].id").value(2))
-                .andExpect(jsonPath("$.data[1].tasks[0].title").value("u2"))
-                .andExpect(jsonPath("$.data[1].tasks[0].startAt").isEmpty())
-                .andExpect(jsonPath("$.data[1].tasks[0].endAt").isEmpty())
-                .andExpect(jsonPath("$.data[1].tasks[0].unscheduled").value(true));
+                .andExpect(jsonPath("$.data[1].id").value(2))
+                .andExpect(jsonPath("$.data[1].title").value("u2"))
+                .andExpect(jsonPath("$.data[1].startAt").isEmpty())
+                .andExpect(jsonPath("$.data[1].endAt").isEmpty())
+                .andExpect(jsonPath("$.data[1].unscheduled").value(true));
     }
 
     /*******************

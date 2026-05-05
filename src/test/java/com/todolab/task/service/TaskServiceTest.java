@@ -255,16 +255,14 @@ class TaskServiceTest {
         given(taskRepository.findByDateRange(dayStart, nextDayStart)).willReturn(returnedByRepo);
 
         // when
-        List<TaskCategoryGroupResponse> res = taskService.getTasks(request);
+        List<TaskResponse> res = taskService.getTasks(request);
 
         // then
-        assertThat(res).hasSize(1);
-        assertThat(res.getFirst().category()).isEqualTo("일");
-        assertThat(res.getFirst().tasks()).hasSize(2);
-        assertThat(res.getFirst().tasks()).extracting(TaskResponse::title)
+        assertThat(res).hasSize(2);
+        assertThat(res).extracting(TaskResponse::title)
                 .containsExactlyInAnyOrder("include-start", "include-late");
-        assertThat(res.getFirst().tasks()).allMatch(r -> !r.unscheduled());
-        assertThat(res.getFirst().tasks()).allMatch(r ->
+        assertThat(res).allMatch(r -> !r.unscheduled());
+        assertThat(res).allMatch(r ->
                 !r.startAt().isBefore(dayStart) && r.startAt().isBefore(nextDayStart)
         );
 
@@ -299,15 +297,13 @@ class TaskServiceTest {
         given(taskRepository.findByDateRange(weekStart, weekEndExclusive)).willReturn(returnedByRepo);
 
         // when
-        List<TaskCategoryGroupResponse> res = taskService.getTasks(request);
+        List<TaskResponse> res = taskService.getTasks(request);
 
         // then
-        assertThat(res).hasSize(1);
-        assertThat(res.getFirst().category()).isEqualTo("일");
-        assertThat(res.getFirst().tasks()).hasSize(2);
-        assertThat(res.getFirst().tasks()).extracting(TaskResponse::title)
+        assertThat(res).hasSize(2);
+        assertThat(res).extracting(TaskResponse::title)
                 .containsExactlyInAnyOrder("mon", "sun-2359");
-        assertThat(res.getFirst().tasks()).allMatch(r ->
+        assertThat(res).allMatch(r ->
                 !r.startAt().isBefore(weekStart) && r.startAt().isBefore(weekEndExclusive)
         );
 
@@ -341,19 +337,57 @@ class TaskServiceTest {
         given(taskRepository.findByDateRange(monthStart, monthEndExclusive)).willReturn(returnedByRepo);
 
         // when
-        List<TaskCategoryGroupResponse> res = taskService.getTasks(request);
+        List<TaskResponse> res = taskService.getTasks(request);
 
         // then
-        assertThat(res).hasSize(1);
-        assertThat(res.getFirst().category()).isEqualTo("일");
-        assertThat(res.getFirst().tasks()).hasSize(2);
-        assertThat(res.getFirst().tasks()).extracting(TaskResponse::title)
+        assertThat(res).hasSize(2);
+        assertThat(res).extracting(TaskResponse::title)
                 .containsExactlyInAnyOrder("m-start", "m-end-1m");
-        assertThat(res.getFirst().tasks()).allMatch(r ->
+        assertThat(res).allMatch(r ->
                 !r.startAt().isBefore(monthStart) && r.startAt().isBefore(monthEndExclusive)
         );
 
         then(taskRepository).should(times(1)).findByDateRange(monthStart, monthEndExclusive);
+        then(taskRepository).shouldHaveNoMoreInteractions();
+        then(taskTxService).shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("카테고리 그룹 일정 조회는 미분류를 마지막에 정렬한다")
+    void getGroupedTasks_ordersUncategorizedLast() {
+        // given
+        TaskQueryRequest request = TaskQueryRequest.builder()
+                .rawType("DAY")
+                .rawDate("2025-11-27")
+                .build();
+
+        DateRange day = TaskQueryType.DAY.calculate("2025-11-27");
+        Task uncategorized = Task.builder()
+                .title("u")
+                .startAt(day.getStart())
+                .endAt(null)
+                .allDay(false)
+                .category(null)
+                .build();
+        Task work = Task.builder()
+                .title("w")
+                .startAt(day.getStart().plusHours(1))
+                .endAt(null)
+                .allDay(false)
+                .category("WORK")
+                .build();
+
+        given(taskRepository.findByDateRange(day.getStart(), day.getEnd()))
+                .willReturn(List.of(uncategorized, work));
+
+        // when
+        List<TaskCategoryGroupResponse> result = taskService.getGroupedTasks(request);
+
+        // then
+        assertThat(result).extracting(TaskCategoryGroupResponse::category)
+                .containsExactly("WORK", "미분류");
+
+        then(taskRepository).should(times(1)).findByDateRange(day.getStart(), day.getEnd());
         then(taskRepository).shouldHaveNoMoreInteractions();
         then(taskTxService).shouldHaveNoInteractions();
     }
@@ -497,25 +531,15 @@ class TaskServiceTest {
                 .willReturn(List.of(unscheduled1, unscheduled2));
 
         // when
-        List<TaskCategoryGroupResponse> result = taskService.getUnscheduledTasks();
+        List<TaskResponse> result = taskService.getUnscheduledTasks();
 
         // then
         assertThat(result).hasSize(2);
 
-        assertThat(result.getFirst().category()).isEqualTo("WORK");
-        assertThat(result.getFirst().tasks()).hasSize(1);
-        assertThat(result.getFirst().tasks().getFirst().title()).isEqualTo("u2");
-        assertThat(result.getFirst().tasks().getFirst().category()).isEqualTo("WORK");
-        assertThat(result.getFirst().tasks().getFirst().startAt()).isNull();
-        assertThat(result.getFirst().tasks().getFirst().endAt()).isNull();
-        assertThat(result.getFirst().tasks().getFirst().unscheduled()).isTrue();
-
-        assertThat(result.get(1).category()).isEqualTo("미분류");
-        assertThat(result.get(1).tasks()).hasSize(1);
-        assertThat(result.get(1).tasks().getFirst().title()).isEqualTo("u1");
-        assertThat(result.get(1).tasks().getFirst().startAt()).isNull();
-        assertThat(result.get(1).tasks().getFirst().endAt()).isNull();
-        assertThat(result.get(1).tasks().getFirst().unscheduled()).isTrue();
+        assertThat(result).extracting(TaskResponse::title)
+                .containsExactly("u1", "u2");
+        assertThat(result).allMatch(TaskResponse::unscheduled);
+        assertThat(result).allMatch(task -> task.startAt() == null && task.endAt() == null);
 
         then(taskRepository).should(times(1)).findUnscheduledTask();
         then(taskRepository).shouldHaveNoMoreInteractions();

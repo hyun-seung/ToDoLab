@@ -1,8 +1,8 @@
 package com.todolab.batch.config;
 
 import com.todolab.mail.MailService;
+import com.todolab.batch.scheduler.BatchScheduler;
 import com.todolab.task.domain.query.TaskQueryType;
-import com.todolab.task.dto.TaskCategoryGroupResponse;
 import com.todolab.task.dto.TaskQueryRequest;
 import com.todolab.task.dto.TaskResponse;
 import com.todolab.task.service.TaskService;
@@ -19,8 +19,12 @@ import org.springframework.batch.test.JobRepositoryTestUtils;
 import org.springframework.batch.test.context.SpringBatchTest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.ActiveProfiles;
 
+import javax.sql.DataSource;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -29,8 +33,12 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 
-@SpringBootTest(properties = "app.mail.daily-summary.to=test@todolab.com")
+@SpringBootTest(properties = {
+        "app.mail.daily-summary.to=test@todolab.com",
+        "spring.batch.job.enabled=false"
+})
 @SpringBatchTest
+@ActiveProfiles("test")
 class DailyScheduleMailJobIntegrationTest {
 
     @Autowired
@@ -42,15 +50,25 @@ class DailyScheduleMailJobIntegrationTest {
     @Autowired
     private Job dailyScheduleMailJob;
 
+    @Autowired
+    private DataSource dataSource;
+
     @MockitoBean
     private TaskService taskService;
 
     @MockitoBean
     private MailService mailService;
 
+    @MockitoBean
+    private BatchScheduler batchScheduler;
+
     @BeforeEach
     void setUp() {
         jobOperatorTestUtils.setJob(dailyScheduleMailJob);
+        new ResourceDatabasePopulator(
+                new ClassPathResource("org/springframework/batch/core/schema-drop-h2.sql"),
+                new ClassPathResource("org/springframework/batch/core/schema-h2.sql")
+        ).execute(dataSource);
         jobRepositoryTestUtils.removeJobExecutions();
     }
 
@@ -76,21 +94,15 @@ class DailyScheduleMailJobIntegrationTest {
     void dailyScheduleMailJob_completes_and_sendsMail() throws Exception {
         // given
         given(taskService.getUnscheduledTasks()).willReturn(List.of(
-                new TaskCategoryGroupResponse("미분류", List.of(
-                        taskResponse(1L, "미정 일정", null, null, true)
-                ))
+                taskResponse(1L, "미정 일정", null, null, true)
         ));
         given(taskService.getTasks(refEq(new TaskQueryRequest(TaskQueryType.DAY, "2026-03-12"))))
                 .willReturn(List.of(
-                        new TaskCategoryGroupResponse("업무", List.of(
-                                taskResponse(2L, "회의", LocalDateTime.of(2026, 3, 12, 10, 0), null, false)
-                        ))
+                        taskResponse(2L, "회의", LocalDateTime.of(2026, 3, 12, 10, 0), null, false)
                 ));
         given(taskService.getTasks(refEq(new TaskQueryRequest(TaskQueryType.WEEK, "2026-03-12"))))
                 .willReturn(List.of(
-                        new TaskCategoryGroupResponse("업무", List.of(
-                                taskResponse(3L, "개발", LocalDateTime.of(2026, 3, 12, 14, 0), LocalDateTime.of(2026, 3, 12, 16, 0), false)
-                        ))
+                        taskResponse(3L, "개발", LocalDateTime.of(2026, 3, 12, 14, 0), LocalDateTime.of(2026, 3, 12, 16, 0), false)
                 ));
 
         JobParameters jobParameters = new JobParametersBuilder()
@@ -132,6 +144,6 @@ class DailyScheduleMailJobIntegrationTest {
     }
 
     private TaskResponse taskResponse(Long id, String title, LocalDateTime startAt, LocalDateTime endAt, boolean unscheduled) {
-        return new TaskResponse(id, title, null, startAt, endAt, false, true, null, null);
+        return new TaskResponse(id, title, null, startAt, endAt, false, unscheduled, null, null);
     }
 }

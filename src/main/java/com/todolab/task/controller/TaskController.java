@@ -55,7 +55,7 @@ public class TaskController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<TaskCategoryGroupResponse>>> getTasks(
+    public ResponseEntity<ApiResponse<List<TaskResponse>>> getTasks(
             @RequestParam(required = false) String type,
             @RequestParam(required = false) String date
     ) {
@@ -65,9 +65,27 @@ public class TaskController {
                 .rawDate(date)
                 .build();
 
-        List<TaskCategoryGroupResponse> res = taskService.getTasks(request);
-        log.info("[API] getTasks success :: type={}, date={}, groupCount={}", type, date, res.size());
-        log.debug("[API] getTasks categories :: {}",  res.stream().map(TaskCategoryGroupResponse::category).toList());
+        List<TaskResponse> res = taskService.getTasks(request);
+        log.info("[API] getTasks success :: type={}, date={}, taskCount={}", type, date, res.size());
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(ApiResponse.success(res));
+    }
+
+    @GetMapping("/grouped")
+    public ResponseEntity<ApiResponse<List<TaskCategoryGroupResponse>>> getGroupedTasks(
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false) String date
+    ) {
+        log.info("[API] getGroupedTasks :: Type : {} , Date : {}", type, date);
+        TaskQueryRequest request = TaskQueryRequest.builder()
+                .rawType(type)
+                .rawDate(date)
+                .build();
+
+        List<TaskCategoryGroupResponse> res = taskService.getGroupedTasks(request);
+        log.info("[API] getGroupedTasks success :: type={}, date={}, groupCount={}", type, date, res.size());
+        log.debug("[API] getGroupedTasks categories :: {}",
+                res.stream().map(TaskCategoryGroupResponse::category).toList());
         return ResponseEntity.status(HttpStatus.OK)
                 .body(ApiResponse.success(res));
     }
@@ -95,13 +113,24 @@ public class TaskController {
     }
 
     @GetMapping("/unscheduled")
-    public ResponseEntity<ApiResponse<List<TaskCategoryGroupResponse>>> getUnscheduledTasks() {
+    public ResponseEntity<ApiResponse<List<TaskResponse>>> getUnscheduledTasks() {
         log.info("[API] getUnscheduledTasks request");
 
-        List<TaskCategoryGroupResponse> res = taskService.getUnscheduledTasks();
+        List<TaskResponse> res = taskService.getUnscheduledTasks();
 
-        log.info("[API] getUnscheduledTasks success :: groupCount={}", res.size());
-        log.debug("[API] getUnscheduledTasks categories :: {}",
+        log.info("[API] getUnscheduledTasks success :: taskCount={}", res.size());
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(ApiResponse.success(res));
+    }
+
+    @GetMapping("/unscheduled/grouped")
+    public ResponseEntity<ApiResponse<List<TaskCategoryGroupResponse>>> getGroupedUnscheduledTasks() {
+        log.info("[API] getGroupedUnscheduledTasks request");
+
+        List<TaskCategoryGroupResponse> res = taskService.getGroupedUnscheduledTasks();
+
+        log.info("[API] getGroupedUnscheduledTasks success :: groupCount={}", res.size());
+        log.debug("[API] getGroupedUnscheduledTasks categories :: {}",
                 res.stream().map(TaskCategoryGroupResponse::category).toList());
         return ResponseEntity.status(HttpStatus.OK)
                 .body(ApiResponse.success(res));
