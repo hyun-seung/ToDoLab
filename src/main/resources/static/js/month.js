@@ -95,16 +95,7 @@
       applyTodayRing();
 
       const ym = monthLabel || (monthStart ? monthStart.slice(0, 7) : '');
-      const url = `/api/tasks?type=MONTH&date=${encodeURIComponent(ym)}`;
-
-      const res = await fetch(url, { headers: { 'Accept': 'application/json' }});
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-      const body = await res.json();
-      if (!body) throw new Error('응답이 비어있음');
-      if (body.success === false) throw new Error(body.message || 'API 실패');
-
-      const tasks = body.data ?? [];
+      const tasks = await TaskApi.getMonthTasks(ym);
 
       // 하단 리스트는 selectedDate 기준
       const filtered = Array.isArray(tasks)

@@ -147,62 +147,6 @@ window.TaskModal = (() => {
     };
   }
 
-  function unwrap(body) {
-    // { success, data } or { status, data } 등 방어
-    if (!body) return null;
-    if (body.success === false) throw new Error(body.message || 'API failed');
-    if (body.status && body.status !== 'success') throw new Error(body.message || 'API failed');
-    return body.data ?? body?.data?.data ?? body;
-  }
-
-  async function apiGet(id) {
-    const res = await fetch(`/api/tasks/${encodeURIComponent(id)}`, {
-      headers: { 'Accept': 'application/json' }
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const body = await res.json();
-    return unwrap(body);
-  }
-
-  async function apiCreate(payload) {
-    const res = await fetch(`/api/tasks`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'X-Requested-With': 'fetch'
-      },
-      body: JSON.stringify(payload)
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const body = await res.json().catch(() => ({}));
-    return unwrap(body) || true;
-  }
-
-  async function apiUpdate(id, payload) {
-    const res = await fetch(`/api/tasks/${encodeURIComponent(id)}`, {
-      method: 'PUT', // ✅ 수정은 PUT 고정
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'X-Requested-With': 'fetch'
-      },
-      body: JSON.stringify(payload)
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const body = await res.json().catch(() => ({}));
-    return unwrap(body) || true;
-  }
-
-  async function apiDelete(id) {
-    const res = await fetch(`/api/tasks/${encodeURIComponent(id)}`, {
-      method: 'DELETE',
-      headers: { 'Accept': 'application/json', 'X-Requested-With': 'fetch' }
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return true;
-  }
-
   /* -----------------------------
    * mode set
    * ----------------------------- */
@@ -263,7 +207,7 @@ window.TaskModal = (() => {
       if (mode === 'create') {
         const payload = payloadFromForm();
         if (!payload.title) return alert('제목은 필수야');
-        await apiCreate(payload);
+        await TaskApi.createTask(payload);
         close();
         location.reload();
         return;
@@ -281,7 +225,7 @@ window.TaskModal = (() => {
         if (!payload.title) return alert('제목은 필수야');
         if (!currentId) return;
 
-        await apiUpdate(currentId, payload);
+        await TaskApi.updateTask(currentId, payload);
         close();
         location.reload();
       }
@@ -295,7 +239,7 @@ window.TaskModal = (() => {
     if (!confirm('정말 삭제할까?')) return;
 
     try {
-      await apiDelete(currentId);
+      await TaskApi.deleteTask(currentId);
       close();
       location.reload();
     } catch (e) {
@@ -317,7 +261,7 @@ window.TaskModal = (() => {
     open(); // 로딩 중에도 모달은 띄움
 
     try {
-      const task = await apiGet(id);
+      const task = await TaskApi.getTask(id);
       setModeDetail(id, task);
     } catch (e) {
       alert(`상세 로딩 실패: ${e.message || e}`);

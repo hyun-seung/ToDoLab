@@ -97,15 +97,7 @@
       applyTodayRing();
 
       const date = selectedDate || weekStart;
-      const url = `/api/tasks?type=WEEK&date=${encodeURIComponent(date)}`;
-      const res = await fetch(url, { headers: { 'Accept': 'application/json' }});
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-      const body = await res.json();
-      if (!body) throw new Error('응답이 비어있음');
-      if (body.success === false) throw new Error(body.message || 'API 실패');
-
-      const tasks = body.data ?? [];
+      const tasks = await TaskApi.getWeekTasks(date);
 
       const filtered = Array.isArray(tasks)
         ? tasks.filter(t => {

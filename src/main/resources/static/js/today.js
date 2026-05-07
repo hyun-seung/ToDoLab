@@ -93,15 +93,8 @@
         $dateText.textContent = dow ? `${date} (${dow})` : date;
       }
 
-      const url = `/api/tasks?type=DAY&date=${encodeURIComponent(date)}`;
-      const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-      const body = await res.json();
-      if (!body) throw new Error('응답이 비어있음');
-      if (body.success === false) throw new Error(body.message || 'API 실패');
-
-      render(body.data ?? []);
+      const tasks = await TaskApi.getTodayTasks(date);
+      render(tasks ?? []);
     } catch (e) {
       showError(`Today 로딩 실패: ${e.message}`);
     } finally {

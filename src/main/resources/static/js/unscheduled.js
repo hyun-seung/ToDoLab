@@ -77,16 +77,7 @@
       $loading?.classList.remove('hidden');
       $error?.classList.add('hidden');
 
-      const res = await fetch('/api/tasks/unscheduled', {
-        headers: { 'Accept': 'application/json' }
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-      const body = await res.json();
-      if (!body) throw new Error('응답이 비어있음');
-      if (body.success === false) throw new Error(body.message || 'API 실패');
-
-      const raw = body.data ?? [];
+      const raw = (await TaskApi.getUnscheduledTasks()) ?? [];
       const only = raw.filter(t => t && t.unscheduled === true);
       render(sortTasks(only));
     } catch (e) {
