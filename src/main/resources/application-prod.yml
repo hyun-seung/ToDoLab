@@ -1,0 +1,49 @@
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+  datasource:
+    url: ${TODOLAB_DB_URL}
+    username: ${TODOLAB_DB_USERNAME}
+    password: ${TODOLAB_DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: false
+    open-in-view: false
+
+  batch:
+    jdbc:
+      initialize-schema: never
+    job:
+      enabled: false
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${TODOLAB_MAIL_USERNAME}
+    password: ${TODOLAB_MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls.enable: true
+
+app:
+  batch:
+    scheduler:
+      enabled: true
+
+  mail:
+    daily-summary:
+      to: ${TODOLAB_DAILY_SUMMARY_TO}
+
+logging:
+  level:
+    org.hibernate.SQL: INFO
+    org.hibernate.orm.jdbc.bind: INFO
