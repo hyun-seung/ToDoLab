@@ -1,6 +1,5 @@
 package com.todolab.task.service;
 
-import com.todolab.Constant;
 import com.todolab.task.domain.Task;
 import com.todolab.task.domain.query.DateRange;
 import com.todolab.task.domain.query.TaskQueryType;
@@ -14,8 +13,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -23,6 +20,7 @@ public class TaskService {
 
     private final TaskTxService taskTxService;
     private final TaskRepository taskRepository;
+    private final TaskCategoryGrouper taskCategoryGrouper;
 
     public TaskResponse create(TaskRequest req) {
         Task task = Task.builder()
@@ -50,7 +48,7 @@ public class TaskService {
     }
 
     public List<TaskCategoryGroupResponse> getGroupedTasks(TaskQueryRequest request) {
-        return groupByCategory(findTasks(request));
+        return taskCategoryGrouper.group(findTasks(request));
     }
 
     public List<TaskResponse> getUnscheduledTasks() {
@@ -58,7 +56,7 @@ public class TaskService {
     }
 
     public List<TaskCategoryGroupResponse> getGroupedUnscheduledTasks() {
-        return groupByCategory(findUnscheduledTasks());
+        return taskCategoryGrouper.group(findUnscheduledTasks());
     }
 
     public TaskResponse update(Long id, TaskRequest taskRequest) {
@@ -91,31 +89,4 @@ public class TaskService {
                 .toList();
     }
 
-    private List<TaskCategoryGroupResponse> groupByCategory(List<TaskResponse> tasks) {
-        Map<String, List<TaskResponse>> grouped = tasks.stream()
-                .collect(Collectors.groupingBy(task -> toCategoryLabel(task.category())));
-
-        return grouped.entrySet().stream()
-                .sorted((a, b) -> {
-                    boolean aUncategorized = a.getKey().equals(Constant.UNCATEGORIZED);
-                    boolean bUncategorized = b.getKey().equals(Constant.UNCATEGORIZED);
-
-                    if (aUncategorized && !bUncategorized) {
-                        return 1;
-                    }
-                    if (!aUncategorized && bUncategorized) {
-                        return -1;
-                    }
-                    return a.getKey().compareTo(b.getKey());
-                })
-                .map(entry -> new TaskCategoryGroupResponse(entry.getKey(), entry.getValue()))
-                .toList();
-    }
-
-    private String toCategoryLabel(String category) {
-        if (category == null || category.isBlank()) {
-            return Constant.UNCATEGORIZED;
-        }
-        return category;
-    }
 }

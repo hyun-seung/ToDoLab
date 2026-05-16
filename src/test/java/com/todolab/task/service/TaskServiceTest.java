@@ -41,11 +41,14 @@ class TaskServiceTest {
     @Mock
     TaskTxService taskTxService;
 
+    TaskCategoryGrouper taskCategoryGrouper;
+
     TaskService taskService;
 
     @BeforeEach
     void setUp() {
-        taskService = new TaskService(taskTxService, taskRepository);
+        taskCategoryGrouper = new TaskCategoryGrouper();
+        taskService = new TaskService(taskTxService, taskRepository, taskCategoryGrouper);
     }
 
     /*******************
