@@ -12,6 +12,7 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -287,5 +288,106 @@ class TaskRepositoryTest extends RepositoryTestSupport {
         then(result.getFirst().getTitle()).isEqualTo("u1");
         then(result.getFirst().getStartAt()).isNull();
         then(result.getFirst().getEndAt()).isNull();
+    }
+
+    @Test
+    @DisplayName("findByStatus()는 지정한 상태의 Task만 조회한다")
+    void findByStatus_filters_status() {
+        // given
+        Task inbox = Task.builder()
+                .title("inbox")
+                .status(TaskStatus.INBOX)
+                .build();
+
+        Task today = Task.builder()
+                .title("today")
+                .status(TaskStatus.TODAY)
+                .targetDate(LocalDate.of(2026, 5, 20))
+                .build();
+
+        taskRepository.saveAll(List.of(inbox, today));
+        flushAndClear();
+
+        // when
+        List<Task> result = taskRepository.findByStatus(TaskStatus.INBOX);
+
+        // then
+        then(result).extracting("title")
+                .containsExactly("inbox");
+    }
+
+    @Test
+    @DisplayName("findTodayTasks()는 지정한 targetDate의 Today Task만 조회한다")
+    void findTodayTasks_filters_targetDate() {
+        // given
+        LocalDate targetDate = LocalDate.of(2026, 5, 20);
+
+        Task today = Task.builder()
+                .title("today")
+                .status(TaskStatus.TODAY)
+                .targetDate(targetDate)
+                .build();
+
+        Task otherDay = Task.builder()
+                .title("otherDay")
+                .status(TaskStatus.TODAY)
+                .targetDate(targetDate.plusDays(1))
+                .build();
+
+        Task inbox = Task.builder()
+                .title("inbox")
+                .status(TaskStatus.INBOX)
+                .build();
+
+        taskRepository.saveAll(List.of(today, otherDay, inbox));
+        flushAndClear();
+
+        // when
+        List<Task> result = taskRepository.findTodayTasks(targetDate);
+
+        // then
+        then(result).extracting("title")
+                .containsExactly("today");
+    }
+
+    @Test
+    @DisplayName("findDoneTasks()는 지정한 날짜에 완료한 Done Task만 완료 시간 최신순으로 조회한다")
+    void findDoneTasks_filters_completedDate() {
+        // given
+        LocalDate completedDate = LocalDate.of(2026, 5, 20);
+
+        Task morning = Task.builder()
+                .title("morning")
+                .status(TaskStatus.DONE)
+                .completedAt(completedDate.atTime(9, 0))
+                .build();
+
+        Task evening = Task.builder()
+                .title("evening")
+                .status(TaskStatus.DONE)
+                .completedAt(completedDate.atTime(21, 0))
+                .build();
+
+        Task otherDay = Task.builder()
+                .title("otherDay")
+                .status(TaskStatus.DONE)
+                .completedAt(completedDate.plusDays(1).atStartOfDay())
+                .build();
+
+        Task today = Task.builder()
+                .title("today")
+                .status(TaskStatus.TODAY)
+                .targetDate(completedDate)
+                .build();
+
+        taskRepository.saveAll(List.of(morning, evening, otherDay, today));
+        flushAndClear();
+
+        // when
+        List<Task> result = taskRepository.findDoneTasks(completedDate);
+
+        // then
+        then(result).extracting("title")
+                .containsExactly("evening", "morning");
     }
 }

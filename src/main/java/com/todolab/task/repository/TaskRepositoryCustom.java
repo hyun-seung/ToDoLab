@@ -1,8 +1,10 @@
 package com.todolab.task.repository;
 
 import com.todolab.task.domain.Task;
+import com.todolab.task.domain.TaskStatus;
 import com.todolab.task.domain.TaskType;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -12,4 +14,10 @@ public interface TaskRepositoryCustom {
     List<Task> findByDateRangeAndType(LocalDateTime start, LocalDateTime end, TaskType taskType);
 
     List<Task> findUnscheduledTask();
+
+    List<Task> findByStatus(TaskStatus status);
+
+    List<Task> findTodayTasks(LocalDate targetDate);
+
+    List<Task> findDoneTasks(LocalDate completedDate);
 }

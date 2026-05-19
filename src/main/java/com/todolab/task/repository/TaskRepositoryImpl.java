@@ -4,9 +4,11 @@ import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.todolab.task.domain.QTask;
 import com.todolab.task.domain.Task;
+import com.todolab.task.domain.TaskStatus;
 import com.todolab.task.domain.TaskType;
 import jakarta.persistence.EntityManager;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -58,6 +60,48 @@ public class TaskRepositoryImpl implements TaskRepositoryCustom {
                         t.endAt.isNull()
                 )
                 .orderBy(t.id.asc())
+                .fetch();
+    }
+
+    @Override
+    public List<Task> findByStatus(TaskStatus status) {
+        QTask t = QTask.task;
+
+        return queryFactory
+                .selectFrom(t)
+                .where(t.status.eq(status))
+                .orderBy(t.createdAt.asc(), t.id.asc())
+                .fetch();
+    }
+
+    @Override
+    public List<Task> findTodayTasks(LocalDate targetDate) {
+        QTask t = QTask.task;
+
+        return queryFactory
+                .selectFrom(t)
+                .where(
+                        t.status.eq(TaskStatus.TODAY),
+                        t.targetDate.eq(targetDate)
+                )
+                .orderBy(t.createdAt.asc(), t.id.asc())
+                .fetch();
+    }
+
+    @Override
+    public List<Task> findDoneTasks(LocalDate completedDate) {
+        QTask t = QTask.task;
+        LocalDateTime start = completedDate.atStartOfDay();
+        LocalDateTime end = completedDate.plusDays(1).atStartOfDay();
+
+        return queryFactory
+                .selectFrom(t)
+                .where(
+                        t.status.eq(TaskStatus.DONE),
+                        t.completedAt.goe(start),
+                        t.completedAt.lt(end)
+                )
+                .orderBy(t.completedAt.desc(), t.id.asc())
                 .fetch();
     }
 
