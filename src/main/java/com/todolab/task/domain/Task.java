@@ -97,6 +97,32 @@ public class Task {
         return startAt != null && endAt != null;
     }
 
+    public void moveToInbox() {
+        this.status = TaskStatus.INBOX;
+        this.targetDate = null;
+        this.completedAt = null;
+    }
+
+    public void moveToToday(LocalDate targetDate) {
+        validateTargetDate(targetDate);
+        this.status = TaskStatus.TODAY;
+        this.targetDate = targetDate;
+        this.completedAt = null;
+    }
+
+    public void complete(LocalDateTime completedAt) {
+        validateCompletedAt(completedAt);
+        this.status = TaskStatus.DONE;
+        this.completedAt = completedAt;
+    }
+
+    public void carryOverTo(LocalDate nextDate) {
+        validateTargetDate(nextDate);
+        this.status = TaskStatus.TODAY;
+        this.targetDate = nextDate;
+        this.completedAt = null;
+    }
+
     private void apply(String title, String description, TaskType type, LocalDateTime startAt, LocalDateTime endAt, boolean allDay, String category) {
         validateSchedule(startAt, endAt, allDay);
 
@@ -118,6 +144,18 @@ public class Task {
 
     private TaskType normalizeType(TaskType type) {
         return type == null ? TaskType.defaultType() : type;
+    }
+
+    private void validateTargetDate(LocalDate targetDate) {
+        if (targetDate == null) {
+            throw new IllegalArgumentException("targetDate는 필수입니다.");
+        }
+    }
+
+    private void validateCompletedAt(LocalDateTime completedAt) {
+        if (completedAt == null) {
+            throw new IllegalArgumentException("completedAt은 필수입니다.");
+        }
     }
 
     private void applyStatus(TaskStatus status, LocalDate targetDate, LocalDateTime completedAt) {
