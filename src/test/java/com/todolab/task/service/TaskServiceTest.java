@@ -763,4 +763,84 @@ class TaskServiceTest {
         then(taskRepository).shouldHaveNoMoreInteractions();
         then(taskTxService).shouldHaveNoInteractions();
     }
+
+    @Test
+    @DisplayName("Today 이동은 트랜잭션 서비스에 위임하고 응답을 반환한다")
+    void moveToToday_success() {
+        // given
+        long id = 1L;
+        LocalDate targetDate = LocalDate.of(2026, 5, 21);
+        Task moved = Task.builder()
+                .title("moved")
+                .status(TaskStatus.TODAY)
+                .targetDate(targetDate)
+                .build();
+
+        given(taskTxService.moveToTodayTx(id, targetDate)).willReturn(moved);
+
+        // when
+        TaskResponse result = taskService.moveToToday(id, targetDate);
+
+        // then
+        assertThat(result.title()).isEqualTo("moved");
+        assertThat(result.status()).isEqualTo(TaskStatus.TODAY);
+        assertThat(result.targetDate()).isEqualTo(targetDate);
+        assertThat(result.completedAt()).isNull();
+
+        then(taskTxService).should(times(1)).moveToTodayTx(id, targetDate);
+        then(taskRepository).shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("완료 처리는 트랜잭션 서비스에 위임하고 응답을 반환한다")
+    void complete_success() {
+        // given
+        long id = 1L;
+        LocalDateTime completedAt = LocalDateTime.of(2026, 5, 21, 22, 0);
+        Task completed = Task.builder()
+                .title("completed")
+                .status(TaskStatus.DONE)
+                .completedAt(completedAt)
+                .build();
+
+        given(taskTxService.completeTx(id, completedAt)).willReturn(completed);
+
+        // when
+        TaskResponse result = taskService.complete(id, completedAt);
+
+        // then
+        assertThat(result.title()).isEqualTo("completed");
+        assertThat(result.status()).isEqualTo(TaskStatus.DONE);
+        assertThat(result.completedAt()).isEqualTo(completedAt);
+
+        then(taskTxService).should(times(1)).completeTx(id, completedAt);
+        then(taskRepository).shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("이월 처리는 트랜잭션 서비스에 위임하고 응답을 반환한다")
+    void carryOver_success() {
+        // given
+        long id = 1L;
+        LocalDate nextDate = LocalDate.of(2026, 5, 22);
+        Task carriedOver = Task.builder()
+                .title("carried over")
+                .status(TaskStatus.TODAY)
+                .targetDate(nextDate)
+                .build();
+
+        given(taskTxService.carryOverTx(id, nextDate)).willReturn(carriedOver);
+
+        // when
+        TaskResponse result = taskService.carryOver(id, nextDate);
+
+        // then
+        assertThat(result.title()).isEqualTo("carried over");
+        assertThat(result.status()).isEqualTo(TaskStatus.TODAY);
+        assertThat(result.targetDate()).isEqualTo(nextDate);
+        assertThat(result.completedAt()).isNull();
+
+        then(taskTxService).should(times(1)).carryOverTx(id, nextDate);
+        then(taskRepository).shouldHaveNoInteractions();
+    }
 }

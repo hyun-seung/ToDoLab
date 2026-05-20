@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -83,6 +84,21 @@ public class TaskService {
     public TaskResponse update(Long id, TaskRequest taskRequest) {
         Task updated = taskTxService.updateTx(id, taskRequest);
         return TaskResponse.from(updated);
+    }
+
+    public TaskResponse moveToToday(Long id, LocalDate targetDate) {
+        Task moved = taskTxService.moveToTodayTx(id, targetDate);
+        return TaskResponse.from(moved);
+    }
+
+    public TaskResponse complete(Long id, LocalDateTime completedAt) {
+        Task completed = taskTxService.completeTx(id, completedAt);
+        return TaskResponse.from(completed);
+    }
+
+    public TaskResponse carryOver(Long id, LocalDate nextDate) {
+        Task carriedOver = taskTxService.carryOverTx(id, nextDate);
+        return TaskResponse.from(carriedOver);
     }
 
     public void delete(Long id) {
