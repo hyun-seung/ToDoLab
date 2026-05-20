@@ -681,4 +681,86 @@ class TaskServiceTest {
         then(taskRepository).shouldHaveNoMoreInteractions();
         then(taskTxService).shouldHaveNoInteractions();
     }
+
+    @Test
+    @DisplayName("Inbox 조회는 INBOX 상태 Task를 반환한다")
+    void getInboxTasks_success() {
+        // given
+        Task inbox = Task.builder()
+                .title("inbox")
+                .status(TaskStatus.INBOX)
+                .build();
+
+        given(taskRepository.findByStatus(TaskStatus.INBOX))
+                .willReturn(List.of(inbox));
+
+        // when
+        List<TaskResponse> result = taskService.getInboxTasks();
+
+        // then
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst().title()).isEqualTo("inbox");
+        assertThat(result.getFirst().status()).isEqualTo(TaskStatus.INBOX);
+
+        then(taskRepository).should(times(1)).findByStatus(TaskStatus.INBOX);
+        then(taskRepository).shouldHaveNoMoreInteractions();
+        then(taskTxService).shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("Today 조회는 targetDate 기준 Task를 반환한다")
+    void getTodayTasks_success() {
+        // given
+        LocalDate targetDate = LocalDate.of(2026, 5, 20);
+        Task today = Task.builder()
+                .title("today")
+                .status(TaskStatus.TODAY)
+                .targetDate(targetDate)
+                .build();
+
+        given(taskRepository.findTodayTasks(targetDate))
+                .willReturn(List.of(today));
+
+        // when
+        List<TaskResponse> result = taskService.getTodayTasks(targetDate);
+
+        // then
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst().title()).isEqualTo("today");
+        assertThat(result.getFirst().status()).isEqualTo(TaskStatus.TODAY);
+        assertThat(result.getFirst().targetDate()).isEqualTo(targetDate);
+
+        then(taskRepository).should(times(1)).findTodayTasks(targetDate);
+        then(taskRepository).shouldHaveNoMoreInteractions();
+        then(taskTxService).shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("Done 조회는 completedAt 날짜 기준 Task를 반환한다")
+    void getDoneTasks_success() {
+        // given
+        LocalDate completedDate = LocalDate.of(2026, 5, 20);
+        LocalDateTime completedAt = completedDate.atTime(21, 0);
+        Task done = Task.builder()
+                .title("done")
+                .status(TaskStatus.DONE)
+                .completedAt(completedAt)
+                .build();
+
+        given(taskRepository.findDoneTasks(completedDate))
+                .willReturn(List.of(done));
+
+        // when
+        List<TaskResponse> result = taskService.getDoneTasks(completedDate);
+
+        // then
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst().title()).isEqualTo("done");
+        assertThat(result.getFirst().status()).isEqualTo(TaskStatus.DONE);
+        assertThat(result.getFirst().completedAt()).isEqualTo(completedAt);
+
+        then(taskRepository).should(times(1)).findDoneTasks(completedDate);
+        then(taskRepository).shouldHaveNoMoreInteractions();
+        then(taskTxService).shouldHaveNoInteractions();
+    }
 }

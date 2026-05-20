@@ -1,6 +1,7 @@
 package com.todolab.task.service;
 
 import com.todolab.task.domain.Task;
+import com.todolab.task.domain.TaskStatus;
 import com.todolab.task.domain.query.DateRange;
 import com.todolab.task.domain.query.TaskQueryType;
 import com.todolab.task.dto.TaskCategoryGroupResponse;
@@ -12,6 +13,7 @@ import com.todolab.task.repository.TaskRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -58,6 +60,24 @@ public class TaskService {
 
     public List<TaskCategoryGroupResponse> getGroupedUnscheduledTasks() {
         return taskCategoryGrouper.group(findUnscheduledTasks());
+    }
+
+    public List<TaskResponse> getInboxTasks() {
+        return taskRepository.findByStatus(TaskStatus.INBOX).stream()
+                .map(TaskResponse::from)
+                .toList();
+    }
+
+    public List<TaskResponse> getTodayTasks(LocalDate targetDate) {
+        return taskRepository.findTodayTasks(targetDate).stream()
+                .map(TaskResponse::from)
+                .toList();
+    }
+
+    public List<TaskResponse> getDoneTasks(LocalDate completedDate) {
+        return taskRepository.findDoneTasks(completedDate).stream()
+                .map(TaskResponse::from)
+                .toList();
     }
 
     public TaskResponse update(Long id, TaskRequest taskRequest) {
