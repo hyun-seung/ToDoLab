@@ -13,6 +13,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Slf4j
@@ -86,6 +88,43 @@ public class TaskController {
                 .body(ApiResponse.success(res));
     }
 
+    @GetMapping("/inbox")
+    public ResponseEntity<ApiResponse<List<TaskResponse>>> getInboxTasks() {
+        log.info("[API] getInboxTasks request");
+
+        List<TaskResponse> res = taskService.getInboxTasks();
+
+        log.info("[API] getInboxTasks success :: taskCount={}", res.size());
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(ApiResponse.success(res));
+    }
+
+    @GetMapping("/today")
+    public ResponseEntity<ApiResponse<List<TaskResponse>>> getTodayTasks(
+            @RequestParam LocalDate date
+    ) {
+        log.info("[API] getTodayTasks request :: date={}", date);
+
+        List<TaskResponse> res = taskService.getTodayTasks(date);
+
+        log.info("[API] getTodayTasks success :: date={}, taskCount={}", date, res.size());
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(ApiResponse.success(res));
+    }
+
+    @GetMapping("/done")
+    public ResponseEntity<ApiResponse<List<TaskResponse>>> getDoneTasks(
+            @RequestParam LocalDate date
+    ) {
+        log.info("[API] getDoneTasks request :: date={}", date);
+
+        List<TaskResponse> res = taskService.getDoneTasks(date);
+
+        log.info("[API] getDoneTasks success :: date={}, taskCount={}", date, res.size());
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(ApiResponse.success(res));
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<TaskResponse>> updateTask(
             @PathVariable Long id,
@@ -98,6 +137,49 @@ public class TaskController {
 
         TaskResponse res = taskService.update(id, request);
         log.info("[API] updateTask success :: id={}", id);
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(ApiResponse.success(res));
+    }
+
+    @PatchMapping("/{id}/today")
+    public ResponseEntity<ApiResponse<TaskResponse>> moveToToday(
+            @PathVariable Long id,
+            @RequestParam LocalDate date
+    ) {
+        log.info("[API] moveToToday request :: id={}, date={}", id, date);
+
+        TaskResponse res = taskService.moveToToday(id, date);
+
+        log.info("[API] moveToToday success :: id={}, date={}", id, date);
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(ApiResponse.success(res));
+    }
+
+    @PatchMapping("/{id}/done")
+    public ResponseEntity<ApiResponse<TaskResponse>> complete(
+            @PathVariable Long id,
+            @RequestParam(required = false) LocalDateTime completedAt
+    ) {
+        LocalDateTime effectiveCompletedAt = completedAt == null ? LocalDateTime.now() : completedAt;
+        log.info("[API] complete request :: id={}, completedAt={}", id, effectiveCompletedAt);
+
+        TaskResponse res = taskService.complete(id, effectiveCompletedAt);
+
+        log.info("[API] complete success :: id={}, completedAt={}", id, effectiveCompletedAt);
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(ApiResponse.success(res));
+    }
+
+    @PatchMapping("/{id}/carry-over")
+    public ResponseEntity<ApiResponse<TaskResponse>> carryOver(
+            @PathVariable Long id,
+            @RequestParam LocalDate date
+    ) {
+        log.info("[API] carryOver request :: id={}, date={}", id, date);
+
+        TaskResponse res = taskService.carryOver(id, date);
+
+        log.info("[API] carryOver success :: id={}, date={}", id, date);
         return ResponseEntity.status(HttpStatus.OK)
                 .body(ApiResponse.success(res));
     }

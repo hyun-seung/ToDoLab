@@ -2,6 +2,7 @@ package com.todolab.task.controller;
 
 import com.todolab.common.api.ApiExceptionHandler;
 import com.todolab.common.api.ErrorCode;
+import com.todolab.task.domain.TaskStatus;
 import com.todolab.task.dto.TaskCategoryGroupResponse;
 import com.todolab.task.dto.TaskRequest;
 import com.todolab.task.dto.TaskResponse;
@@ -19,6 +20,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -396,6 +398,100 @@ class TaskControllerTest {
     }
 
     @Test
+    @DisplayName("Inbox 조회 성공")
+    void getInboxTasks_success() throws Exception {
+        // given
+        TaskResponse inbox = TaskResponse.builder()
+                .id(1L)
+                .title("inbox")
+                .status(TaskStatus.INBOX)
+                .build();
+
+        given(taskService.getInboxTasks()).willReturn(List.of(inbox));
+
+        // when & then
+        mockMvc.perform(get("/api/tasks/inbox"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].id").value(1))
+                .andExpect(jsonPath("$.data[0].title").value("inbox"))
+                .andExpect(jsonPath("$.data[0].status").value("INBOX"));
+
+        then(taskService).should().getInboxTasks();
+        then(taskService).shouldHaveNoMoreInteractions();
+    }
+
+    @Test
+    @DisplayName("Today 조회 성공")
+    void getTodayTasks_success() throws Exception {
+        // given
+        LocalDate date = LocalDate.of(2026, 5, 21);
+        TaskResponse today = TaskResponse.builder()
+                .id(1L)
+                .title("today")
+                .status(TaskStatus.TODAY)
+                .targetDate(date)
+                .build();
+
+        given(taskService.getTodayTasks(date)).willReturn(List.of(today));
+
+        // when & then
+        mockMvc.perform(get("/api/tasks/today")
+                        .param("date", "2026-05-21"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].id").value(1))
+                .andExpect(jsonPath("$.data[0].status").value("TODAY"))
+                .andExpect(jsonPath("$.data[0].targetDate").value("2026-05-21"));
+
+        then(taskService).should().getTodayTasks(date);
+        then(taskService).shouldHaveNoMoreInteractions();
+    }
+
+    @Test
+    @DisplayName("Done 조회 성공")
+    void getDoneTasks_success() throws Exception {
+        // given
+        LocalDate date = LocalDate.of(2026, 5, 21);
+        LocalDateTime completedAt = LocalDateTime.of(2026, 5, 21, 22, 0);
+        TaskResponse done = TaskResponse.builder()
+                .id(1L)
+                .title("done")
+                .status(TaskStatus.DONE)
+                .completedAt(completedAt)
+                .build();
+
+        given(taskService.getDoneTasks(date)).willReturn(List.of(done));
+
+        // when & then
+        mockMvc.perform(get("/api/tasks/done")
+                        .param("date", "2026-05-21"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].id").value(1))
+                .andExpect(jsonPath("$.data[0].status").value("DONE"))
+                .andExpect(jsonPath("$.data[0].completedAt").value("2026-05-21T22:00:00"));
+
+        then(taskService).should().getDoneTasks(date);
+        then(taskService).shouldHaveNoMoreInteractions();
+    }
+
+    @Test
+    @DisplayName("Today 조회 실패 - date 형식이 잘못되면 400 에러를 반환한다")
+    void getTodayTasks_fail_invalidDate() throws Exception {
+        mockMvc.perform(get("/api/tasks/today")
+                        .param("date", "20260521"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value("fail"))
+                .andExpect(jsonPath("$.error.code").value(ErrorCode.INVALID_INPUT.getCode()));
+
+        then(taskService).shouldHaveNoInteractions();
+    }
+
+    @Test
     @DisplayName("일정 조회 실패 - 잘못된 type이면 400, 10001 에러를 반환한다")
     void getTasks_fail_invalidType() throws Exception {
         mockMvc.perform(get("/api/tasks")
@@ -620,6 +716,90 @@ class TaskControllerTest {
                 .andExpect(jsonPath("$.error.code").value(ErrorCode.INVALID_INPUT.getCode()));
 
         then(taskService).shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("Today 이동 성공")
+    void moveToToday_success() throws Exception {
+        // given
+        long id = 1L;
+        LocalDate targetDate = LocalDate.of(2026, 5, 21);
+        TaskResponse moved = TaskResponse.builder()
+                .id(id)
+                .title("moved")
+                .status(TaskStatus.TODAY)
+                .targetDate(targetDate)
+                .build();
+
+        given(taskService.moveToToday(id, targetDate)).willReturn(moved);
+
+        // when & then
+        mockMvc.perform(patch("/api/tasks/{id}/today", id)
+                        .param("date", "2026-05-21"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.data.id").value(1))
+                .andExpect(jsonPath("$.data.status").value("TODAY"))
+                .andExpect(jsonPath("$.data.targetDate").value("2026-05-21"));
+
+        then(taskService).should().moveToToday(id, targetDate);
+        then(taskService).shouldHaveNoMoreInteractions();
+    }
+
+    @Test
+    @DisplayName("완료 처리 성공")
+    void complete_success() throws Exception {
+        // given
+        long id = 1L;
+        LocalDateTime completedAt = LocalDateTime.of(2026, 5, 21, 22, 0);
+        TaskResponse completed = TaskResponse.builder()
+                .id(id)
+                .title("done")
+                .status(TaskStatus.DONE)
+                .completedAt(completedAt)
+                .build();
+
+        given(taskService.complete(id, completedAt)).willReturn(completed);
+
+        // when & then
+        mockMvc.perform(patch("/api/tasks/{id}/done", id)
+                        .param("completedAt", "2026-05-21T22:00:00"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.data.id").value(1))
+                .andExpect(jsonPath("$.data.status").value("DONE"))
+                .andExpect(jsonPath("$.data.completedAt").value("2026-05-21T22:00:00"));
+
+        then(taskService).should().complete(id, completedAt);
+        then(taskService).shouldHaveNoMoreInteractions();
+    }
+
+    @Test
+    @DisplayName("이월 처리 성공")
+    void carryOver_success() throws Exception {
+        // given
+        long id = 1L;
+        LocalDate nextDate = LocalDate.of(2026, 5, 22);
+        TaskResponse carriedOver = TaskResponse.builder()
+                .id(id)
+                .title("carried over")
+                .status(TaskStatus.TODAY)
+                .targetDate(nextDate)
+                .build();
+
+        given(taskService.carryOver(id, nextDate)).willReturn(carriedOver);
+
+        // when & then
+        mockMvc.perform(patch("/api/tasks/{id}/carry-over", id)
+                        .param("date", "2026-05-22"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.data.id").value(1))
+                .andExpect(jsonPath("$.data.status").value("TODAY"))
+                .andExpect(jsonPath("$.data.targetDate").value("2026-05-22"));
+
+        then(taskService).should().carryOver(id, nextDate);
+        then(taskService).shouldHaveNoMoreInteractions();
     }
 
     /*******************
