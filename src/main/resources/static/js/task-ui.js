@@ -76,12 +76,20 @@
     // ✅ 좌측 바 컬러 (task.color가 있으면 우선)
     const barColor = TaskUI.escapeHtml(task.color || options.barColor || 'rgba(99, 102, 241, 0.55)');
 
+    const checkHtml = options.completeAction
+      ? `<button type="button"
+                 class="check-box hover:bg-emerald-50 hover:text-emerald-700"
+                 data-action="complete-task"
+                 data-task-id="${TaskUI.escapeHtml(task.id)}"
+                 aria-label="완료 처리">✓</button>`
+      : `<div class="check-box">✓</div>`;
+
     return `
 <div class="task-card task-card-clickable cursor-pointer hover:bg-gray-50 active:scale-[0.995]"
      data-task-id="${TaskUI.escapeHtml(task.id)}">
   <div class="task-row">
     <div class="task-left-bar" style="background:${barColor};"></div>
-    <div class="check-box">✓</div>
+    ${checkHtml}
 
     <div class="min-w-0 flex-1">
       <div class="flex items-center gap-2 min-w-0">
@@ -118,7 +126,19 @@
   TaskUI.renderTodayCard = (t) => {
     return TaskUI.renderTaskCard(t, {
       showRightTime: true,
-      metaText: null
+      metaText: null,
+      completeAction: true
+    });
+  };
+
+  TaskUI.renderDoneCard = (t) => {
+    const completedTime = TaskUI.toTimeHM(t?.completedAt);
+    const meta = completedTime ? `완료 · ${completedTime}` : '완료';
+
+    return TaskUI.renderTaskCard(t, {
+      showRightTime: false,
+      metaText: meta,
+      barColor: 'rgba(16, 185, 129, 0.55)'
     });
   };
 
