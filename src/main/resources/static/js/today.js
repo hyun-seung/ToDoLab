@@ -15,6 +15,13 @@
   const $list     = document.getElementById('today-list');
   const $count    = document.getElementById('today-count');
   const $dateText = document.getElementById('todayDateText');
+  const $quickForm = document.getElementById('todayQuickForm');
+  const $quickTitle = document.getElementById('todayQuickTitle');
+  const $quickSubmit = document.getElementById('todayQuickSubmit');
+  const $doneEmpty = document.getElementById('today-done-empty');
+  const $doneCard = document.getElementById('today-done-card');
+  const $doneList = document.getElementById('today-done-list');
+  const $doneCount = document.getElementById('today-done-count');
 
   function hideAll() {
     $loading?.classList.add('hidden');
@@ -66,7 +73,12 @@
     }
   }
 
-  function render(tasks) {
+  function setDoneCount(n) {
+    if (!$doneCount) return;
+    $doneCount.textContent = `${n}개`;
+  }
+
+  function renderToday(tasks) {
     if (!Array.isArray(tasks) || tasks.length === 0) {
       showEmpty();
       return;
@@ -81,6 +93,25 @@
     $list.innerHTML = tasks.map(TaskUI.renderTodayCard).join('');
   }
 
+  function renderDone(tasks) {
+    const doneTasks = Array.isArray(tasks) ? tasks : [];
+    setDoneCount(doneTasks.length);
+
+    if (!window.TaskUI || typeof window.TaskUI.renderDoneCard !== 'function') {
+      return;
+    }
+
+    if (doneTasks.length === 0) {
+      $doneCard?.classList.add('hidden');
+      $doneEmpty?.classList.remove('hidden');
+      return;
+    }
+
+    $doneEmpty?.classList.add('hidden');
+    $doneCard?.classList.remove('hidden');
+    $doneList.innerHTML = doneTasks.map(TaskUI.renderDoneCard).join('');
+  }
+
   async function load() {
     try {
       // 로딩 시작
@@ -93,8 +124,13 @@
         $dateText.textContent = dow ? `${date} (${dow})` : date;
       }
 
-      const tasks = await TaskApi.getTodayTasks(date);
-      render(tasks ?? []);
+      const [todayTasks, doneTasks] = await Promise.all([
+        TaskApi.getTodayTasks(date),
+        TaskApi.getDoneTasks(date)
+      ]);
+
+      renderToday(todayTasks ?? []);
+      renderDone(doneTasks ?? []);
     } catch (e) {
       showError(`Today 로딩 실패: ${e.message}`);
     } finally {
@@ -102,6 +138,62 @@
       $loading?.classList.add('hidden');
     }
   }
+
+  async function createTodayTask(title) {
+    const created = await TaskApi.createTask({
+      title,
+      description: '',
+      category: '',
+      type: 'TODO',
+      allDay: false,
+      startAt: null,
+      endAt: null
+    });
+
+    await TaskApi.moveToToday(created.id, date);
+  }
+
+  $quickForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const title = ($quickTitle?.value || '').trim();
+    if (!title) {
+      $quickTitle?.focus();
+      return;
+    }
+
+    try {
+      if ($quickSubmit) $quickSubmit.disabled = true;
+      await createTodayTask(title);
+      $quickTitle.value = '';
+      await load();
+    } catch (err) {
+      showError(`오늘 할 일 추가 실패: ${err.message}`);
+    } finally {
+      if ($quickSubmit) $quickSubmit.disabled = false;
+    }
+  });
+
+  $list?.addEventListener('click', async (e) => {
+    const btn = e.target.closest('[data-action="complete-task"]');
+    if (!btn) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    const id = btn.getAttribute('data-task-id');
+    if (!id) return;
+
+    try {
+      btn.disabled = true;
+      await TaskApi.completeTask(id);
+      await load();
+    } catch (err) {
+      showError(`완료 처리 실패: ${err.message}`);
+    } finally {
+      btn.disabled = false;
+    }
+  });
 
   load();
 })();

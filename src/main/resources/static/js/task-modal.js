@@ -206,7 +206,7 @@ window.TaskModal = (() => {
     try {
       if (mode === 'create') {
         const payload = payloadFromForm();
-        if (!payload.title) return alert('제목은 필수야');
+        if (!payload.title) return alert('제목을 입력해주세요.');
         await TaskApi.createTask(payload);
         close();
         location.reload();
@@ -222,7 +222,7 @@ window.TaskModal = (() => {
 
       if (mode === 'edit') {
         const payload = payloadFromForm();
-        if (!payload.title) return alert('제목은 필수야');
+        if (!payload.title) return alert('제목을 입력해주세요.');
         if (!currentId) return;
 
         await TaskApi.updateTask(currentId, payload);
@@ -236,7 +236,7 @@ window.TaskModal = (() => {
 
   $delete.addEventListener('click', async () => {
     if (!currentId) return;
-    if (!confirm('정말 삭제할까?')) return;
+    if (!confirm('정말 삭제하시겠어요?')) return;
 
     try {
       await TaskApi.deleteTask(currentId);

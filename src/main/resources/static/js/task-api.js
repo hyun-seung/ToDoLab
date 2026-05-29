@@ -56,7 +56,34 @@
     return request(`/api/tasks/grouped${buildQuery({ type, date, taskType })}`);
   };
 
-  TaskApi.getTodayTasks = (date) => TaskApi.getTasks('DAY', date);
+  TaskApi.getTodayTasks = (date) => {
+    return request(`/api/tasks/today${buildQuery({ date })}`);
+  };
+
+  TaskApi.getDoneTasks = (date) => {
+    return request(`/api/tasks/done${buildQuery({ date })}`);
+  };
+
+  TaskApi.moveToToday = (id, date) => {
+    return request(`/api/tasks/${encodeURIComponent(id)}/today${buildQuery({ date })}`, {
+      method: 'PATCH',
+      headers: { 'X-Requested-With': 'fetch' }
+    });
+  };
+
+  TaskApi.completeTask = (id) => {
+    return request(`/api/tasks/${encodeURIComponent(id)}/done`, {
+      method: 'PATCH',
+      headers: { 'X-Requested-With': 'fetch' }
+    });
+  };
+
+  TaskApi.carryOver = (id, date) => {
+    return request(`/api/tasks/${encodeURIComponent(id)}/carry-over${buildQuery({ date })}`, {
+      method: 'PATCH',
+      headers: { 'X-Requested-With': 'fetch' }
+    });
+  };
 
   TaskApi.getWeekTasks = (date) => TaskApi.getTasks('WEEK', date);
 
