@@ -12,6 +12,9 @@
   const $card    = document.getElementById('unscheduled-card');
   const $list    = document.getElementById('unscheduled-list');
   const $count   = document.getElementById('unscheduled-count');
+  const $quickForm = document.getElementById('inboxQuickForm');
+  const $quickTitle = document.getElementById('inboxQuickTitle');
+  const $quickSubmit = document.getElementById('inboxQuickSubmit');
 
   function todayYmd() {
     const now = new Date();
@@ -93,6 +96,39 @@
       $loading?.classList.add('hidden');
     }
   }
+
+  async function createInboxTask(title) {
+    await TaskApi.createTask({
+      title,
+      description: '',
+      category: '',
+      type: 'TODO',
+      allDay: false,
+      startAt: null,
+      endAt: null
+    });
+  }
+
+  $quickForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const title = ($quickTitle?.value || '').trim();
+    if (!title) {
+      $quickTitle?.focus();
+      return;
+    }
+
+    try {
+      if ($quickSubmit) $quickSubmit.disabled = true;
+      await createInboxTask(title);
+      $quickTitle.value = '';
+      await load();
+    } catch (err) {
+      showError(`Inbox 기록 실패: ${err.message}`);
+    } finally {
+      if ($quickSubmit) $quickSubmit.disabled = false;
+    }
+  });
 
   $list?.addEventListener('click', async (e) => {
     const btn = e.target.closest('[data-action="move-to-today"]');
