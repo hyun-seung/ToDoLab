@@ -24,6 +24,21 @@
     <!-- ✅ 아래 영역만 스크롤 -->
     <div class="flex-1 min-h-0 overflow-y-auto">
 
+        <form id="inboxQuickForm"
+              class="mt-5 flex items-center gap-2"
+              autocomplete="off">
+            <input id="inboxQuickTitle"
+                   type="text"
+                   maxlength="30"
+                   class="min-w-0 flex-1 rounded-xl border border-gray-200 bg-white px-4 py-3 text-[15px] font-semibold text-gray-900 outline-none focus:border-gray-900"
+                   placeholder="생각난 할 일을 바로 기록" />
+            <button id="inboxQuickSubmit"
+                    type="submit"
+                    class="shrink-0 rounded-xl bg-gray-900 px-4 py-3 text-[14px] font-extrabold text-white disabled:opacity-50">
+                기록
+            </button>
+        </form>
+
         <!-- 로딩 / 에러 -->
         <div id="unscheduled-loading"
              class="mt-6 text-gray-500 text-sm">
@@ -52,7 +67,7 @@
 
             <!-- CTA -->
             <div class="mt-4 text-sm font-semibold text-gray-500">
-                오른쪽 아래 <span class="font-extrabold text-gray-700">+</span> 버튼으로 바로 기록할 수 있어요
+                위 입력창에서 바로 기록할 수 있어요
             </div>
         </div>
 
