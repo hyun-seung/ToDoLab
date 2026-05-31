@@ -18,6 +18,9 @@
   const $quickForm = document.getElementById('todayQuickForm');
   const $quickTitle = document.getElementById('todayQuickTitle');
   const $quickSubmit = document.getElementById('todayQuickSubmit');
+  const $summaryToday = document.getElementById('today-summary-today');
+  const $summaryInbox = document.getElementById('today-summary-inbox');
+  const $summaryDone = document.getElementById('today-summary-done');
   const $inboxEmpty = document.getElementById('today-inbox-empty');
   const $inboxCard = document.getElementById('today-inbox-card');
   const $inboxList = document.getElementById('today-inbox-list');
@@ -35,6 +38,7 @@
   }
 
   function setCount(n) {
+    if ($summaryToday) $summaryToday.textContent = String(Math.max(0, n || 0));
     if (!$count) return;
     if (n <= 0) {
       $count.classList.add('hidden');
@@ -88,11 +92,13 @@
   }
 
   function setDoneCount(n) {
+    if ($summaryDone) $summaryDone.textContent = String(Math.max(0, n || 0));
     if (!$doneCount) return;
     $doneCount.textContent = `${n}개`;
   }
 
   function setInboxCount(n) {
+    if ($summaryInbox) $summaryInbox.textContent = String(Math.max(0, n || 0));
     if (!$inboxCount) return;
     $inboxCount.textContent = `${n}개`;
   }
