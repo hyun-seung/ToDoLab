@@ -25,6 +25,37 @@ class TaskTest {
     }
 
     @Test
+    @DisplayName("이월 횟수가 3회 이상이면 다시 정리 대상이다")
+    void isStaleCarryOver() {
+        // given
+        Task stale = Task.builder()
+                .title("stale")
+                .carryOverCount(3)
+                .build();
+        Task active = Task.builder()
+                .title("active")
+                .carryOverCount(2)
+                .build();
+
+        // then
+        assertThat(stale.isStaleCarryOver()).isTrue();
+        assertThat(active.isStaleCarryOver()).isFalse();
+    }
+
+    @Test
+    @DisplayName("음수 이월 횟수는 0으로 보정한다")
+    void carryOverCount_normalizesNegative() {
+        // given
+        Task task = Task.builder()
+                .title("task")
+                .carryOverCount(-1)
+                .build();
+
+        // then
+        assertThat(task.getCarryOverCount()).isZero();
+    }
+
+    @Test
     @DisplayName("moveToInbox는 Inbox 상태로 바꾸고 실행 날짜와 완료 시간을 비운다")
     void moveToInbox() {
         // given

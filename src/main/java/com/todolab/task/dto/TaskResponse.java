@@ -24,6 +24,7 @@ public record TaskResponse(
         LocalDate targetDate,
         LocalDateTime completedAt,
         int carryOverCount,
+        boolean staleCarryOver,
         Long ddayGoalId,
         String ddayGoalTitle,
         LocalDate ddayGoalTargetDate,
@@ -41,7 +42,7 @@ public record TaskResponse(
             String category,
             LocalDateTime createdAt
     ) {
-        this(id, TaskType.defaultType(), title, description, startAt, endAt, allDay, unscheduled, category, null, null, null, 0, null, null, null, null, createdAt);
+        this(id, TaskType.defaultType(), title, description, startAt, endAt, allDay, unscheduled, category, null, null, null, 0, false, null, null, null, null, createdAt);
     }
 
     public static TaskResponse from(Task t) {
@@ -60,6 +61,7 @@ public record TaskResponse(
                 .targetDate(t.getTargetDate())
                 .completedAt(t.getCompletedAt())
                 .carryOverCount(t.getCarryOverCount())
+                .staleCarryOver(t.isStaleCarryOver())
                 .ddayGoalId(ddayGoal == null ? null : ddayGoal.getId())
                 .ddayGoalTitle(ddayGoal == null ? null : ddayGoal.getTitle())
                 .ddayGoalTargetDate(ddayGoal == null ? null : ddayGoal.getTargetDate())

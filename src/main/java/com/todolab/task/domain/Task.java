@@ -18,6 +18,8 @@ import java.time.LocalTime;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Task {
 
+    public static final int STALE_CARRY_OVER_THRESHOLD = 3;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "`ID`")
@@ -105,6 +107,10 @@ public class Task {
 
     public boolean isPeriodTask() {
         return startAt != null && endAt != null;
+    }
+
+    public boolean isStaleCarryOver() {
+        return carryOverCount >= STALE_CARRY_OVER_THRESHOLD;
     }
 
     public void moveToInbox() {

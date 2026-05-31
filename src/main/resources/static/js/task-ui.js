@@ -59,6 +59,7 @@
   TaskUI.formatCarryOverMeta = (task) => {
     const n = Number(task?.carryOverCount || 0);
     if (!Number.isFinite(n) || n <= 0) return null;
+    if (task?.staleCarryOver || n >= 3) return `${n}회 이월 · 다시 정리 필요`;
     return `${n}회 이월`;
   };
 
