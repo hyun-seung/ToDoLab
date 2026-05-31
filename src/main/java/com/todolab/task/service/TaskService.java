@@ -1,5 +1,6 @@
 package com.todolab.task.service;
 
+import com.todolab.task.domain.DeferReason;
 import com.todolab.task.domain.Task;
 import com.todolab.task.domain.TaskStatus;
 import com.todolab.task.domain.query.DateRange;
@@ -99,6 +100,16 @@ public class TaskService {
     public TaskResponse carryOver(Long id, LocalDate nextDate) {
         Task carriedOver = taskTxService.carryOverTx(id, nextDate);
         return TaskResponse.from(carriedOver);
+    }
+
+    public TaskResponse setDeferReason(Long id, DeferReason reason) {
+        Task updated = taskTxService.setDeferReasonTx(id, reason);
+        return TaskResponse.from(updated);
+    }
+
+    public TaskResponse clearDeferReason(Long id) {
+        Task updated = taskTxService.clearDeferReasonTx(id);
+        return TaskResponse.from(updated);
     }
 
     public TaskResponse connectDdayGoal(Long id, Long ddayGoalId) {
