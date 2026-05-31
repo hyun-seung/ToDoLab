@@ -3,6 +3,7 @@ package com.todolab.task.service;
 import com.todolab.dday.domain.DdayGoal;
 import com.todolab.dday.exception.DdayGoalNotFoundException;
 import com.todolab.dday.repository.DdayGoalRepository;
+import com.todolab.task.domain.DeferReason;
 import com.todolab.task.domain.Task;
 import com.todolab.task.dto.TaskRequest;
 import com.todolab.task.exception.TaskNotFoundException;
@@ -48,6 +49,20 @@ public class TaskTxService {
     public Task carryOverTx(Long id, LocalDate nextDate) {
         Task task = findTask(id);
         task.carryOverTo(nextDate);
+        return taskRepository.save(task);
+    }
+
+    @Transactional
+    public Task setDeferReasonTx(Long id, DeferReason reason) {
+        Task task = findTask(id);
+        task.setDeferReason(reason);
+        return taskRepository.save(task);
+    }
+
+    @Transactional
+    public Task clearDeferReasonTx(Long id) {
+        Task task = findTask(id);
+        task.clearDeferReason();
         return taskRepository.save(task);
     }
 

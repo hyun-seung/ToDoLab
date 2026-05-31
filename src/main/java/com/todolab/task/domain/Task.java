@@ -69,6 +69,10 @@ public class Task {
     @Column(name = "`CARRY_OVER_COUNT`", nullable = false)
     private int carryOverCount;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "`DEFER_REASON`")
+    private DeferReason deferReason;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "`DDAY_GOAL_ID`")
     private DdayGoal ddayGoal;
@@ -87,10 +91,12 @@ public class Task {
 
     @Builder
     public Task(String title, String description, TaskType type, LocalDateTime startAt, LocalDateTime endAt, boolean allDay, String category,
-                TaskStatus status, LocalDate targetDate, LocalDateTime completedAt, Integer carryOverCount, DdayGoal ddayGoal) {
+                TaskStatus status, LocalDate targetDate, LocalDateTime completedAt, Integer carryOverCount,
+                DeferReason deferReason, DdayGoal ddayGoal) {
         apply(title, description, type, startAt, endAt, allDay, category);
         applyStatus(status, targetDate, completedAt);
         this.carryOverCount = carryOverCount == null ? 0 : Math.max(0, carryOverCount);
+        this.deferReason = deferReason;
         this.ddayGoal = ddayGoal;
     }
 
@@ -149,6 +155,17 @@ public class Task {
 
     public void disconnectDdayGoal() {
         this.ddayGoal = null;
+    }
+
+    public void setDeferReason(DeferReason deferReason) {
+        if (deferReason == null) {
+            throw new IllegalArgumentException("deferReason은 필수입니다.");
+        }
+        this.deferReason = deferReason;
+    }
+
+    public void clearDeferReason() {
+        this.deferReason = null;
     }
 
     private void apply(String title, String description, TaskType type, LocalDateTime startAt, LocalDateTime endAt, boolean allDay, String category) {

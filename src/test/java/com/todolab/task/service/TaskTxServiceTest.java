@@ -3,6 +3,7 @@ package com.todolab.task.service;
 import com.todolab.dday.domain.DdayGoal;
 import com.todolab.dday.exception.DdayGoalNotFoundException;
 import com.todolab.dday.repository.DdayGoalRepository;
+import com.todolab.task.domain.DeferReason;
 import com.todolab.task.domain.Task;
 import com.todolab.task.domain.TaskStatus;
 import com.todolab.task.exception.TaskNotFoundException;
@@ -200,6 +201,54 @@ class TaskTxServiceTest {
 
         // then
         assertThat(result.getDdayGoal()).isNull();
+
+        then(taskRepository).should(times(1)).findById(id);
+        then(taskRepository).should(times(1)).save(task);
+    }
+
+    @Test
+    @DisplayName("setDeferReasonTx는 Task에 미룬 이유를 저장한다")
+    void setDeferReasonTx_success() {
+        // given
+        long id = 1L;
+        Task task = Task.builder()
+                .title("task")
+                .carryOverCount(3)
+                .build();
+        TaskTxService service = new TaskTxService(taskRepository, ddayGoalRepository);
+
+        given(taskRepository.findById(id)).willReturn(Optional.of(task));
+        given(taskRepository.save(task)).willReturn(task);
+
+        // when
+        Task result = service.setDeferReasonTx(id, DeferReason.TOO_BIG);
+
+        // then
+        assertThat(result.getDeferReason()).isEqualTo(DeferReason.TOO_BIG);
+
+        then(taskRepository).should(times(1)).findById(id);
+        then(taskRepository).should(times(1)).save(task);
+    }
+
+    @Test
+    @DisplayName("clearDeferReasonTx는 Task의 미룬 이유를 해제한다")
+    void clearDeferReasonTx_success() {
+        // given
+        long id = 1L;
+        Task task = Task.builder()
+                .title("task")
+                .deferReason(DeferReason.TOO_BIG)
+                .build();
+        TaskTxService service = new TaskTxService(taskRepository, ddayGoalRepository);
+
+        given(taskRepository.findById(id)).willReturn(Optional.of(task));
+        given(taskRepository.save(task)).willReturn(task);
+
+        // when
+        Task result = service.clearDeferReasonTx(id);
+
+        // then
+        assertThat(result.getDeferReason()).isNull();
 
         then(taskRepository).should(times(1)).findById(id);
         then(taskRepository).should(times(1)).save(task);

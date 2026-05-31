@@ -1,6 +1,7 @@
 package com.todolab.task.dto;
 
 import com.todolab.task.domain.Task;
+import com.todolab.task.domain.DeferReason;
 import com.todolab.task.domain.TaskStatus;
 import com.todolab.task.domain.TaskType;
 import lombok.Builder;
@@ -25,6 +26,8 @@ public record TaskResponse(
         LocalDateTime completedAt,
         int carryOverCount,
         boolean staleCarryOver,
+        DeferReason deferReason,
+        String deferReasonLabel,
         Long ddayGoalId,
         String ddayGoalTitle,
         LocalDate ddayGoalTargetDate,
@@ -42,7 +45,7 @@ public record TaskResponse(
             String category,
             LocalDateTime createdAt
     ) {
-        this(id, TaskType.defaultType(), title, description, startAt, endAt, allDay, unscheduled, category, null, null, null, 0, false, null, null, null, null, createdAt);
+        this(id, TaskType.defaultType(), title, description, startAt, endAt, allDay, unscheduled, category, null, null, null, 0, false, null, null, null, null, null, null, createdAt);
     }
 
     public static TaskResponse from(Task t) {
@@ -62,6 +65,8 @@ public record TaskResponse(
                 .completedAt(t.getCompletedAt())
                 .carryOverCount(t.getCarryOverCount())
                 .staleCarryOver(t.isStaleCarryOver())
+                .deferReason(t.getDeferReason())
+                .deferReasonLabel(t.getDeferReason() == null ? null : t.getDeferReason().getLabel())
                 .ddayGoalId(ddayGoal == null ? null : ddayGoal.getId())
                 .ddayGoalTitle(ddayGoal == null ? null : ddayGoal.getTitle())
                 .ddayGoalTargetDate(ddayGoal == null ? null : ddayGoal.getTargetDate())

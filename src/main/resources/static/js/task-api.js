@@ -89,6 +89,20 @@
     });
   };
 
+  TaskApi.setDeferReason = (id, reason) => {
+    return request(`/api/tasks/${encodeURIComponent(id)}/defer-reason${buildQuery({ reason })}`, {
+      method: 'PATCH',
+      headers: { 'X-Requested-With': 'fetch' }
+    });
+  };
+
+  TaskApi.clearDeferReason = (id) => {
+    return request(`/api/tasks/${encodeURIComponent(id)}/defer-reason`, {
+      method: 'DELETE',
+      headers: { 'X-Requested-With': 'fetch' }
+    });
+  };
+
   TaskApi.connectDdayGoal = (id, ddayGoalId) => {
     return request(`/api/tasks/${encodeURIComponent(id)}/dday-goal${buildQuery({ ddayGoalId })}`, {
       method: 'PATCH',

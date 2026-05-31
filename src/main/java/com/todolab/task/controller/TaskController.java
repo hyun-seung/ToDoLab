@@ -1,6 +1,7 @@
 package com.todolab.task.controller;
 
 import com.todolab.common.api.ApiResponse;
+import com.todolab.task.domain.DeferReason;
 import com.todolab.task.dto.TaskCategoryGroupResponse;
 import com.todolab.task.dto.TaskQueryRequest;
 import com.todolab.task.dto.TaskRequest;
@@ -180,6 +181,31 @@ public class TaskController {
         TaskResponse res = taskService.carryOver(id, date);
 
         log.info("[API] carryOver success :: id={}, date={}", id, date);
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(ApiResponse.success(res));
+    }
+
+    @PatchMapping("/{id}/defer-reason")
+    public ResponseEntity<ApiResponse<TaskResponse>> setDeferReason(
+            @PathVariable Long id,
+            @RequestParam DeferReason reason
+    ) {
+        log.info("[API] setDeferReason request :: id={}, reason={}", id, reason);
+
+        TaskResponse res = taskService.setDeferReason(id, reason);
+
+        log.info("[API] setDeferReason success :: id={}, reason={}", id, reason);
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(ApiResponse.success(res));
+    }
+
+    @DeleteMapping("/{id}/defer-reason")
+    public ResponseEntity<ApiResponse<TaskResponse>> clearDeferReason(@PathVariable Long id) {
+        log.info("[API] clearDeferReason request :: id={}", id);
+
+        TaskResponse res = taskService.clearDeferReason(id);
+
+        log.info("[API] clearDeferReason success :: id={}", id);
         return ResponseEntity.status(HttpStatus.OK)
                 .body(ApiResponse.success(res));
     }

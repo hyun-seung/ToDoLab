@@ -207,4 +207,49 @@ class TaskTest {
         // then
         assertThat(task.getDdayGoal()).isNull();
     }
+
+    @Test
+    @DisplayName("setDeferReason은 미룬 이유를 기록한다")
+    void setDeferReason() {
+        // given
+        Task task = Task.builder()
+                .title("task")
+                .build();
+
+        // when
+        task.setDeferReason(DeferReason.ETC);
+
+        // then
+        assertThat(task.getDeferReason()).isEqualTo(DeferReason.ETC);
+    }
+
+    @Test
+    @DisplayName("setDeferReason은 미룬 이유가 없으면 실패한다")
+    void setDeferReason_requiresReason() {
+        // given
+        Task task = Task.builder()
+                .title("task")
+                .build();
+
+        // when & then
+        assertThatThrownBy(() -> task.setDeferReason(null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("deferReason은 필수입니다.");
+    }
+
+    @Test
+    @DisplayName("clearDeferReason은 미룬 이유를 해제한다")
+    void clearDeferReason() {
+        // given
+        Task task = Task.builder()
+                .title("task")
+                .deferReason(DeferReason.TOO_BIG)
+                .build();
+
+        // when
+        task.clearDeferReason();
+
+        // then
+        assertThat(task.getDeferReason()).isNull();
+    }
 }

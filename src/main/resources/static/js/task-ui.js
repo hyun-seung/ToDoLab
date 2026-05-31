@@ -56,10 +56,22 @@
     return label ? `목표 · ${task.ddayGoalTitle} ${label}` : `목표 · ${task.ddayGoalTitle}`;
   };
 
+  TaskUI.deferReasons = [
+    { value: 'TOO_BIG', label: '너무 큼' },
+    { value: 'NOT_NEEDED_NOW', label: '지금 필요 없음' },
+    { value: 'AVOIDING', label: '하기 싫음' },
+    { value: 'NO_DEADLINE', label: '마감 없음' },
+    { value: 'WAITING_OTHER', label: '다른 사람 대기' },
+    { value: 'ETC', label: '기타' }
+  ];
+
   TaskUI.formatCarryOverMeta = (task) => {
     const n = Number(task?.carryOverCount || 0);
     if (!Number.isFinite(n) || n <= 0) return null;
-    if (task?.staleCarryOver || n >= 3) return `${n}회 이월 · 다시 정리 필요`;
+    if (task?.staleCarryOver || n >= 3) {
+      const reason = (task?.deferReasonLabel || '').trim();
+      return reason ? `${n}회 이월 · ${reason}` : `${n}회 이월 · 다시 정리 필요`;
+    }
     return `${n}회 이월`;
   };
 
@@ -113,14 +125,30 @@
                  aria-label="완료 처리">✓</button>`
       : `<div class="check-box">✓</div>`;
 
-    const actionsHtml = options.carryOverAction
-      ? `<div class="px-4 pb-4 flex justify-end">
+    const deferReasonHtml = options.deferReasonAction
+      ? `<label class="sr-only" for="defer-reason-${TaskUI.escapeHtml(task.id)}">미룬 이유</label>
+         <select id="defer-reason-${TaskUI.escapeHtml(task.id)}"
+                 class="min-w-[150px] rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] font-extrabold text-amber-900"
+                 data-action="set-defer-reason"
+                 data-task-id="${TaskUI.escapeHtml(task.id)}">
+           <option value="">미룬 이유 선택</option>
+           ${TaskUI.deferReasons.map(reason => `
+             <option value="${TaskUI.escapeHtml(reason.value)}" ${task.deferReason === reason.value ? 'selected' : ''}>
+               ${TaskUI.escapeHtml(reason.label)}
+             </option>`).join('')}
+         </select>`
+      : '';
+
+    const actionsHtml = (options.carryOverAction || options.deferReasonAction)
+      ? `<div class="px-4 pb-4 flex flex-wrap items-center justify-end gap-2">
+           ${deferReasonHtml}
+           ${options.carryOverAction ? `
            <button type="button"
                    class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-[12px] font-extrabold text-gray-700 hover:bg-gray-50"
                    data-action="carry-over-task"
                    data-task-id="${TaskUI.escapeHtml(task.id)}">
              내일로
-           </button>
+           </button>` : ''}
          </div>`
       : '';
 
@@ -192,7 +220,8 @@
       showRightTime: true,
       metaText: TaskUI.joinMeta(TaskUI.formatDdayMeta(t), TaskUI.formatCarryOverMeta(t)),
       completeAction: true,
-      carryOverAction: true
+      carryOverAction: true,
+      deferReasonAction: Boolean(t?.staleCarryOver || Number(t?.carryOverCount || 0) >= 3)
     });
   };
 

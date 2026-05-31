@@ -3,6 +3,7 @@ package com.todolab.task.controller;
 import com.todolab.common.api.ApiExceptionHandler;
 import com.todolab.common.api.ErrorCode;
 import com.todolab.dday.exception.DdayGoalNotFoundException;
+import com.todolab.task.domain.DeferReason;
 import com.todolab.task.domain.TaskStatus;
 import com.todolab.task.dto.TaskCategoryGroupResponse;
 import com.todolab.task.dto.TaskRequest;
@@ -884,6 +885,63 @@ class TaskControllerTest {
                 .andExpect(jsonPath("$.data.ddayGoalId").doesNotExist());
 
         then(taskService).should().disconnectDdayGoal(id);
+        then(taskService).shouldHaveNoMoreInteractions();
+    }
+
+    @Test
+    @DisplayName("미룬 이유 저장 성공")
+    void setDeferReason_success() throws Exception {
+        // given
+        long id = 1L;
+        TaskResponse updated = TaskResponse.builder()
+                .id(id)
+                .title("carried over")
+                .status(TaskStatus.TODAY)
+                .carryOverCount(3)
+                .staleCarryOver(true)
+                .deferReason(DeferReason.ETC)
+                .deferReasonLabel("기타")
+                .build();
+
+        given(taskService.setDeferReason(id, DeferReason.ETC)).willReturn(updated);
+
+        // when & then
+        mockMvc.perform(patch("/api/tasks/{id}/defer-reason", id)
+                        .param("reason", "ETC"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.data.id").value(1))
+                .andExpect(jsonPath("$.data.deferReason").value("ETC"))
+                .andExpect(jsonPath("$.data.deferReasonLabel").value("기타"));
+
+        then(taskService).should().setDeferReason(id, DeferReason.ETC);
+        then(taskService).shouldHaveNoMoreInteractions();
+    }
+
+    @Test
+    @DisplayName("미룬 이유 해제 성공")
+    void clearDeferReason_success() throws Exception {
+        // given
+        long id = 1L;
+        TaskResponse updated = TaskResponse.builder()
+                .id(id)
+                .title("carried over")
+                .status(TaskStatus.TODAY)
+                .carryOverCount(3)
+                .staleCarryOver(true)
+                .build();
+
+        given(taskService.clearDeferReason(id)).willReturn(updated);
+
+        // when & then
+        mockMvc.perform(delete("/api/tasks/{id}/defer-reason", id))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.data.id").value(1))
+                .andExpect(jsonPath("$.data.deferReason").doesNotExist())
+                .andExpect(jsonPath("$.data.deferReasonLabel").doesNotExist());
+
+        then(taskService).should().clearDeferReason(id);
         then(taskService).shouldHaveNoMoreInteractions();
     }
 

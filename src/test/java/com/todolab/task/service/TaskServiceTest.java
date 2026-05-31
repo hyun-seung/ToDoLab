@@ -2,6 +2,7 @@ package com.todolab.task.service;
 
 import com.todolab.common.api.ErrorCode;
 import com.todolab.dday.domain.DdayGoal;
+import com.todolab.task.domain.DeferReason;
 import com.todolab.task.domain.Task;
 import com.todolab.task.domain.TaskStatus;
 import com.todolab.task.domain.TaskType;
@@ -902,6 +903,53 @@ class TaskServiceTest {
         assertThat(result.ddayGoalId()).isNull();
 
         then(taskTxService).should(times(1)).disconnectDdayGoalTx(id);
+        then(taskRepository).shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("미룬 이유 저장은 트랜잭션 서비스에 위임하고 응답을 반환한다")
+    void setDeferReason_success() {
+        // given
+        long id = 1L;
+        Task updated = Task.builder()
+                .title("carried over")
+                .carryOverCount(3)
+                .deferReason(DeferReason.ETC)
+                .build();
+
+        given(taskTxService.setDeferReasonTx(id, DeferReason.ETC)).willReturn(updated);
+
+        // when
+        TaskResponse result = taskService.setDeferReason(id, DeferReason.ETC);
+
+        // then
+        assertThat(result.deferReason()).isEqualTo(DeferReason.ETC);
+        assertThat(result.deferReasonLabel()).isEqualTo("기타");
+
+        then(taskTxService).should(times(1)).setDeferReasonTx(id, DeferReason.ETC);
+        then(taskRepository).shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("미룬 이유 해제는 트랜잭션 서비스에 위임하고 응답을 반환한다")
+    void clearDeferReason_success() {
+        // given
+        long id = 1L;
+        Task updated = Task.builder()
+                .title("carried over")
+                .carryOverCount(3)
+                .build();
+
+        given(taskTxService.clearDeferReasonTx(id)).willReturn(updated);
+
+        // when
+        TaskResponse result = taskService.clearDeferReason(id);
+
+        // then
+        assertThat(result.deferReason()).isNull();
+        assertThat(result.deferReasonLabel()).isNull();
+
+        then(taskTxService).should(times(1)).clearDeferReasonTx(id);
         then(taskRepository).shouldHaveNoInteractions();
     }
 }
