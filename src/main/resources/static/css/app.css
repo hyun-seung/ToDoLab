@@ -644,6 +644,11 @@ textarea.task-modal-input{
   gap:14px;
 }
 
+.task-modal-date-grid.is-all-day .task-modal-input{
+  font-weight:900;
+  background:#f8fafc;
+}
+
 .task-modal-date-field{
   min-width:0;
 }
@@ -673,6 +678,12 @@ textarea.task-modal-input{
 .task-modal-check input{
   width:15px;
   height:15px;
+}
+
+.task-modal-check.is-active{
+  border-color:#bfdbfe;
+  background:#eff6ff;
+  color:#1d4ed8;
 }
 
 .task-modal-check:has(input:disabled){

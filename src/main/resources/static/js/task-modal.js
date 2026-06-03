@@ -13,8 +13,13 @@ window.TaskModal = (() => {
   const $category = document.getElementById('tmCategory');
   const $unscheduled = document.getElementById('tmUnscheduled');
   const $allDay = document.getElementById('tmAllDay');
+  const $allDayLabel = document.getElementById('tmAllDayLabel');
+  const $dateTitle = document.getElementById('tmDateTitle');
+  const $dateHint = document.getElementById('tmDateHint');
   const $startAt = document.getElementById('tmStartAt');
   const $endAt = document.getElementById('tmEndAt');
+  const $startLabel = document.getElementById('tmStartLabel');
+  const $endLabel = document.getElementById('tmEndLabel');
   const $scheduleFields = document.getElementById('tmScheduleFields');
 
   const $meta = document.getElementById('tmMeta');
@@ -99,15 +104,58 @@ window.TaskModal = (() => {
       || todayDate();
   }
 
-  function normalizeAllDayRange() {
-    if (!$allDay.checked) return;
+  function datePart(value) {
+    const text = String(value || '');
+    return /^\d{4}-\d{2}-\d{2}/.test(text) ? text.slice(0, 10) : '';
+  }
 
-    const startDate = baseScheduleDate();
-    const endDate = $endAt.value ? $endAt.value.slice(0, 10) : nextDate(startDate);
+  function dateTimeAtStartOfDay(date) {
+    return date ? `${date}T00:00` : null;
+  }
+
+  function setScheduleInputMode() {
+    const isAllDay = !!$allDay.checked;
+    const startValue = $startAt.value;
+    const endValue = $endAt.value;
+    const startDate = datePart(startValue);
+    const endDate = datePart(endValue);
+
+    $startAt.type = isAllDay ? 'date' : 'datetime-local';
+    $endAt.type = isAllDay ? 'date' : 'datetime-local';
+
+    $dateTitle.textContent = isAllDay ? '날짜' : '날짜/시간';
+    $dateHint.textContent = isAllDay ? '종일 일정은 날짜만 선택' : '날짜 없으면 할 일로 저장';
+    $startLabel.textContent = isAllDay ? '시작일' : '시작';
+    $endLabel.textContent = isAllDay ? '종료일' : '종료';
+    $scheduleFields?.classList.toggle('is-all-day', isAllDay);
+    $allDayLabel?.classList.toggle('is-active', isAllDay);
+
+    if (isAllDay) {
+      $startAt.value = startDate;
+      $endAt.value = endDate;
+      return;
+    }
+
+    $startAt.value = startValue && !startValue.includes('T') ? (dateTimeAtStartOfDay(startDate) || '') : startValue;
+    $endAt.value = endValue && !endValue.includes('T') ? (dateTimeAtStartOfDay(endDate) || '') : endValue;
+  }
+
+  function normalizeAllDayRange() {
+    if (!$allDay.checked) return null;
+
+    setScheduleInputMode();
+
+    const startDate = datePart($startAt.value) || baseScheduleDate();
+    const endDate = datePart($endAt.value) || nextDate(startDate);
     const normalizedEndDate = endDate <= startDate ? nextDate(startDate) : endDate;
 
-    $startAt.value = `${startDate}T00:00`;
-    $endAt.value = `${normalizedEndDate}T00:00`;
+    $startAt.value = startDate;
+    $endAt.value = normalizedEndDate;
+
+    return {
+      startAt: dateTimeAtStartOfDay(startDate),
+      endAt: dateTimeAtStartOfDay(normalizedEndDate),
+    };
   }
 
   function setReadOnly(ro) {
@@ -121,13 +169,17 @@ window.TaskModal = (() => {
   }
 
   function syncDateDisabled({ normalize = false } = {}) {
+    setScheduleInputMode();
+
+    if (normalize) {
+      normalizeAllDayRange();
+    }
+
     const hasSchedule = !!($startAt.value || $endAt.value);
     $unscheduled.checked = !hasSchedule;
     $allDay.disabled = mode === 'detail';
     if (!hasSchedule && !$allDay.checked) {
       $allDay.checked = false;
-    } else if (normalize) {
-      normalizeAllDayRange();
     }
     $scheduleFields?.classList.toggle('task-modal-date-grid-empty', !hasSchedule);
   }
@@ -185,10 +237,10 @@ window.TaskModal = (() => {
   }
 
   function payloadFromForm() {
-    normalizeAllDayRange();
+    const allDayRange = normalizeAllDayRange();
 
-    const startAt = $startAt.value || null;
-    const endAt = $endAt.value || null;
+    const startAt = allDayRange?.startAt ?? ($startAt.value || null);
+    const endAt = allDayRange?.endAt ?? ($endAt.value || null);
     const hasSchedule = !!(startAt || endAt);
     const isUnscheduled = !hasSchedule;
     const type = hasSchedule ? 'SCHEDULE' : (currentType === 'IDEA' ? 'IDEA' : 'TODO');
