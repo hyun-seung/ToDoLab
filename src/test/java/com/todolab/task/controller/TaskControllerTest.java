@@ -823,6 +823,10 @@ class TaskControllerTest {
         TaskResponse reopened = TaskResponse.builder()
                 .id(id)
                 .title("reopened")
+                .startAt(targetDate.atStartOfDay())
+                .endAt(targetDate.plusDays(1).atStartOfDay())
+                .allDay(true)
+                .scheduleSource(ScheduleSource.AUTO_TODAY)
                 .status(TaskStatus.TODAY)
                 .targetDate(targetDate)
                 .completedAt(null)
@@ -838,6 +842,10 @@ class TaskControllerTest {
                 .andExpect(jsonPath("$.data.id").value(1))
                 .andExpect(jsonPath("$.data.status").value("TODAY"))
                 .andExpect(jsonPath("$.data.targetDate").value("2026-05-21"))
+                .andExpect(jsonPath("$.data.startAt").value("2026-05-21T00:00:00"))
+                .andExpect(jsonPath("$.data.endAt").value("2026-05-22T00:00:00"))
+                .andExpect(jsonPath("$.data.allDay").value(true))
+                .andExpect(jsonPath("$.data.scheduleSource").value("AUTO_TODAY"))
                 .andExpect(jsonPath("$.data.completedAt").doesNotExist());
 
         then(taskService).should().reopenToday(id, targetDate);
