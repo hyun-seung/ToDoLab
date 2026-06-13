@@ -149,10 +149,7 @@ public class Task {
     public void moveToToday(LocalDate targetDate) {
         validateTargetDate(targetDate);
         if (isUnscheduled()) {
-            this.startAt = targetDate.atStartOfDay();
-            this.endAt = targetDate.plusDays(1).atStartOfDay();
-            this.allDay = true;
-            this.scheduleSource = ScheduleSource.AUTO_TODAY;
+            applyAutoTodaySchedule(targetDate);
         }
         this.status = TaskStatus.TODAY;
         this.targetDate = targetDate;
@@ -166,15 +163,17 @@ public class Task {
     }
 
     public void reopenToday(LocalDate targetDate) {
+        validateTargetDate(targetDate);
+        if (this.scheduleSource == ScheduleSource.AUTO_TODAY) {
+            applyAutoTodaySchedule(targetDate);
+        }
         moveToToday(targetDate);
     }
 
     public void carryOverTo(LocalDate nextDate) {
         validateTargetDate(nextDate);
         if (this.scheduleSource == ScheduleSource.AUTO_TODAY) {
-            this.startAt = nextDate.atStartOfDay();
-            this.endAt = nextDate.plusDays(1).atStartOfDay();
-            this.allDay = true;
+            applyAutoTodaySchedule(nextDate);
         }
         this.status = TaskStatus.TODAY;
         this.targetDate = nextDate;
@@ -275,6 +274,13 @@ public class Task {
         if (this.type == TaskType.SCHEDULE) {
             this.type = TaskType.TODO;
         }
+    }
+
+    private void applyAutoTodaySchedule(LocalDate targetDate) {
+        this.startAt = targetDate.atStartOfDay();
+        this.endAt = targetDate.plusDays(1).atStartOfDay();
+        this.allDay = true;
+        this.scheduleSource = ScheduleSource.AUTO_TODAY;
     }
 
     private void validateTargetDate(LocalDate targetDate) {

@@ -274,8 +274,8 @@ class TaskTest {
     }
 
     @Test
-    @DisplayName("reopenToday는 완료 상태를 취소하고 지정 날짜의 Today로 되돌린다")
-    void reopenToday() {
+    @DisplayName("일정 없는 Task의 완료를 취소하면 지정 날짜의 자동 종일 일정을 생성한다")
+    void reopenToday_createsAutoTodaySchedule() {
         // given
         Task task = Task.builder()
                 .title("task")
@@ -291,6 +291,68 @@ class TaskTest {
         assertThat(task.getStatus()).isEqualTo(TaskStatus.TODAY);
         assertThat(task.getTargetDate()).isEqualTo(targetDate);
         assertThat(task.getCompletedAt()).isNull();
+        assertThat(task.getStartAt()).isEqualTo(targetDate.atStartOfDay());
+        assertThat(task.getEndAt()).isEqualTo(targetDate.plusDays(1).atStartOfDay());
+        assertThat(task.isAllDay()).isTrue();
+        assertThat(task.getScheduleSource()).isEqualTo(ScheduleSource.AUTO_TODAY);
+    }
+
+    @Test
+    @DisplayName("자동 종일 일정의 완료를 취소하면 일정을 지정 날짜로 이동한다")
+    void reopenToday_movesAutoTodaySchedule() {
+        // given
+        LocalDate completedDate = LocalDate.of(2026, 5, 20);
+        LocalDate targetDate = LocalDate.of(2026, 5, 22);
+        Task task = Task.builder()
+                .title("task")
+                .startAt(completedDate.atStartOfDay())
+                .endAt(completedDate.plusDays(1).atStartOfDay())
+                .allDay(true)
+                .scheduleSource(ScheduleSource.AUTO_TODAY)
+                .status(TaskStatus.DONE)
+                .targetDate(completedDate)
+                .completedAt(LocalDateTime.of(2026, 5, 20, 11, 0))
+                .build();
+
+        // when
+        task.reopenToday(targetDate);
+
+        // then
+        assertThat(task.getStatus()).isEqualTo(TaskStatus.TODAY);
+        assertThat(task.getTargetDate()).isEqualTo(targetDate);
+        assertThat(task.getCompletedAt()).isNull();
+        assertThat(task.getStartAt()).isEqualTo(targetDate.atStartOfDay());
+        assertThat(task.getEndAt()).isEqualTo(targetDate.plusDays(1).atStartOfDay());
+        assertThat(task.isAllDay()).isTrue();
+        assertThat(task.getScheduleSource()).isEqualTo(ScheduleSource.AUTO_TODAY);
+    }
+
+    @Test
+    @DisplayName("사용자 지정 일정의 완료를 취소해도 캘린더 일정은 변경하지 않는다")
+    void reopenToday_preservesUserSchedule() {
+        // given
+        LocalDateTime startAt = LocalDateTime.of(2026, 5, 20, 14, 0);
+        LocalDateTime endAt = LocalDateTime.of(2026, 5, 20, 15, 0);
+        LocalDate targetDate = LocalDate.of(2026, 5, 22);
+        Task task = Task.builder()
+                .title("task")
+                .startAt(startAt)
+                .endAt(endAt)
+                .scheduleSource(ScheduleSource.USER)
+                .status(TaskStatus.DONE)
+                .targetDate(LocalDate.of(2026, 5, 20))
+                .completedAt(LocalDateTime.of(2026, 5, 20, 16, 0))
+                .build();
+
+        // when
+        task.reopenToday(targetDate);
+
+        // then
+        assertThat(task.getStatus()).isEqualTo(TaskStatus.TODAY);
+        assertThat(task.getTargetDate()).isEqualTo(targetDate);
+        assertThat(task.getStartAt()).isEqualTo(startAt);
+        assertThat(task.getEndAt()).isEqualTo(endAt);
+        assertThat(task.getScheduleSource()).isEqualTo(ScheduleSource.USER);
     }
 
     @Test

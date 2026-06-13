@@ -229,7 +229,7 @@ class TaskTxServiceTest {
     }
 
     @Test
-    @DisplayName("reopenTodayTx는 Done Task를 지정 날짜의 Today 상태로 되돌리고 저장한다")
+    @DisplayName("reopenTodayTx는 Done Task를 지정 날짜의 자동 종일 일정으로 되돌리고 저장한다")
     void reopenTodayTx_success() {
         // given
         long id = 1L;
@@ -251,6 +251,10 @@ class TaskTxServiceTest {
         assertThat(result.getStatus()).isEqualTo(TaskStatus.TODAY);
         assertThat(result.getTargetDate()).isEqualTo(targetDate);
         assertThat(result.getCompletedAt()).isNull();
+        assertThat(result.getStartAt()).isEqualTo(targetDate.atStartOfDay());
+        assertThat(result.getEndAt()).isEqualTo(targetDate.plusDays(1).atStartOfDay());
+        assertThat(result.isAllDay()).isTrue();
+        assertThat(result.getScheduleSource()).isEqualTo(ScheduleSource.AUTO_TODAY);
 
         then(taskRepository).should(times(1)).findById(id);
         then(taskRepository).should(times(1)).save(task);
