@@ -14,6 +14,7 @@ window.TaskModal = (() => {
   const $unscheduled = document.getElementById('tmUnscheduled');
   const $allDay = document.getElementById('tmAllDay');
   const $allDayLabel = document.getElementById('tmAllDayLabel');
+  const $allDayBadge = document.getElementById('tmAllDayBadge');
   const $dateHint = document.getElementById('tmDateHint');
   const $startAt = document.getElementById('tmStartAt');
   const $endAt = document.getElementById('tmEndAt');
@@ -191,6 +192,7 @@ window.TaskModal = (() => {
     const hasSchedule = !!($startAt.value || $endAt.value);
     $unscheduled.checked = !hasSchedule;
     $allDay.disabled = mode === 'detail';
+    $allDayBadge?.classList.toggle('hidden', !(mode === 'detail' && hasSchedule && $allDay.checked));
     if (!hasSchedule && !$allDay.checked) {
       $allDay.checked = false;
     }

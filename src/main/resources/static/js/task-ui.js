@@ -25,13 +25,13 @@
 
   /**
    * 카드 우측에 보여줄 "시간 텍스트" 생성
-   * - 종일이면 "종일"
+   * - 종일 일정은 별도 배지로 표시
    * - start~end 둘다 있으면 "HH:mm ~ HH:mm"
    * - start만 있으면 "HH:mm"
    */
   TaskUI.formatRightTime = (task) => {
     if (!task) return '';
-    if (task.allDay) return '종일';
+    if (task.allDay) return '';
 
     const st = TaskUI.toTimeHM(task.startAt);
     const et = TaskUI.toTimeHM(task.endAt);
@@ -39,6 +39,19 @@
     if (st && et) return `${st} ~ ${et}`;
     if (st) return `${st}`;
     return '';
+  };
+
+  TaskUI.renderAllDayBadge = (task) => {
+    if (!task?.allDay) return '';
+    return `<span class="task-all-day-badge">
+              <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <rect x="2.5" y="3.5" width="11" height="10" rx="2"
+                      stroke="currentColor" stroke-width="1.3"/>
+                <path d="M5 2.5v2M11 2.5v2M2.5 6.5h11"
+                      stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+              </svg>
+              <span>종일</span>
+            </span>`;
   };
 
   TaskUI.formatDdayLabel = (daysLeft) => {
@@ -117,6 +130,7 @@
     const title = TaskUI.escapeHtml(task.title || '(제목 없음)');
     const desc  = TaskUI.escapeHtml((task.description || '').trim());
     const cat   = TaskUI.escapeHtml((task.category || '').trim());
+    const allDayBadge = TaskUI.renderAllDayBadge(task);
 
     const metaText = TaskUI.escapeHtml((options.metaText || '').trim());
     const showDesc = (options.showDesc !== false);
@@ -315,6 +329,7 @@
     <div class="min-w-0 flex-1">
       <div class="flex items-center gap-2 min-w-0">
         <div class="task-title truncate">${title}</div>
+        ${allDayBadge}
         ${cat ? `<span class="task-badge">${cat}</span>` : ``}
       </div>
 
