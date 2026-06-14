@@ -322,12 +322,39 @@
   });
 
   $overdueList?.addEventListener('click', async (e) => {
+    const menuToggle = e.target.closest('[data-action="toggle-overdue-menu"]');
+    if (menuToggle) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const card = menuToggle.closest('.task-card');
+      const menu = card?.querySelector('[data-role="overdue-menu"]');
+      if (!menu) return;
+
+      const shouldOpen = menu.hidden;
+      $overdueList.querySelectorAll('[data-role="overdue-menu"]').forEach(otherMenu => {
+        otherMenu.hidden = true;
+      });
+      $overdueList.querySelectorAll('[data-action="toggle-overdue-menu"]').forEach(otherToggle => {
+        otherToggle.setAttribute('aria-expanded', 'false');
+      });
+
+      menu.hidden = !shouldOpen;
+      menuToggle.setAttribute('aria-expanded', String(shouldOpen));
+      return;
+    }
+
     const btn = e.target.closest(
       '[data-action="overdue-today"], [data-action="overdue-tomorrow"], ' +
       '[data-action="overdue-inbox"], [data-action="overdue-complete"], ' +
       '[data-action="overdue-reschedule"], [data-action="overdue-delete"]'
     );
-    if (!btn) return;
+    if (!btn) {
+      if (e.target.closest('.task-overdue-actions')) {
+        e.stopPropagation();
+      }
+      return;
+    }
 
     e.preventDefault();
     e.stopPropagation();
