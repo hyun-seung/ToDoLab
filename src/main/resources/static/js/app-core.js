@@ -7,21 +7,42 @@ function closeModal() {
   document.getElementById("successModal")?.classList.add("hidden");
 }
 
-function showToast(message) {
+function showToast(message, type = "success") {
   const container = document.getElementById("toast-container");
   if (!container) return;
 
   const toast = document.createElement("div");
-  toast.className = "bg-black text-white px-4 py-2 rounded shadow-lg opacity-90 transition transform text-sm";
-  toast.innerHTML = "✔️ " + message;
+  const normalizedType = type === "error" ? "error" : "success";
+  toast.className = `app-toast app-toast-${normalizedType}`;
+  toast.setAttribute("role", normalizedType === "error" ? "alert" : "status");
+
+  const icon = document.createElement("span");
+  icon.className = "app-toast-icon";
+  icon.setAttribute("aria-hidden", "true");
+  icon.textContent = normalizedType === "error" ? "!" : "✓";
+
+  const text = document.createElement("span");
+  text.className = "app-toast-message";
+  text.textContent = String(message || "");
+
+  toast.append(icon, text);
 
   container.appendChild(toast);
 
   setTimeout(() => {
-    toast.classList.add("opacity-0");
-    setTimeout(() => toast.remove(), 300);
-  }, 2000);
+    toast.classList.add("app-toast-leaving");
+    setTimeout(() => toast.remove(), 180);
+  }, normalizedType === "error" ? 3600 : 2200);
 }
+
+window.AppFeedback = {
+  success(message) {
+    showToast(message, "success");
+  },
+  error(message) {
+    showToast(message, "error");
+  }
+};
 
 // util
 function toIsoLocalDateTime(dateStr, timeStr) {

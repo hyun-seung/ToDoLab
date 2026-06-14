@@ -62,6 +62,21 @@
     setCount(0);
   }
 
+  function showActionSuccess(msg) {
+    window.AppFeedback?.success(msg);
+  }
+
+  function showActionError(msg) {
+    if (window.AppFeedback?.error) {
+      window.AppFeedback.error(msg);
+      return;
+    }
+    if ($error) {
+      $error.textContent = msg;
+      $error.classList.remove('hidden');
+    }
+  }
+
   function showEmpty() {
     hideAll();
     $empty?.classList.remove('hidden');
@@ -241,8 +256,9 @@
       await createInboxTask(title);
       $quickTitle.value = '';
       await load();
+      showActionSuccess('기록함에 추가했어요.');
     } catch (err) {
-      showError(`기록 실패: ${err.message}`);
+      showActionError(`기록 실패: ${err.message}`);
     } finally {
       if ($quickSubmit) $quickSubmit.disabled = false;
     }
@@ -271,8 +287,9 @@
         btn.disabled = true;
         await TaskApi.moveToInbox(id, removeSchedule);
         await load();
+        showActionSuccess('기록함으로 이동했어요.');
       } catch (err) {
-        showError(`기록함 이동 실패: ${err.message}`);
+        showActionError(`기록함 이동 실패: ${err.message}`);
       } finally {
         btn.disabled = false;
       }
@@ -287,9 +304,14 @@
         await TaskApi.completeTask(id);
       }
       await load();
+      showActionSuccess(
+        btn.dataset.action === 'carry-over-task'
+          ? '내일 할 일로 옮겼어요.'
+          : '완료했어요.'
+      );
     } catch (err) {
       const actionLabel = btn.dataset.action === 'carry-over-task' ? '이월 처리' : '완료 처리';
-      showError(`${actionLabel} 실패: ${err.message}`);
+      showActionError(`${actionLabel} 실패: ${err.message}`);
     } finally {
       btn.disabled = false;
     }
@@ -314,8 +336,9 @@
         await TaskApi.clearDeferReason(id);
       }
       await load();
+      showActionSuccess(reason ? '미룬 이유를 저장했어요.' : '미룬 이유를 지웠어요.');
     } catch (err) {
-      showError(`미룬 이유 저장 실패: ${err.message}`);
+      showActionError(`미룬 이유 저장 실패: ${err.message}`);
     } finally {
       select.disabled = false;
     }
@@ -379,11 +402,11 @@
       ? btn.closest('.task-card')?.querySelector('[data-role="overdue-date"]')?.value
       : null;
     if (action === 'overdue-reschedule' && !rescheduleDate) {
-      showError('다시 정할 날짜를 선택해주세요.');
+      showActionError('다시 정할 날짜를 선택해주세요.');
       return;
     }
     if (action === 'overdue-reschedule' && rescheduleDate < date) {
-      showError(`${date} 이후 날짜를 선택해주세요.`);
+      showActionError(`${date} 이후 날짜를 선택해주세요.`);
       return;
     }
 
@@ -403,6 +426,15 @@
         await TaskApi.completeTask(id);
       }
       await load();
+      const successMessages = {
+        'overdue-today': '오늘 할 일로 옮겼어요.',
+        'overdue-tomorrow': '내일 할 일로 옮겼어요.',
+        'overdue-inbox': '기록함으로 이동했어요.',
+        'overdue-complete': '완료했어요.',
+        'overdue-reschedule': '실행 날짜를 변경했어요.',
+        'overdue-delete': '할 일을 삭제했어요.'
+      };
+      showActionSuccess(successMessages[action] || '지난 미완료를 정리했어요.');
     } catch (err) {
       const labels = {
         'overdue-today': '오늘 이동',
@@ -412,7 +444,7 @@
         'overdue-reschedule': '날짜 재설정',
         'overdue-delete': '삭제'
       };
-      showError(`${labels[action] || '지난 미완료 정리'} 실패: ${err.message}`);
+      showActionError(`${labels[action] || '지난 미완료 정리'} 실패: ${err.message}`);
     } finally {
       btn.disabled = false;
     }
@@ -437,8 +469,9 @@
         await TaskApi.clearDeferReason(id);
       }
       await load();
+      showActionSuccess(reason ? '미룬 이유를 저장했어요.' : '미룬 이유를 지웠어요.');
     } catch (err) {
-      showError(`미룬 이유 저장 실패: ${err.message}`);
+      showActionError(`미룬 이유 저장 실패: ${err.message}`);
     } finally {
       select.disabled = false;
     }
@@ -458,8 +491,9 @@
       btn.disabled = true;
       await TaskApi.reopenToday(id, date);
       await load();
+      showActionSuccess('오늘 할 일로 되돌렸어요.');
     } catch (err) {
-      showError(`완료 취소 실패: ${err.message}`);
+      showActionError(`완료 취소 실패: ${err.message}`);
     } finally {
       btn.disabled = false;
     }
@@ -479,8 +513,9 @@
       btn.disabled = true;
       await TaskApi.moveToToday(id, date);
       await load();
+      showActionSuccess('오늘 할 일로 옮겼어요.');
     } catch (err) {
-      showError(`오늘 할 일 이동 실패: ${err.message}`);
+      showActionError(`오늘 할 일 이동 실패: ${err.message}`);
     } finally {
       btn.disabled = false;
     }
