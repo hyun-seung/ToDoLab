@@ -17,6 +17,19 @@
 
   TaskUI.toDate = (iso) => (iso ? String(iso).split('T')[0] : null);
 
+  TaskUI.formatDateKorean = (value, { includeYear = false } = {}) => {
+    const date = TaskUI.toDate(value);
+    const match = String(date || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!match) return date || '';
+
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+    const weekday = ['일', '월', '화', '수', '목', '금', '토'][new Date(year, month - 1, day).getDay()];
+    const yearText = includeYear ? `${year}년 ` : '';
+    return `${yearText}${month}월 ${day}일 ${weekday}요일`;
+  };
+
   TaskUI.toTimeHM = (iso) => {
     if (!iso) return null;
     const t = String(iso).split('T')[1] || '';
@@ -441,8 +454,8 @@
   // ✅ Week: 우측 시간 O, meta X
   TaskUI.renderWeekCard = (t) => {
     return TaskUI.renderTaskCard(t, {
-      showRightTime: true,
-      metaText: null
+      showRightTime: false,
+      metaText: TaskUI.formatRightTime(t) || null
     });
   };
 

@@ -157,8 +157,11 @@
 
             <div id="week-card" class="mt-4 hidden">
                 <div class="mb-3 px-1">
-                    <div class="text-[15px] font-black text-gray-900">선택한 날짜의 일정</div>
-                    <div class="mt-1 text-[12px] font-semibold text-gray-500" th:text="${selectedDate}">2026-05-30</div>
+                    <div id="week-selected-date-title"
+                         class="text-[15px] font-black text-gray-900">선택한 날짜의 할 일</div>
+                    <div id="week-selected-date-text"
+                         class="mt-1 text-[12px] font-semibold text-gray-500"
+                         th:text="${selectedDate}">2026-05-30</div>
                 </div>
                 <div class="task-card">
                     <div id="week-list" class="space-y-0"></div>

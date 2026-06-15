@@ -141,7 +141,8 @@ window.TaskModal = (() => {
     else status = `${diffDays}일 후`;
 
     return {
-      value: `${month}월 ${day}일 ${weekdays[target.getDay()]}요일`,
+      value: window.TaskUI?.formatDateKorean?.(targetDate)
+        || `${month}월 ${day}일 ${weekdays[target.getDay()]}요일`,
       status,
       isPast: diffDays < 0
     };
@@ -191,12 +192,8 @@ window.TaskModal = (() => {
     }
 
     const timeText = formatScheduleTime(task);
-    const hasDifferentScheduleDate = targetDate && scheduleDate && targetDate !== scheduleDate;
     if ($whenMeta) {
-      if (hasDifferentScheduleDate) {
-        const schedulePresentation = executionDatePresentation(scheduleDate);
-        $whenMeta.textContent = `캘린더에는 ${schedulePresentation.value} ${timeText || ''}`.trim();
-      } else if (task?.scheduleSource === 'AUTO_TODAY') {
+      if (task?.scheduleSource === 'AUTO_TODAY') {
         $whenMeta.textContent = '종일 · 오늘 할 일로 이동하며 자동 설정';
       } else if (timeText) {
         $whenMeta.textContent = timeText;

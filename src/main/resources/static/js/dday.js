@@ -89,10 +89,13 @@
     return `
       <div class="mt-3 space-y-2">
         ${tasks.map(task => {
+          const plannedDateLabel = task.targetDate
+            ? (window.TaskUI?.formatDateKorean?.(task.targetDate) || task.targetDate)
+            : null;
           if (window.TaskUI?.renderTaskCard) {
             return TaskUI.renderTaskCard(task, {
               showRightTime: true,
-              metaText: task.targetDate ? `실행일 · ${task.targetDate}` : null,
+              metaText: plannedDateLabel ? `할 날짜 · ${plannedDateLabel}` : null,
               barColor: 'rgba(99, 102, 241, 0.55)',
               showDesc: false
             });
@@ -101,7 +104,7 @@
           return `
             <div class="rounded-lg border border-slate-200 bg-white px-4 py-3">
               <div class="truncate text-[14px] font-black text-gray-900">${escapeHtml(task.title)}</div>
-              ${task.targetDate ? `<div class="mt-1 text-[12px] font-semibold text-gray-500">${escapeHtml(task.targetDate)}</div>` : ''}
+              ${plannedDateLabel ? `<div class="mt-1 text-[12px] font-semibold text-gray-500">할 날짜 · ${escapeHtml(plannedDateLabel)}</div>` : ''}
             </div>
           `;
         }).join('')}
@@ -126,6 +129,8 @@
     $card?.classList.remove('hidden');
     $list.innerHTML = items.map(goal => {
       const selected = String(goal.id) === String(selectedGoalId);
+      const targetDateLabel = window.TaskUI?.formatDateKorean?.(goal.targetDate, { includeYear: true })
+        || goal.targetDate;
       return `
         <div class="rounded-lg border ${selected ? 'border-blue-200 bg-blue-50/70' : 'border-slate-200 bg-white'} px-5 py-4 shadow-sm"
              data-action="select-dday"
@@ -133,7 +138,7 @@
           <div class="flex items-center justify-between gap-3">
             <div class="min-w-0">
               <div class="truncate text-[16px] font-black text-gray-900">${escapeHtml(goal.title)}</div>
-              <div class="mt-1 text-[12px] font-semibold text-gray-500">${escapeHtml(goal.targetDate)}</div>
+              <div class="mt-1 text-[12px] font-semibold text-gray-500">${escapeHtml(targetDateLabel)}</div>
             </div>
             <div class="shrink-0 text-right">
               <div class="text-[18px] font-black text-blue-700">${escapeHtml(ddayLabel(goal.daysLeft))}</div>

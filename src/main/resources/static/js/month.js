@@ -20,6 +20,8 @@
   const $doneCard = document.getElementById('month-done-card');
   const $doneList = document.getElementById('month-done-list');
   const $doneCount = document.getElementById('month-done-count');
+  const $selectedDateTitle = document.getElementById('month-selected-date-title');
+  const $selectedDateText = document.getElementById('month-selected-date-text');
 
   const selectedDate = (root.dataset.selectedDate || '').trim(); // yyyy-MM-dd
   const monthLabel   = (root.dataset.monthLabel || '').trim();   // yyyy-MM
@@ -75,17 +77,15 @@
     $doneList.innerHTML = doneTasks.map(TaskUI.renderDoneCard).join('');
   }
 
-  function taskDate(t) {
-    return (t?.startAt || t?.targetDate || '').split('T')[0];
-  }
-
   function isTaskOnDate(t, date) {
     if (!date) return true;
-    const s = taskDate(t);
-    const e = (t?.endAt || '').split('T')[0];
-    if (!s) return false;
-    if (!e) return s === date;
-    return (s <= date && date <= e);
+    const dayStart = new Date(`${date}T00:00:00`);
+    const dayEnd = new Date(dayStart);
+    dayEnd.setDate(dayEnd.getDate() + 1);
+    const start = t?.startAt ? new Date(t.startAt) : null;
+    const end = t?.endAt ? new Date(t.endAt) : null;
+    if (!start) return false;
+    return start < dayEnd && (!end || end > dayStart);
   }
 
   function mergeTasks(...groups) {
@@ -143,9 +143,12 @@
     try {
       $error?.classList.add('hidden');
       applyTodayRing();
+      const selectedDateLabel = window.TaskUI?.formatDateKorean?.(selectedDate) || selectedDate;
+      if ($selectedDateTitle) $selectedDateTitle.textContent = `${selectedDateLabel}의 할 일`;
+      if ($selectedDateText) $selectedDateText.textContent = selectedDateLabel;
 
       const ym = monthLabel || (monthStart ? monthStart.slice(0, 7) : '');
-      const [tasks, todayTasks, doneTasks] = await Promise.all([
+      const [tasks, plannedTasks, doneTasks] = await Promise.all([
         TaskApi.getMonthTasks(ym),
         selectedDate ? TaskApi.getTodayTasks(selectedDate) : Promise.resolve([]),
         selectedDate ? TaskApi.getDoneTasks(selectedDate) : Promise.resolve([])
@@ -153,10 +156,8 @@
       renderDone(doneTasks);
 
       // 하단 리스트는 selectedDate 기준
-      const mergedTasks = mergeTasks(tasks, todayTasks);
-      const filtered = Array.isArray(tasks)
-        ? mergedTasks.filter(t => isTaskOnDate(t, selectedDate))
-        : [];
+      const filtered = mergeTasks(tasks, plannedTasks)
+        .filter(t => isTaskOnDate(t, selectedDate));
 
       if (!filtered.length) {
         showEmpty();

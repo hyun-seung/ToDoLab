@@ -277,7 +277,7 @@
     if (!id) return;
 
     if (btn.dataset.action === 'move-to-inbox') {
-      if (!confirm('캘린더 일정과 실행일을 제거하고 기록함으로 이동할까요?')) return;
+      if (!confirm('날짜와 시간을 제거하고 기록함으로 이동할까요?')) return;
 
       try {
         btn.disabled = true;
@@ -383,7 +383,7 @@
 
     const action = btn.dataset.action;
     if (action === 'overdue-inbox') {
-      if (!confirm('캘린더 일정과 실행일을 제거하고 기록함으로 이동할까요?')) return;
+      if (!confirm('날짜와 시간을 제거하고 기록함으로 이동할까요?')) return;
     }
     if (action === 'overdue-delete') {
       const title = (btn.dataset.taskTitle || '이 할 일').trim();
