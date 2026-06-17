@@ -310,6 +310,13 @@ select:focus{
 .task-card-clickable:hover{ background: transparent; }
 .task-card-clickable:hover .task-row{ background: rgba(15,23,42,0.025); }
 .task-card-clickable:active{ transform: scale(0.995); }
+.task-card-clickable:focus-visible{
+  outline:3px solid rgba(37,99,235,0.22);
+  outline-offset:3px;
+}
+.task-card-clickable:focus-visible .task-row{
+  background:rgba(37,99,235,0.04);
+}
 
 /* 행 */
 .task-row{

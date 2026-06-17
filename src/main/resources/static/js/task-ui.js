@@ -380,7 +380,10 @@
 
     return `
 <div class="task-card task-card-clickable ${staleCarryOver ? 'task-card-stale' : ''}"
-     data-task-id="${TaskUI.escapeHtml(task.id)}">
+     data-task-id="${TaskUI.escapeHtml(task.id)}"
+     tabindex="0"
+     role="button"
+     aria-label="${title} 상세 열기">
   <div class="task-row ${options.rowClass || ''}">
     <div class="task-left-bar" style="background:${barColor};"></div>
     ${checkHtml}
@@ -536,6 +539,19 @@
     // 내부 버튼/링크/폼 클릭 제외
     if (e.target.closest('button,a,input,textarea,select,label')) return;
 
+    const id = card.getAttribute('data-task-id');
+    if (!id) return;
+
+    TaskUI.openDetail(id);
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+
+    const card = e.target.closest('.task-card-clickable[data-task-id]');
+    if (!card || e.target !== card) return;
+
+    e.preventDefault();
     const id = card.getAttribute('data-task-id');
     if (!id) return;
 
