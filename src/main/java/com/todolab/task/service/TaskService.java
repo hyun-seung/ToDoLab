@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.List;
 
@@ -75,10 +76,10 @@ public class TaskService {
     public List<TaskRecommendationResponse> getTodayRecommendations(LocalDate referenceDate) {
         return taskRepository.findByStatus(TaskStatus.INBOX).stream()
                 .map(TaskResponse::from)
-                .map(task -> new RecommendationCandidate(task, recommendationReason(task, referenceDate)))
+                .map(task -> RecommendationCandidate.from(task, referenceDate))
                 .sorted(Comparator
                         .comparingInt(RecommendationCandidate::priority)
-                        .thenComparing(RecommendationCandidate::createdAtForSort, Comparator.nullsLast(Comparator.reverseOrder()))
+                        .thenComparingLong(RecommendationCandidate::sortKey)
                         .thenComparing(candidate -> candidate.task().id(), Comparator.nullsLast(Comparator.naturalOrder())))
                 .limit(5)
                 .map(candidate -> new TaskRecommendationResponse(candidate.task(), candidate.reason()))
@@ -190,32 +191,34 @@ public class TaskService {
                 .toList();
     }
 
-    private String recommendationReason(TaskResponse task, LocalDate referenceDate) {
-        if (task.ddayGoalTargetDate() != null
-                && !task.ddayGoalTargetDate().isBefore(referenceDate)
-                && !task.ddayGoalTargetDate().isAfter(referenceDate.plusDays(14))) {
-            return "D-Day 임박";
+    private record RecommendationCandidate(TaskResponse task, String reason, int priority, long sortKey) {
+        static RecommendationCandidate from(TaskResponse task, LocalDate referenceDate) {
+            LocalDate ddayDate = task.ddayGoalTargetDate();
+            if (ddayDate != null && !ddayDate.isBefore(referenceDate)) {
+                long daysLeft = ChronoUnit.DAYS.between(referenceDate, ddayDate);
+                if (!ddayDate.isAfter(referenceDate.plusDays(3))) {
+                    return new RecommendationCandidate(task, "D-Day 3일 이내", 0, daysLeft);
+                }
+                if (!ddayDate.isAfter(referenceDate.plusDays(14))) {
+                    return new RecommendationCandidate(task, "D-Day 임박", 1, daysLeft);
+                }
+            }
+
+            LocalDateTime createdAt = task.createdAt();
+            if (createdAt != null && !createdAt.toLocalDate().isAfter(referenceDate.minusDays(7))) {
+                return new RecommendationCandidate(task, "오래 기록", 2, createdAtSortKey(createdAt));
+            }
+
+            return new RecommendationCandidate(
+                    task,
+                    "최근 기록",
+                    3,
+                    createdAt == null ? Long.MAX_VALUE : -createdAtSortKey(createdAt)
+            );
         }
 
-        if (task.createdAt() != null
-                && !task.createdAt().toLocalDate().isAfter(referenceDate.minusDays(7))) {
-            return "오래 기록";
-        }
-
-        return "최근 기록";
-    }
-
-    private record RecommendationCandidate(TaskResponse task, String reason) {
-        int priority() {
-            return switch (reason) {
-                case "D-Day 임박" -> 0;
-                case "오래 기록" -> 1;
-                default -> 2;
-            };
-        }
-
-        LocalDateTime createdAtForSort() {
-            return task.createdAt();
+        private static long createdAtSortKey(LocalDateTime createdAt) {
+            return createdAt.toLocalDate().toEpochDay() * 86_400L + createdAt.toLocalTime().toSecondOfDay();
         }
     }
 

@@ -714,11 +714,12 @@ class TaskServiceTest {
     }
 
     @Test
-    @DisplayName("Today 추천은 D-Day 임박, 오래 기록, 최근 기록 순으로 최대 5개를 반환한다")
+    @DisplayName("Today 추천은 D-Day 긴급도, 오래 기록, 최근 기록 순으로 최대 5개를 반환한다")
     void getTodayRecommendations_success() {
         // given
         LocalDate referenceDate = LocalDate.of(2026, 6, 16);
-        DdayGoal closeGoal = new DdayGoal("시험", referenceDate.plusDays(3));
+        DdayGoal urgentGoal = new DdayGoal("시험", referenceDate.plusDays(2));
+        DdayGoal closeGoal = new DdayGoal("제출", referenceDate.plusDays(10));
 
         Task recent = Task.builder()
                 .title("최근 기록")
@@ -728,8 +729,13 @@ class TaskServiceTest {
                 .title("오래 기록")
                 .status(TaskStatus.INBOX)
                 .build();
-        Task dday = Task.builder()
-                .title("D-Day 할 일")
+        Task urgentDday = Task.builder()
+                .title("D-Day 3일")
+                .status(TaskStatus.INBOX)
+                .ddayGoal(urgentGoal)
+                .build();
+        Task closeDday = Task.builder()
+                .title("D-Day 10일")
                 .status(TaskStatus.INBOX)
                 .ddayGoal(closeGoal)
                 .build();
@@ -739,10 +745,11 @@ class TaskServiceTest {
 
         ReflectionTestUtils.setField(old, "createdAt", referenceDate.minusDays(8).atTime(9, 0));
         ReflectionTestUtils.setField(recent, "createdAt", referenceDate.minusDays(1).atTime(9, 0));
-        ReflectionTestUtils.setField(dday, "createdAt", referenceDate.minusDays(1).atTime(8, 0));
+        ReflectionTestUtils.setField(urgentDday, "createdAt", referenceDate.minusDays(1).atTime(8, 0));
+        ReflectionTestUtils.setField(closeDday, "createdAt", referenceDate.minusDays(1).atTime(7, 0));
 
         given(taskRepository.findByStatus(TaskStatus.INBOX))
-                .willReturn(List.of(recent, old, extra1, dday, extra2, extra3));
+                .willReturn(List.of(recent, old, extra1, closeDday, urgentDday, extra2, extra3));
 
         // when
         List<TaskRecommendationResponse> result = taskService.getTodayRecommendations(referenceDate);
@@ -750,9 +757,9 @@ class TaskServiceTest {
         // then
         assertThat(result).hasSize(5);
         assertThat(result).extracting(r -> r.task().title())
-                .containsExactly("D-Day 할 일", "오래 기록", "최근 기록", "extra1", "extra2");
+                .containsExactly("D-Day 3일", "D-Day 10일", "오래 기록", "최근 기록", "extra1");
         assertThat(result).extracting(TaskRecommendationResponse::reason)
-                .containsExactly("D-Day 임박", "오래 기록", "최근 기록", "최근 기록", "최근 기록");
+                .containsExactly("D-Day 3일 이내", "D-Day 임박", "오래 기록", "최근 기록", "최근 기록");
 
         then(taskRepository).should(times(1)).findByStatus(TaskStatus.INBOX);
         then(taskRepository).shouldHaveNoMoreInteractions();
