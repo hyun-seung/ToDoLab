@@ -144,7 +144,7 @@
             <div class="shrink-0 text-right">
               <div class="text-[18px] font-black text-blue-700">${escapeHtml(ddayLabel(goal.daysLeft))}</div>
               <button type="button"
-                      class="mt-2 text-[12px] font-extrabold text-gray-400 hover:text-red-600"
+                      class="mt-2 min-h-11 px-3 text-[12px] font-extrabold text-gray-400 hover:text-red-600"
                       data-action="delete-dday"
                       data-dday-id="${escapeHtml(goal.id)}"
                       data-dday-title="${escapeHtml(goal.title)}">

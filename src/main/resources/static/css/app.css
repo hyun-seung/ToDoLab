@@ -335,11 +335,11 @@ select:focus{
 
 /* 체크박스 */
 .check-box{
-  width:26px;
-  height:26px;
-  border-radius:8px;
-  border:1.5px solid #cbd5e1;
-  background:#fff;
+  position:relative;
+  width:44px;
+  height:44px;
+  border:0;
+  background:transparent;
   color:transparent;
   display:flex;
   align-items:center;
@@ -352,11 +352,21 @@ select:focus{
   margin-top:2px;
 }
 
-.task-check-action{
-  transition:background .12s ease, border-color .12s ease, color .12s ease, transform .12s ease, box-shadow .12s ease;
+.check-box::before{
+  content:"";
+  position:absolute;
+  inset:9px;
+  border-radius:8px;
+  border:1.5px solid #cbd5e1;
+  background:#fff;
+  transition:background .12s ease, border-color .12s ease, box-shadow .12s ease;
 }
 
-.task-check-action:hover{
+.task-check-action{
+  transition:color .12s ease, transform .12s ease;
+}
+
+.task-check-action:hover::before{
   border-color:#94a3b8;
   background:#f8fafc;
   box-shadow:0 8px 16px rgba(15,23,42,0.08);
@@ -367,14 +377,20 @@ select:focus{
 }
 
 .task-check-done{
-  border-color:#cbd5e1;
-  background:#e5e7eb;
   color:#64748b;
 }
 
-.task-check-done:hover{
+.task-check-done::before{
+  border-color:#cbd5e1;
+  background:#e5e7eb;
+}
+
+.task-check-done:hover::before{
   border-color:#94a3b8;
   background:#dbe2ea;
+}
+
+.task-check-done:hover{
   color:#475569;
 }
 
@@ -698,7 +714,7 @@ select:focus{
 }
 
 .task-overdue-menu-action{
-  min-height:40px;
+  min-height:44px;
   border:0;
   border-radius:var(--app-radius);
   background:transparent;
@@ -1063,8 +1079,8 @@ select:focus{
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  width:32px;
-  height:32px;
+  width:44px;
+  height:44px;
   border-radius:var(--app-radius);
   color:#94a3b8;
 }
@@ -1440,7 +1456,7 @@ textarea.task-modal-input{
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  height:32px;
+  min-height:44px;
   min-width:50px;
   padding:0 12px;
   border:1px solid #fecaca;
@@ -1448,7 +1464,7 @@ textarea.task-modal-input{
   background:#fff7f7;
   color:#dc2626;
   font-size:12px;
-  line-height:32px;
+  line-height:1;
   font-weight:900;
   box-shadow:0 1px 2px rgba(220, 38, 38, 0.08);
 }
