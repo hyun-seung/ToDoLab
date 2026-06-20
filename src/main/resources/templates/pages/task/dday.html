@@ -35,10 +35,20 @@
             <div id="dday-error" class="mt-6 text-red-600 text-sm hidden"></div>
 
             <section id="dday-empty"
-                     class="app-empty hidden mt-6 text-left">
-                <div class="text-[18px] font-black text-gray-900">아직 목표가 없어요</div>
-                <div class="mt-2 text-[14px] font-semibold leading-6 text-gray-500">
-                    시험, 마감, 제출일처럼 날짜가 중요한 일을 여기에 모아둘 수 있어요.
+                     class="app-empty hidden mt-6">
+                <div class="app-empty-icon">
+                    D
+                </div>
+                <div class="app-empty-title">아직 목표가 없어요</div>
+                <div class="app-empty-copy">
+                    시험, 마감, 제출일처럼 날짜가 중요한 목표를 모아둘 수 있어요.
+                </div>
+                <div class="app-empty-actions">
+                    <button type="button"
+                            class="app-empty-action"
+                            data-action="focus-dday-title">
+                        목표 추가하기
+                    </button>
                 </div>
             </section>
 

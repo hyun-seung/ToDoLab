@@ -151,5 +151,12 @@
     }
   });
 
+  root.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-action="focus-inbox-quick"]');
+    if (!btn) return;
+    e.preventDefault();
+    $quickTitle?.focus();
+  });
+
   load();
 })();

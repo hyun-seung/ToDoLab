@@ -706,6 +706,13 @@
     }
   });
 
+  root.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-action="focus-today-quick"]');
+    if (!btn) return;
+    e.preventDefault();
+    $quickTitle?.focus();
+  });
+
   initTodayDragSort();
 
   load();

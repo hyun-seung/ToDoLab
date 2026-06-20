@@ -368,5 +368,12 @@
     }
   });
 
+  root.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-action="focus-dday-title"]');
+    if (!btn) return;
+    e.preventDefault();
+    $title?.focus();
+  });
+
   load();
 })();

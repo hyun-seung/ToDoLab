@@ -103,17 +103,25 @@
 
             <!-- Empty State -->
             <div id="today-empty"
-                 class="today-empty-state hidden">
-                <div class="today-empty-icon">
+                 class="app-empty hidden mt-6">
+                <div class="app-empty-icon">
                     ✓
                 </div>
 
-                <div class="today-empty-title">
+                <div class="app-empty-title">
                     오늘 할 일이 없어요
                 </div>
 
-                <div class="today-empty-copy">
-                    새로 기록하거나 아래 기록함에서 오늘 할 일을 골라보세요
+                <div class="app-empty-copy">
+                    바로 기록하거나 기록함에서 오늘 할 일을 골라보세요.
+                </div>
+
+                <div class="app-empty-actions">
+                    <button type="button"
+                            class="app-empty-action"
+                            data-action="focus-today-quick">
+                        할 일 기록하기
+                    </button>
                 </div>
             </div>
 
