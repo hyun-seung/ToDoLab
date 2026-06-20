@@ -19,6 +19,13 @@
 
   TaskUI.plannedDate = (task) => task?.plannedDate || task?.targetDate || TaskUI.toDate(task?.startAt);
 
+  TaskUI.isAutoAllDayTodo = (task) => {
+    return String(task?.type || '').toUpperCase() === 'TODO'
+      && String(task?.status || '').toUpperCase() === 'TODAY'
+      && Boolean(task?.allDay)
+      && Boolean(TaskUI.plannedDate(task));
+  };
+
   TaskUI.formatDateKorean = (value, { includeYear = false } = {}) => {
     const date = TaskUI.toDate(value);
     const match = String(date || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);

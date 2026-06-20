@@ -91,13 +91,15 @@
       <div class="mt-3 space-y-2">
         ${tasks.map(task => {
           const plannedDate = window.TaskUI?.plannedDate?.(task) || task.plannedDate || task.targetDate;
+          const hideTodayDateMeta = plannedDate === todayYmd()
+            && window.TaskUI?.isAutoAllDayTodo?.(task);
           const plannedDateLabel = plannedDate
             ? (window.TaskUI?.formatDateKorean?.(plannedDate) || plannedDate)
             : null;
           if (window.TaskUI?.renderTaskCard) {
             return TaskUI.renderTaskCard(task, {
               showRightTime: true,
-              metaText: plannedDateLabel ? `할 날짜 · ${plannedDateLabel}` : null,
+              metaText: plannedDateLabel && !hideTodayDateMeta ? `할 날짜 · ${plannedDateLabel}` : null,
               barColor: 'rgba(99, 102, 241, 0.55)',
               showDesc: false
             });
@@ -106,7 +108,7 @@
           return `
             <div class="rounded-lg border border-slate-200 bg-white px-4 py-3">
               <div class="truncate text-[14px] font-black text-gray-900">${escapeHtml(task.title)}</div>
-              ${plannedDateLabel ? `<div class="mt-1 text-[12px] font-semibold text-gray-500">할 날짜 · ${escapeHtml(plannedDateLabel)}</div>` : ''}
+              ${plannedDateLabel && !hideTodayDateMeta ? `<div class="mt-1 text-[12px] font-semibold text-gray-500">할 날짜 · ${escapeHtml(plannedDateLabel)}</div>` : ''}
             </div>
           `;
         }).join('')}
