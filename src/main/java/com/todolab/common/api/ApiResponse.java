@@ -4,10 +4,11 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.time.LocalDateTime;
 
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public record ApiResponse<T>(
         String status,
+        @JsonInclude(JsonInclude.Include.ALWAYS)
         T data,
+        @JsonInclude(JsonInclude.Include.NON_NULL)
         ErrorBody error,
         LocalDateTime timestamp
 ) {

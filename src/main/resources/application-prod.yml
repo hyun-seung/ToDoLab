@@ -35,6 +35,9 @@ spring:
           starttls.enable: true
 
 app:
+  cors:
+    allowed-origins: ${TODOLAB_ALLOWED_ORIGINS:}
+
   batch:
     scheduler:
       enabled: true

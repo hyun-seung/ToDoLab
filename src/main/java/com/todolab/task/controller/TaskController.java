@@ -102,7 +102,7 @@ public class TaskController {
                 .body(ApiResponse.success(res));
     }
 
-    @GetMapping("/recommendations/today")
+    @GetMapping({"/recommendations/today", "/today/recommendations"})
     public ResponseEntity<ApiResponse<List<TaskRecommendationResponse>>> getTodayRecommendations(
             @RequestParam LocalDate date
     ) {
@@ -137,6 +137,20 @@ public class TaskController {
         List<TaskResponse> res = taskService.getOverdueTasks(date);
 
         log.info("[API] getOverdueTasks success :: date={}, taskCount={}", date, res.size());
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(ApiResponse.success(res));
+    }
+
+    @GetMapping("/stale")
+    public ResponseEntity<ApiResponse<List<TaskResponse>>> getStaleTasks(
+            @RequestParam(required = false) LocalDate date
+    ) {
+        LocalDate referenceDate = date == null ? LocalDate.now() : date;
+        log.info("[API] getStaleTasks request :: date={}", referenceDate);
+
+        List<TaskResponse> res = taskService.getOverdueTasks(referenceDate);
+
+        log.info("[API] getStaleTasks success :: date={}, taskCount={}", referenceDate, res.size());
         return ResponseEntity.status(HttpStatus.OK)
                 .body(ApiResponse.success(res));
     }
@@ -330,13 +344,13 @@ public class TaskController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<TaskResponse>> deleteTask(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<Void>> deleteTask(@PathVariable Long id) {
         log.info("[API] deleteTask request :: id={}", id);
 
         taskService.delete(id);
         log.info("[API] deleteTask success :: id={}", id);
 
         return ResponseEntity.status(HttpStatus.OK)
-                .body(ApiResponse.success(TaskResponse.builder().id(id).build()));
+                .body(ApiResponse.success(null));
     }
 }

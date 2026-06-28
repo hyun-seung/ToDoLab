@@ -2,6 +2,7 @@ package com.todolab.task.controller;
 
 import com.todolab.common.api.ApiExceptionHandler;
 import com.todolab.common.api.ErrorCode;
+import com.todolab.config.CorsConfig;
 import com.todolab.dday.exception.DdayGoalNotFoundException;
 import com.todolab.task.domain.DeferReason;
 import com.todolab.task.domain.TaskStatus;
@@ -22,6 +23,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
 
@@ -35,8 +37,9 @@ import static org.mockito.BDDMockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@Import(ApiExceptionHandler.class)
+@Import({ApiExceptionHandler.class, CorsConfig.class})
 @WebMvcTest(controllers = TaskController.class)
+@TestPropertySource(properties = "app.cors.allowed-origins=http://localhost:8081,http://localhost:8090")
 class TaskControllerTest {
 
     @Autowired
@@ -457,6 +460,24 @@ class TaskControllerTest {
     }
 
     @Test
+    @DisplayName("Today 추천 조회 성공 - 모바일 클라이언트 경로도 지원한다")
+    void getTodayRecommendations_mobileAlias_success() throws Exception {
+        // given
+        LocalDate date = LocalDate.of(2026, 6, 16);
+        given(taskService.getTodayRecommendations(date)).willReturn(List.of());
+
+        // when & then
+        mockMvc.perform(get("/api/tasks/today/recommendations")
+                        .param("date", "2026-06-16"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.data.length()").value(0));
+
+        then(taskService).should().getTodayRecommendations(date);
+        then(taskService).shouldHaveNoMoreInteractions();
+    }
+
+    @Test
     @DisplayName("Today 조회 성공")
     void getTodayTasks_success() throws Exception {
         // given
@@ -479,6 +500,24 @@ class TaskControllerTest {
                 .andExpect(jsonPath("$.data[0].id").value(1))
                 .andExpect(jsonPath("$.data[0].status").value("TODAY"))
                 .andExpect(jsonPath("$.data[0].targetDate").value("2026-05-21"));
+
+        then(taskService).should().getTodayTasks(date);
+        then(taskService).shouldHaveNoMoreInteractions();
+    }
+
+    @Test
+    @DisplayName("Expo Web Origin은 API CORS 응답 헤더를 받는다")
+    void cors_expoWebOrigin_success() throws Exception {
+        LocalDate date = LocalDate.of(2026, 5, 21);
+        given(taskService.getTodayTasks(date)).willReturn(List.of());
+
+        mockMvc.perform(get("/api/tasks/today")
+                        .header("Origin", "http://localhost:8081")
+                        .param("date", "2026-05-21"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:8081"))
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.data.length()").value(0));
 
         then(taskService).should().getTodayTasks(date);
         then(taskService).shouldHaveNoMoreInteractions();
@@ -508,6 +547,24 @@ class TaskControllerTest {
                 .andExpect(jsonPath("$.data[0].id").value(1))
                 .andExpect(jsonPath("$.data[0].status").value("TODAY"))
                 .andExpect(jsonPath("$.data[0].targetDate").value("2026-05-19"));
+
+        then(taskService).should().getOverdueTasks(referenceDate);
+        then(taskService).shouldHaveNoMoreInteractions();
+    }
+
+    @Test
+    @DisplayName("지난 미완료 조회 성공 - stale 경로와 date 파라미터를 지원한다")
+    void getStaleTasks_success() throws Exception {
+        // given
+        LocalDate referenceDate = LocalDate.of(2026, 5, 21);
+        given(taskService.getOverdueTasks(referenceDate)).willReturn(List.of());
+
+        // when & then
+        mockMvc.perform(get("/api/tasks/stale")
+                        .param("date", "2026-05-21"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.data.length()").value(0));
 
         then(taskService).should().getOverdueTasks(referenceDate);
         then(taskService).shouldHaveNoMoreInteractions();
@@ -1124,7 +1181,7 @@ class TaskControllerTest {
      *  일정 삭제
      *******************/
     @Test
-    @DisplayName("일정 삭제 성공 - 존재하는 id면 200과 삭제된 id를 반환한다")
+    @DisplayName("일정 삭제 성공 - 존재하는 id면 200과 null data를 반환한다")
     void deleteTask_success() throws Exception {
         // given
         long id = 1L;
@@ -1135,7 +1192,7 @@ class TaskControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.status").value("success"))
-                .andExpect(jsonPath("$.data.id").value((int) id));
+                .andExpect(jsonPath("$.data").isEmpty());
 
         then(taskService).should().delete(id);
         then(taskService).shouldHaveNoMoreInteractions();

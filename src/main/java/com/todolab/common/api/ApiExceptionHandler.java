@@ -14,6 +14,7 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @Slf4j
 @RestControllerAdvice
@@ -87,6 +88,13 @@ public class ApiExceptionHandler {
         log.warn("D-Day Goal Not Found : {}", e.getDetail());
         return ResponseEntity.status(ErrorCode.DDAY_GOAL_NOT_FOUND.getStatus())
                 .body(ApiResponse.failure(ErrorCode.DDAY_GOAL_NOT_FOUND));
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ApiResponse<?>> handleNoResourceFoundException(NoResourceFoundException e) {
+        log.warn("Resource Not Found : {}", e.getResourcePath());
+        return ResponseEntity.status(ErrorCode.RESOURCE_NOT_FOUND.getStatus())
+                .body(ApiResponse.failure(ErrorCode.RESOURCE_NOT_FOUND));
     }
 
     @ExceptionHandler(Exception.class)
